@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Vérifie et empaquette les plugins du marketplace Teamstarter (dossier plugin-ts/).
+Vérifie et empaquette les plugins du marketplace Teamstarter.
 
-Usage, depuis plugin-ts/ :
+Usage, depuis la racine du dépôt :
     python3 scripts/check_plugins.py              # vérifie tout, code retour 1 si erreur
     python3 scripts/check_plugins.py --sync       # recopie les fichiers partagés, puis vérifie
     python3 scripts/check_plugins.py --package    # vérifie, puis écrit les zips dans dist/
