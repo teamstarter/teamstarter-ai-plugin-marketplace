@@ -141,6 +141,8 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 ├── teamstarter-core/                   # le plugin pour tous les collaborateurs
 │   ├── .claude-plugin/plugin.json
 │   ├── .mcp.json                       # connecteur Teamstarter : https://app.teamstarter.co/mcp
+│   ├── README.md                       # description du plugin, affichée par le répertoire de Claude
+│   ├── LICENSE                         # MIT
 │   └── skills/
 │       ├── ts-general-creer-projet/    # créer un projet jusqu'à sa proposition ; reprendre un brouillon
 │       └── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
