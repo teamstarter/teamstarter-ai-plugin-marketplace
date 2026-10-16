@@ -140,6 +140,10 @@ Proposer de reprendre un brouillon (« Je reprends lequel ? »). Sur choix de l'
 la main à `ts-general-creer-projet` avec l'id du projet : il relit l'état et repart de la
 première étape non faite. Un projet en campagne échouée se propose à nouveau par le même skill.
 
+Un projet « Automatisation de processus avec l'IA » en réalisation (`CASHEDOUT`) porte un skill :
+pour le créer, en déposer une nouvelle version ou déclarer un blocage, passer la main à
+`ts-general-creer-skill`.
+
 ## Garde-fous
 
 - **Lecture seule** : ce skill n'appelle jamais `run-mutation`.

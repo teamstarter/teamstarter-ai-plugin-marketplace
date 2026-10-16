@@ -1,7 +1,7 @@
 {
   "name": "teamstarter-core",
-  "version": "0.1.0",
-  "description": "Pour tous les collaborateurs Teamstarter : créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, reprendre un brouillon, et lister ses projets par statut, depuis l'outil IA, par le connecteur MCP Teamstarter.",
+  "version": "0.2.0",
+  "description": "Pour tous les collaborateurs Teamstarter : créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, reprendre un brouillon, lister ses projets par statut, et créer un skill par un projet d'automatisation avec l'IA (écriture, dépôt, test, utilisation, blocages), depuis l'outil IA, par le connecteur MCP Teamstarter.",
   "author": {
     "name": "Teamstarter",
     "email": "product@teamstarter.co",

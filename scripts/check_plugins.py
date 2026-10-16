@@ -38,6 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SHARED = {
     "teamstarter-core/skills/ts-general-creer-projet/references/regles-api.md": [
         "teamstarter-core/skills/ts-general-lister-projets/references/regles-api.md",
+        "teamstarter-core/skills/ts-general-creer-skill/references/regles-api.md",
     ],
 }
 
