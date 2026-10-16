@@ -21,6 +21,8 @@ dans ChatGPT et dans l'app.
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type, de l'idée jusqu'à sa proposition ; reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Monte un projet pour notre séminaire de juin », « Reprends mon brouillon », « Génère la fiche de mon projet », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun, et choisir lequel reprendre | « Où en sont mes projets ? », « Mes brouillons », « Qu'est-ce qu'il me reste à faire sur Teamstarter ? » |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Reprends mon skill », « Dépose la nouvelle version de mon skill », « Mon skill est bloqué » |
+| `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
 
 Inutile de nommer le skill : l'outil IA le choisit d'après la demande.
 
@@ -61,6 +63,34 @@ inventés ; dépenses et budget) et **Automatisation de processus avec l'IA** (l
 le temps qu'elle prend, et aucune donnée sensible dans la fiche). Les autres types suivent le
 parcours commun, avec les questions que votre organisation a définies.
 
+### Créer un skill
+
+`ts-general-creer-skill` passe avant le skill `skill-creator` d'Anthropic : un skill de
+l'organisation naît d'un projet Teamstarter.
+
+1. **Projet.** L'IA crée et propose un projet « Automatisation de processus avec l'IA » avec
+   `ts-general-creer-projet`, en reprenant ce que vous avez dit de la tâche.
+2. **Validation.** Si votre organisation relit les projets, le projet attend la validation des
+   animateurs : revenez quand il est validé, l'IA reprend là. Sans relecture, le projet passe
+   directement en réalisation.
+3. **Écriture.** Le projet en réalisation, l'IA récupère le prompt de création du skill généré par
+   Teamstarter et confie l'écriture à `skill-creator`. Le skill porte l'id du projet dans ses
+   métadonnées (`teamstarter-project-id`). → **Validation** du skill, puis livraison en zip prêt
+   à installer.
+4. **Dépôt.** Le skill est déposé sur le projet, puis chaque nouvelle version que vous validez.
+5. **Étapes de réalisation.** L'IA coche avec votre accord « Créer mon agent IA », puis « Tester
+   l'agent en conditions réelles » une fois le test concluant.
+6. **Utilisation.** Chaque exécution du skill est déclarée à Teamstarter par
+   `ts-general-declarer-execution-skill` : heure, durée, tokens (estimés quand l'outil ne les
+   affiche pas) et personne qui l'utilise, pour les statistiques d'utilisation du projet.
+7. **Blocage.** Un problème qui empêche de créer ou d'utiliser le skill devient, avec votre accord,
+   un point de blocage sur le projet.
+
+Le prompt de création, le dépôt du skill, la validation des étapes et la déclaration des
+utilisations demandent des outils du connecteur que votre accès n'a peut-être pas encore. Sans
+eux, l'IA vous dit quoi faire dans l'app : copier le prompt, déposer le fichier, cocher l'étape.
+Sans eux, les utilisations ne sont pas comptées.
+
 ### Lister ses projets
 
 Les projets sont regroupés comme dans la page « Mes projets » de l'app : structuration, en cours
@@ -78,7 +108,8 @@ Ce skill est en lecture seule : il ne modifie rien.
 ### Garde-fous
 
 - **Rien n'est écrit sans votre accord** : chaque écriture suit une validation, et la proposition
-  du projet demande une confirmation explicite.
+  du projet demande une confirmation explicite. Seule exception : la déclaration d'utilisation
+  d'un skill de projet, faite à la fin de chaque exécution et annoncée dans la réponse.
 - **Rien n'est inventé** : date, lieu, montant, prestataire, co-porteur. L'IA vous les demande,
   ou écrit « à préciser » en vous le disant.
 - Une réponse ou une section n'est jamais réécrite sans vous le dire, et seulement celle que vous
@@ -87,8 +118,9 @@ Ce skill est en lecture seule : il ne modifie rien.
 
 ### Ce qui se fait dans l'app
 
-Le plugin s'arrête à la proposition du projet. Le suivi d'un projet déjà proposé (vote,
-financement, réalisation, mise en place) et le dépôt d'idées se font dans l'app Teamstarter.
+Pour un projet autre qu'un skill, le plugin s'arrête à la proposition. Le suivi d'un projet déjà
+proposé (vote, financement, réalisation, mise en place) et le dépôt d'idées se font dans l'app
+Teamstarter.
 
 ## Installer
 
@@ -145,7 +177,9 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │   ├── LICENSE                         # MIT
 │   └── skills/
 │       ├── ts-general-creer-projet/    # créer un projet jusqu'à sa proposition ; reprendre un brouillon
-│       └── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
+│       ├── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
+│       ├── ts-general-creer-skill/     # créer un skill par un projet : écrire, déposer, tester, blocages
+│       └── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
 └── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés, empaqueter
 ```
 

@@ -11,7 +11,8 @@ description: >-
   événement", "déclarer un projet d'automatisation", "reprendre mon brouillon", "continuer mon
   projet", "finir la structuration", "générer la fiche de mon projet", "soumettre mon projet".
   Déclencher même sans le mot "projet" si l'utilisateur veut porter une initiative dans
-  Teamstarter. Pour seulement voir où en sont ses projets, utiliser ts-general-lister-projets.
+  Teamstarter. Pour voir ses projets : ts-general-lister-projets ; pour créer un skill :
+  ts-general-creer-skill.
 ---
 
 # Créer un projet Teamstarter, de la création à la proposition
@@ -26,6 +27,10 @@ plateforme, pas dans la mémoire de l'outil IA.
 
 Ne pas utiliser pour lister ses projets ou voir leur statut (`ts-general-lister-projets`), ni pour
 un projet déjà proposé ou en réalisation.
+
+L'utilisateur veut créer un skill, un agent ou un assistant IA : c'est `ts-general-creer-skill`
+qui mène, et qui suit ce skill pour créer et proposer le projet `PROCESS_AUTOMATION_WITH_AI`.
+Après la proposition (étape 7), lui rendre la main.
 
 ## Sortie attendue
 
