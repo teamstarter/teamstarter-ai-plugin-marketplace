@@ -37,6 +37,8 @@ Demander d'abord à l'utilisateur :
 
 Puis :
 
+- Projet de création de skill (`PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL`) : poser chaque question
+  avec son libellé exact, sans reformulation (`type-automatisation-ia.md`, règle 3).
 - Une question ouverte à la fois. Grouper dans une même demande les questions courtes (durée,
   nombre, score, oui/non, date).
 - Quand Claude propose : afficher toute la proposition d'une section, attendre la validation ou

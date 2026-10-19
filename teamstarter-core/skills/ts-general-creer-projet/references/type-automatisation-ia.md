@@ -9,6 +9,26 @@ Le type `AI_SKILL` (« AI Skill ») a la même structure de sections (`AI_SKILL_
 commencent par `AI_SKILL_` au lieu de `AI_TASK_`. Il n'a pas encore été joué par le connecteur :
 lire ses questions sur le projet créé, comme pour tout type.
 
+## Règles du projet de création de skill
+
+Un projet de l'un de ces deux types crée un skill. Ces règles valent pour tout le parcours, de
+la création à la proposition, dans ce que Claude dit et demande à l'utilisateur :
+
+1. **« Projet de création de skill », jamais « brouillon ».** Le projet tant qu'il n'est pas
+   proposé (`EMPTY`, `DRAFT`) se nomme « ton projet de création de skill ». Les statuts
+   techniques restent dans les requêtes.
+2. **« Tâche », jamais « titre ».** Le titre du projet est la tâche à automatiser : un verbe à
+   l'infinitif et son objet, 3 à 8 mots (« Rédiger les comptes rendus de réunion client »).
+   Demander « Quelle tâche veux-tu automatiser ? », et l'afficher sous l'étiquette « Tâche » dans
+   les récapitulatifs. La question `AI_TASK_DESCRIPTION` la détaille ensuite.
+3. **Les questions telles qu'elles sont écrites dans Teamstarter.** Poser chaque question de
+   structuration avec son libellé exact (`questionWordings.value` du projet), entre guillemets,
+   sans la reformuler, la résumer ni la fusionner avec une autre. Une question par message ; les
+   questions courtes (durée, fréquence, score, date) peuvent être envoyées ensemble, chacune sur
+   sa ligne avec son libellé exact. Ce que Claude sait déjà de la tâche se montre sous la question
+   (« Proposition : … ») : l'utilisateur répond, ou valide la proposition. Sa réponse s'écrit
+   telle qu'il l'a donnée ; une correction (faute, donnée sensible) se montre avant d'écrire.
+
 ## Choisir le type et l'objectif
 
 - `projectType(where: {"tag": "PROCESS_AUTOMATION_WITH_AI"}) { id tag isDisabled titleWordings { value } aiGlobalContextWordings { value } }`.
@@ -45,10 +65,11 @@ lire ses questions sur le projet créé, comme pour tout type.
 Les questions et leur libellé peuvent varier selon l'organisation : lire celles du projet créé,
 ce tableau sert à préparer les réponses.
 
-- Si l'utilisateur vient de faire la tâche avec l'IA dans la conversation : pré-remplir depuis ce
-  qui a été fait, et demander confirmation seulement.
+- Si l'utilisateur vient de faire la tâche avec l'IA dans la conversation : en tirer une
+  proposition sous chaque question (règle 3), sans sauter la question.
 - **Aucune donnée réelle sensible** dans les réponses (noms de clients, montants, données
-  personnelles) : reformuler en générique, la fiche sera lue par d'autres.
+  personnelles) : proposer un terme générique à la place, en le disant ; la fiche sera lue par
+  d'autres.
 - Pas de dépenses ni de campagne pour ce type.
 
 ## Fiche : correspondance réponses → sections

@@ -103,15 +103,16 @@ query($where: SequelizeJSON) {
 variables : `{"where": {"d_organizerIds": {"contains": [<moi>]}}}`, garder `projectType.tag` =
 `PROCESS_AUTOMATION_WITH_AI`, ou `AI_SKILL` (l'autre type de projet d'agent IA, que les tools de
 skill acceptent aussi). `skillFileId` nomme le dernier skill déposé ; vide, aucun ne l'est.
-Un brouillon de ce type sans identité confirmée : `scopeForMe: true` avec
+Un projet de création de skill pas encore proposé, sans identité confirmée : `scopeForMe: true` avec
 `{"statusGroup": {"in": ["structuration", "writing"]}}`.
 
-Proposer de reprendre un projet ou d'en créer un. Pour reprendre, aller à la première étape non
-faite :
+Proposer de reprendre un projet ou d'en créer un. L'utilisateur part d'une idée de la boîte à
+idées (skill `ts-general-lister-idees-automatisation`) : garder son id pour l'étape 2. Pour
+reprendre, aller à la première étape non faite :
 
 | État relu | Reprendre à |
 |---|---|
-| `EMPTY` ou `DRAFT` | étape 2 (`ts-general-creer-projet` reprend le brouillon) |
+| `EMPTY` ou `DRAFT` | étape 2 (`ts-general-creer-projet` reprend le projet de création de skill) |
 | `UNDER_REVIEW`, ou `PUBLISHED` (vote, financement) | étape 3 : en attente |
 | `CASHEDOUT`, `skillFileId` vide | étape 4 |
 | `CASHEDOUT`, `skillFileId` renseigné, `create-my-agent` sans `doneAt` | étape 7 |
@@ -131,8 +132,15 @@ Suivre le skill `ts-general-creer-projet`, étapes 0 à 7, avec ces différences
   (Fallback).
 - Lire la référence du type « Automatisation de processus avec l'IA » de `ts-general-creer-projet`
   pour les questions et la fiche.
-- **Pré-remplir** les réponses avec ce que l'utilisateur a déjà dit de la tâche (étapes, outils,
-  livrable, durée, fréquence), et lui faire confirmer.
+- **Vocabulaire** : le projet est « ton projet de création de skill », jamais un « brouillon » ;
+  son titre est « la tâche » à automatiser (un verbe à l'infinitif et son objet, 3 à 8 mots),
+  demandée par « Quelle tâche veux-tu automatiser ? » et affichée sous l'étiquette « Tâche ».
+- **Questions mot pour mot** : chaque question de structuration est posée avec son libellé exact
+  dans Teamstarter, entre guillemets, sans reformulation. Ce que l'utilisateur a déjà dit de la
+  tâche (étapes, outils, livrable, durée, fréquence) se montre sous la question
+  (« Proposition : … ») ; il répond ou valide, et sa réponse s'écrit telle qu'il l'a donnée.
+- **Depuis une idée** : passer son id à `ts-general-creer-projet` (sa création depuis une idée,
+  `sourceIdeaId`) ; le projet est relié à l'idée, qui affiche alors le projet lancé.
 - Les validations restent celles de `ts-general-creer-projet` ; la proposition (son étape 7)
   demande une confirmation explicite.
 

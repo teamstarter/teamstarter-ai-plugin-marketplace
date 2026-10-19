@@ -122,6 +122,10 @@ l'utilisateur a décrit. Puis lire le fichier du type s'il existe :
 | `PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL` | `references/type-automatisation-ia.md` |
 | autres | aucune : le parcours commun suffit, les questions se lisent sur le projet créé |
 
+Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` est un **projet de création de skill** : les
+règles de `references/type-automatisation-ia.md` (vocabulaire, tâche au lieu du titre, questions
+posées mot pour mot) valent pour toutes les étapes qui suivent.
+
 **Objectif.**
 ```graphql
 query { objectiveCount objective(limit: 50, order: "reverse:id") { id status mode titleWordings { value } projectTypes { id tag } projectsCount } }
@@ -162,6 +166,8 @@ La mutation accepte n'importe quelle valeur sans erreur. En cas de doute, relire
    cycle de l'idée.
 3. Proposer un **titre court** (3 à 8 mots) et une **description de 120 caractères au plus**.
    Pour un Événement, demander aussi la date, les horaires et le lieu (`type-evenement.md`).
+   Pour un projet de création de skill, le titre est la **tâche** à automatiser, demandée et
+   affichée sous ce nom (`type-automatisation-ia.md`).
 4. **Validation 1** : afficher organisation, type, objectif et son mode, titre, description.
    Attendre le OK.
 5. Créer avec le minimum, puis compléter :
@@ -187,7 +193,8 @@ Dire à l'utilisateur l'id du projet créé : c'est avec lui qu'il le retrouvera
 
 Suivre `references/questions-structuration.md` : lire les questions du projet, demander à
 l'utilisateur s'il répond lui-même ou si Claude propose, **valider section par section** avant
-d'écrire, écrire par lots de 7.
+d'écrire, écrire par lots de 7. Projet de création de skill : chaque question est posée avec son
+libellé exact (`type-automatisation-ia.md`, règle 3).
 
 - `team` = `"1"` (co-porteurs) : demander leurs noms, retrouver chacun par
   `user(where: {"fullname": {"iLike": "%<nom>%"}}) { id fullname }`, faire confirmer, puis

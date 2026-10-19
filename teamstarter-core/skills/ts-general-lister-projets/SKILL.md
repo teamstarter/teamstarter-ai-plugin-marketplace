@@ -126,7 +126,13 @@ Un tableau par groupe non vide, dans cet ordre, avec le libellé de l'app :
 | `delivered` | Mis en place | mis en place le `deliveredAt` |
 | `ended` | Terminé | — |
 
-Colonnes : titre, `#id`, type, mis à jour le (date seule), étape suivante. Une organisation peut
+Colonnes : titre, `#id`, type, mis à jour le (date seule), étape suivante.
+
+Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` pas encore proposé (structuration, rédaction)
+se nomme **« Projet de création de skill »**, jamais « brouillon », et son titre s'affiche comme
+la **tâche** à automatiser (« Tâche : Rédiger les comptes rendus de réunion client »).
+
+Une organisation peut
 renommer un libellé dans son app : en cas de doute, ajouter le statut technique entre
 parenthèses. Ne jamais écrire « tu n'as aucun projet » d'après une liste vide quand l'identité
 n'a pas été confirmée : dire ce qui n'a pas pu être lu.
@@ -140,9 +146,9 @@ Proposer de reprendre un brouillon (« Je reprends lequel ? »). Sur choix de l'
 la main à `ts-general-creer-projet` avec l'id du projet : il relit l'état et repart de la
 première étape non faite. Un projet en campagne échouée se propose à nouveau par le même skill.
 
-Un projet « Automatisation de processus avec l'IA » en réalisation (`CASHEDOUT`) porte un skill :
-pour le créer, en déposer une nouvelle version ou déclarer un blocage, passer la main à
-`ts-general-creer-skill`.
+Un projet de création de skill (`PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL`) se reprend avec
+`ts-general-creer-skill`, à tout statut : il continue la structuration, attend la validation, ou,
+en réalisation (`CASHEDOUT`), crée le skill, en dépose une nouvelle version ou déclare un blocage.
 
 ## Garde-fous
 
