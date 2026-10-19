@@ -291,10 +291,16 @@ frontmatter. Une modification faite ici serait écrasée à la copie suivante. P
 jour :
 
 1. Dans le dépôt `teamstarter` :
-   `python3 teamstarter-os/tools/package_rpt_skill.py --stage <dossier> --out-dir <dossier>`
-   écrit les cinq dossiers complets dans `<dossier>`.
-2. Remplacer chaque `teamstarter-core/skills/<skill>/` de ce dépôt par le dossier du même nom.
-3. `python3 scripts/check_plugins.py`, puis monter la version du plugin.
+   `python3 teamstarter-os/tools/package_rpt_skill.py --marketplace <clone de ce dépôt>`
+   remplace chaque `teamstarter-core/skills/<skill>/` déjà présent ici par le dossier empaqueté,
+   et laisse de côté un skill RPT que le plugin ne déclare pas encore (l'ajouter est une
+   décision prise ici, avec le tableau des skills de ce README).
+2. `python3 scripts/check_plugins.py`, puis monter la version du plugin (dernier chiffre pour de
+   nouvelles versions de skills déjà déclarés) dans `plugin.json` et `marketplace.json`.
+
+Une PR qui ne fait que cela (nouvelles versions de skills déjà déclarés, version du plugin) est
+mergée par la session qui l'ouvre, sans validation (Vincent, 2026-10-19). Un skill ajouté ou
+retiré, ou un changement de la description du plugin, passe par une revue.
 
 Pas de hook ni de dossier `bin/` : le chat claude.ai et ChatGPT ne les exécutent pas, et
 claude.ai refuse un plugin qui a un `bin/` à sa racine. Le script le vérifie.

@@ -1,7 +1,7 @@
 # Format rpt-observation/v1
 
 An observation is a YAML file that proposes changes to tasks of the organization's RPT
-referential, to the AI's access to a data source, or to the blocker register (`blockers.yaml`). It writes nothing in the referential: `intake.merged_by` (from
+referential, to the AI's access to a data source, to the blocker register (`blockers.yaml`), or to the register of recurring agents (`agents.yaml`). It writes nothing in the referential: `intake.merged_by` (from
 `references/rpt-config.yaml`) merges it in batches, after a GO, with the skill
 `ts-general-rpt-merge`. Rules of the referential: `README_operations.md` §4.1, in the referential
 folder (`referential.repository_path` in the repository, `referential.drive_folder` on Drive).
@@ -28,7 +28,8 @@ changes:
 ```
 
 **One file per target**: the changes to a single task, or the new tasks of a single role, or the
-AI's access to a single data source, or the changes to a single known blocker. A new blocker goes
+AI's access to a single data source, or the changes to a single known blocker, or the changes to
+a single agent (a new one included). A new blocker goes
 into the file of the first task of its `tasks`. Several tasks in the same session: one file per
 task.
 
@@ -42,6 +43,7 @@ hyphens in place of dots and colons:
 | The AI's access to `data:pipe-et-prospects` | `2026-10-06-alex-data-pipe-et-prospects.yaml` |
 | A new blocker whose `tasks` start with `CSM-T6.19` | `2026-10-06-alex-csm-t6-19.yaml` (with the task's other changes) |
 | The known blocker `BLK-12` | `2026-10-13-alex-blk-12.yaml` |
+| The agent `ag:daily-update`, new or known | `2026-10-19-alex-ag-daily-update.yaml` |
 
 The name is used to find what is pending for a task without opening every file. The script
 rejects a file that mixes two targets, or whose name does not end with its target.
@@ -206,6 +208,57 @@ not answer. « Pas d'accès aux exports du CRM » [No access to the CRM exports]
 A problem the person reports without the session seeing it is `declared`; a problem only
 supposed is not written unless the person confirms it (then `declared`).
 
+## Agents
+
+The register `agents.yaml`, in the referential folder (README_operations.md §1.16), lists the
+agents that run tasks without being launched by hand each time: a managed agent, a Routine, a
+scheduled task of a person's Claude, a worker. An agent can get better without the status of any
+task changing: its skill learns a new step, its schedule changes, it takes one more task, it
+reaches a stage (`functional`, `efficient`, `refined`). That is written on the agent.
+
+**A new agent**: the session created a scheduled task or a routine, or found one that runs a task
+of the referential and is not in the register.
+
+```yaml
+  - agent: new
+    field: agent
+    before: null
+    after:
+      id: ag:daily-update            # ag:<name>, in lower case, the name of the scheduled task
+      name: Veille IA quotidienne
+      kind: scheduled-task           # managed-agent, routine, scheduled-task or worker
+      platform: saas:claude
+      state: live                    # construction, live, paused or retired
+      schedule: chaque jour vers 9h
+      owner: TECH-R11                # the role it works for
+      people: [person:vincent]       # who set it up (people.yaml)
+      tasks: [TECH-T11.12, TECH-T11.15]
+      skills: [skill:veille-releases-ia]
+      notify:
+        - {channel: email, to: toute l'équipe, when: result}
+      cost: {billing: subscription}
+    basis: declared
+    evidence: Tâche planifiée créée dans la session ; premier e-mail envoyé ce jour.
+```
+
+The file is named after the agent: `2026-10-19-vincent-ag-daily-update.yaml`.
+
+**A known agent that moves**: one change per field, `agent` gives its id, the file is named after
+it. The fields: `state`, `stage`, `schedule`, `tasks`, `skills`, `data`, `people`, `zones`,
+`notify`, `config`, `log`, `cost`, `owner`, `platform`. A stage is proposed with its evidence:
+
+```yaml
+  - agent: ag:daily-update
+    field: stage
+    before: {level: functional, checked: '2026-10-19', basis: declared, evidence: …}
+    after: {level: efficient, checked: '2026-10-27', basis: observed, evidence: sept runs sans réparation, coût mesuré}
+    basis: observed
+    evidence: Les sept runs de la semaine ont tourné sans reprise.
+```
+
+The tasks the agent does change too: propose their `status`, `by` or `tools` in the files of the
+tasks, as usual. An agent is never deleted: one that stopped is `paused` or `retired`.
+
 ## The status
 
 - **M → S**: the task was done with Claude, and the person says they will do it that way from
@@ -242,6 +295,7 @@ The script prints its messages in the organization's language. Frequent errors a
 | an `evidence` that is too long | Keep the fact, remove the content |
 | more than one target in the file | Two tasks in the same file, or a change on a known blocker next to a task's changes: one file per target |
 | a new blocker written another way | `blocker: new`, `field: blocker`, and `after` with at least `text`, `type`, `tasks` |
+| an agent that is not in the register | Read `agents.yaml` again: the id is wrong, or the agent is new (`agent: new`) |
 | a blocker that is not in the register | Read `blockers.yaml` again: the id is wrong, or the blocker is new (`blocker: new`) |
 | a `field` outside the list, on a blocker | `opened` and `resolved` are not proposed: change `state`, the merge writes the dates |
 | an unexpected file name | Rename the file as the message says |

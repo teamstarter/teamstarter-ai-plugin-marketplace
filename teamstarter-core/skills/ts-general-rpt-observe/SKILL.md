@@ -1,8 +1,8 @@
 ---
 name: ts-general-rpt-observe
-description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed, when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
+description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed (the agent's own entry included), when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
 metadata:
-  version: "1.8 (2026-10-19)"
+  version: "1.9 (2026-10-19)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-observe; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -163,6 +163,14 @@ as `declared` if they confirm it.
 
 The `blocker` and `blocker_type` fields of a task are no longer proposed: in the referential, they
 are computed from the register.
+
+**Agents.** When the session created or changed a scheduled task, a routine or a managed agent,
+look it up in `agents.yaml` (same folder as the index). An agent can get better without any
+task's status changing: a new step in its skill, a new schedule, one more task, a stage reached.
+Propose it on the agent (reference, "Agents"): `agent: new` with its entry when it is not in the
+register, otherwise `agent: <id>` with one field per change (`stage`, `schedule`, `tasks`,
+`skills`, `notify`, `state`…), in a file named after the agent. The tasks it does change in their
+own files (`status`, `by`, `tools`).
 
 Do not propose again what is already pending:
 
