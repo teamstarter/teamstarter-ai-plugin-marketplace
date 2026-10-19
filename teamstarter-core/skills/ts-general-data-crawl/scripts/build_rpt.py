@@ -1281,8 +1281,9 @@ def check_person(x, idx=None):
     return errors
 
 
-def check_agent(a, idx):
-    """A recurring agent and what it does (README_operations.md §1.16)."""
+def check_agent(a, idx, criteria=True):
+    """A recurring agent and what it does (README_operations.md §1.16). `criteria` False: the
+    stage is checked for its form only (an observation read without the referential)."""
     where = f"{a['_file']} {a.get('id')}"
     errors = check_keys("agent", a, where)
     errors += check_enum(where, "kind", a.get("kind"), "agent_kind")
@@ -1309,7 +1310,7 @@ def check_agent(a, idx):
         if c.get("model") is not None and c["model"] not in MODEL_PRICES:
             errors.append(tr("check.cost_model", where=where, value=c["model"],
                              models=", ".join(sorted(MODEL_PRICES))))
-    errors += check_agent_stage(a, where)
+    errors += check_agent_stage(a, where, criteria)
     warnings = []
     if a.get("state") == "live" and not a.get("tasks"):
         warnings.append(tr("warn.agent_no_task", where=where))
@@ -1322,7 +1323,7 @@ def check_agent(a, idx):
     return errors, warnings
 
 
-def check_agent_stage(a, where):
+def check_agent_stage(a, where, criteria=True):
     """The stage of an agent and its notifications (README_operations.md §1.16): a stage is
     declared with its evidence, and only when the criteria a file can show are met, its own and
     those of the stages before it."""
@@ -1346,7 +1347,7 @@ def check_agent_stage(a, where):
     if stage.get("level") in AGENT_STAGES and not stage.get("evidence"):
         errors.append(tr("check.agent_stage_evidence", where=where))
     reached = AGENT_STAGES[:AGENT_STAGES.index(stage["level"]) + 1] \
-        if stage.get("level") in AGENT_STAGES else ()
+        if stage.get("level") in AGENT_STAGES and criteria else ()
     criteria = agent_criteria(a)
     missing = [k for st in reached for k, ok in criteria[st] if not ok]
     if missing:
@@ -3758,8 +3759,14 @@ OBSERVABLE = ("status", "target", "frequency", "measure", "input", "output", "ou
               "templates", "tools", "data", "okrs", "method", "by", "blocker", "blocker_type",
               "stakes", "job")
 OBSERVATION_META = ["date", "observer", "surface", "source"]
-CHANGE_KEYS = ["task", "data", "blocker", "tool", "field", "before", "after", "basis",
+CHANGE_KEYS = ["task", "data", "blocker", "agent", "tool", "field", "before", "after", "basis",
                "evidence", "result", "note"]
+# What an observation can change on an agent of agents.yaml, and what a new agent gives
+# (README_operations.md §1.16, §4.1): a skill improved, a schedule changed, a task added, a
+# stage reached, without any task's status changing.
+AGENT_OBSERVABLE = ("state", "stage", "schedule", "tasks", "skills", "data", "people", "zones",
+                    "notify", "config", "log", "cost", "owner", "platform")
+NEW_AGENT_REQUIRED = ("id", "name", "kind", "state")
 # What an observation can change on a blocker of the register, and what a new blocker gives
 # (README_operations.md §1.14, §4.1).
 BLOCKER_OBSERVABLE = ("state", "resolution", "text", "type", "tasks", "owner")
@@ -3829,6 +3836,11 @@ def change_target(c, idx=None):
         return None
     if "data" in c:
         return ("data", str(c.get("data")))
+    if c.get("agent") == "new":
+        new_id = (c.get("after") or {}).get("id") if isinstance(c.get("after"), dict) else None
+        return ("agent", str(new_id)) if new_id else None
+    if c.get("agent"):
+        return ("agent", str(c["agent"]))
     if c.get("blocker") == "new":
         # A new blocker belongs with the changes of the first task it holds back.
         tasks = (c.get("after") or {}).get("tasks") if isinstance(c.get("after"), dict) else None
@@ -3889,10 +3901,12 @@ def check_change(c, where, ctx):
     errors += check_enum(where, "result", c.get("result"), "result")
     if c.get("result"):
         ctx = None  # a processed change is history: the referential may have moved on since
-    if sum(k in c for k in ("task", "data", "blocker")) != 1:
+    if sum(k in c for k in ("task", "data", "blocker", "agent")) != 1:
         return errors + [tr("obs.task_or_data", where=where)], []
     if "blocker" in c:
         return check_blocker_change(c, where, ctx, errors)
+    if "agent" in c:
+        return check_agent_change(c, where, ctx, errors)
     if "data" in c:
         return errors + check_connector_change(c, where, ctx), []
     if c.get("task") == "new":
@@ -4009,6 +4023,49 @@ def check_blocker_change(c, where, ctx, errors):
     return errors, warnings
 
 
+def check_agent_change(c, where, ctx, errors):
+    """A change on agents.yaml (README_operations.md §1.16): a new agent (`agent: new`, `field:
+    agent`, `after` its entry) or one field of an existing one."""
+    idx = ctx["idx"] if ctx else None
+    if c.get("agent") == "new":
+        after = c.get("after")
+        if c.get("field") != "agent" or not isinstance(after, dict):
+            return errors + [tr("obs.new_agent_shape", where=where)], []
+        errors += [tr("obs.new_agent_missing", where=where, key=k) for k in NEW_AGENT_REQUIRED
+                   if not after.get(k)]
+        if after.get("id") and not ID_RE["agent"].match(str(after["id"])):
+            errors.append(tr("obs.agent_id", where=where, value=repr(after["id"])))
+        if ctx and after.get("id") in {a.get("id") for a in ctx["ref"]["agents"]}:
+            errors.append(tr("obs.agent_exists", where=where, agent=after["id"]))
+        e, _ = check_agent(dict(after, _file=where), idx, criteria=bool(ctx))
+        return errors + e, []
+    if c.get("field") not in AGENT_OBSERVABLE:
+        return errors + [tr("obs.field", where=where, value=repr(c.get("field")),
+                            fields=", ".join(AGENT_OBSERVABLE))], []
+    if not ctx:
+        stub = {"id": str(c["agent"]), "name": "-", "kind": "routine", "state": "live",
+                "_file": where, c["field"]: c.get("after")}
+        e, _ = check_agent(stub, None, criteria=False)
+        return errors + e, []
+    a = idx.get(c["agent"])
+    if not a or a.get("id") not in {x["id"] for x in ctx["ref"]["agents"]}:
+        return errors + [tr("obs.agent_unknown", where=where, agent=c["agent"])], []
+    changed = {k: v for k, v in a.items() if k != c["field"]}
+    if c.get("after") not in (None, [], ""):
+        changed[c["field"]] = c["after"]
+    e, _ = check_agent(changed, idx)
+    errors += [f"{where}: {x}" for x in e]
+    warnings = []
+    if not errors:
+        now, before = empty_none(a.get(c["field"])), empty_none(c.get("before"))
+        if same_value(c["field"], now, c.get("after")):
+            warnings.append(tr("obs.already", where=where, id=a["id"], field=c["field"]))
+        elif not same_value(c["field"], now, before):
+            warnings.append(tr("obs.stale", where=where, id=a["id"], field=c["field"],
+                               now=repr(now), before=repr(before)))
+    return errors, warnings
+
+
 def check_connector_change(c, where, ctx):
     errors = [] if c.get("field") == "connector" else \
         [tr("obs.connector_field", where=where)]
@@ -4051,6 +4108,8 @@ def target_of(ref, value):
         return ("data", item.get("id") or str(value))
     if ID_RE["blocker"].match(str(value)):
         return ("blocker", str(value))
+    if ID_RE["agent"].match(str(value)):
+        return ("agent", str(value))
     return ("task", item.get("id") or str(value))
 
 
@@ -4064,7 +4123,8 @@ def pending_groups(ref, target=None):
             continue
         label = f"{c.get('field')} ({c.get('tool')})" if key[0] == "data" else \
             tr("obs.label_new_blocker") if c.get("blocker") == "new" else \
-            f"{c.get('blocker')} {c.get('field')}" if c.get("blocker") else c.get("field")
+            f"{c.get('blocker')} {c.get('field')}" if c.get("blocker") else \
+            tr("obs.label_new_agent") if c.get("agent") == "new" else c.get("field")
         value = json.dumps(c.get("after"), ensure_ascii=False, sort_keys=True)
         out.setdefault(key, {}).setdefault(str(label), {}).setdefault(value, []).append(
             (name, meta, c))
@@ -4098,9 +4158,11 @@ def print_observations(ref, target=None):
     print(tr("obs.pending", changes=len(pending), files=len({name for name, _, _ in pending})))
     names = {t["id"]: t["name"] for t in ref["tasks"]}
     names.update({b["id"]: b.get("text") for b in ref["blockers"]})
+    names.update({a["id"]: a.get("name") for a in ref["agents"]})
     for key, fields in sorted(pending_groups(ref, target).items()):
         title = {"task": names.get(key[1], ""), "new": tr("obs.title_new"),
-                 "data": tr("obs.title_data"), "blocker": names.get(key[1], "")}[key[0]]
+                 "data": tr("obs.title_data"), "blocker": names.get(key[1], ""),
+                 "agent": names.get(key[1], "") or tr("obs.label_new_agent")}[key[0]]
         print(f"\n{key[1]} {title}".rstrip())
         for field, values in fields.items():
             rows = [r for v in values.values() for r in v]
@@ -4142,6 +4204,11 @@ def apply_observation(ref, path, only=None, today=None):
             if not c.get("result"):
                 apply_blocker_change(ref, c, meta, source, only, files, changed,
                                      (applied, skipped, closed), os.path.basename(path), today)
+            continue
+        if "agent" in c:
+            if not c.get("result"):
+                apply_agent_change(ref, c, source, only, files, changed,
+                                   (applied, skipped, closed), os.path.basename(path), today)
             continue
         label = f"{c.get('task') or c.get('data')} {c.get('field')}"
         token = {str(c.get("task") or c.get("data")),
@@ -4252,6 +4319,66 @@ def apply_blocker_change(ref, c, meta, source, only, files, changed, out, name, 
                 b.pop("resolved", None)
         if source not in (b.get("sources") or []):
             b["sources"] = list(b.get("sources") or []) + [source]
+    (data.setdefault("meta", {}))["updated"] = today
+    c["result"] = "merged"
+    changed.add(path_of)
+    applied.append(label)
+
+
+def apply_agent_change(ref, c, source, only, files, changed, out, name, today):
+    """Apply one change of agents.yaml (README_operations.md §1.16). A new agent is added with
+    its id; an agent that already has that id closes the change instead."""
+    applied, skipped, closed = out
+    new = c.get("agent") == "new"
+    after = c.get("after") if isinstance(c.get("after"), dict) else {}
+    agent_id = after.get("id") if new else c.get("agent")
+    label = f"{tr('obs.label_new_agent')} ({agent_id})" if new else f"{agent_id} {c.get('field')}"
+    token = {str(agent_id), f"{agent_id}:{'agent' if new else c.get('field')}"}
+    if only is not None and not token & set(only):
+        return
+    folder = ref["dir"]
+    if new:
+        path_of = os.path.join(folder, AGENTS_FILE)
+        if path_of not in files:
+            files[path_of] = normalize(yaml.safe_load(read_text(path_of))) \
+                if os.path.exists(path_of) else {"format": FORMAT, "meta": {}, "agents": []}
+        data = files[path_of]
+        items = data.setdefault("agents", [])
+        if any(x.get("id") == agent_id for x in items):
+            c["result"], c["note"] = "merged", tr("apply.already_note", view_language())
+            closed.append(f"{label} ({name})")
+            return
+        entry = {k: v for k, v in after.items() if v not in (None, [], "")}
+        entry.setdefault("basis", c.get("basis"))
+        entry["sources"] = list(entry.get("sources") or []) + [source]
+        items.append(entry)
+    else:
+        item = index(ref).get(agent_id)
+        if not item or item.get("_borrowed") or item.get("id") not in \
+                {a["id"] for a in ref["agents"]}:
+            skipped.append(tr("apply.skipped", label=label, reason=tr("apply.not_found")))
+            return
+        path_of = os.path.join(folder, item["_file"])
+        data = files.setdefault(path_of, normalize(yaml.safe_load(read_text(path_of))))
+        a = next((x for x in data.get("agents") or [] if x.get("id") == item["id"]), None)
+        field = c.get("field")
+        if not a:
+            skipped.append(tr("apply.skipped", label=label, reason=tr("apply.not_found")))
+            return
+        if same_value(field, a.get(field), c.get("after")):
+            c["result"], c["note"] = "merged", tr("apply.already_note", view_language())
+            closed.append(f"{label} ({name})")
+            return
+        if not same_value(field, a.get(field), c.get("before")):
+            skipped.append(tr("apply.skipped", label=label, reason=tr(
+                "apply.stale", field=field, value=repr(a.get(field)))))
+            return
+        if empty_none(c.get("after")) is None:
+            a.pop(field, None)
+        else:
+            a[field] = c.get("after")
+        if source not in (a.get("sources") or []):
+            a["sources"] = list(a.get("sources") or []) + [source]
     (data.setdefault("meta", {}))["updated"] = today
     c["result"] = "merged"
     changed.add(path_of)

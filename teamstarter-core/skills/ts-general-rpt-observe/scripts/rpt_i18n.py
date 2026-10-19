@@ -1113,9 +1113,31 @@ MESSAGES = {
               "un contenu"},
     "obs.task_or_data": {
         "en": "{where}: a change is about a task (`task`), about the AI's access to a data "
-              "source (`data` and `tool`) or about a blocker of the register (`blocker`)",
+              "source (`data` and `tool`), about a blocker of the register (`blocker`) or "
+              "about a recurring agent (`agent`)",
         "fr": "{where}: un changement porte sur une tâche (`task`), sur l'accès de l'IA à une "
-              "source de données (`data` et `tool`) ou sur un bloqueur du registre (`blocker`)"},
+              "source de données (`data` et `tool`), sur un bloqueur du registre (`blocker`) "
+              "ou sur un agent récurrent (`agent`)"},
+    "obs.new_agent_shape": {
+        "en": "{where}: a new agent is written `agent: new`, `field: agent`, and `after` its "
+              "entry (id, name, kind, state, and what is known: schedule, tasks, skills…)",
+        "fr": "{where}: un nouvel agent s'écrit `agent: new`, `field: agent`, et `after` sa "
+              "fiche (id, name, kind, state, et ce qu'on sait : schedule, tasks, skills…)"},
+    "obs.new_agent_missing": {
+        "en": "{where}: the new agent has no `{key}`",
+        "fr": "{where}: le nouvel agent n'a pas de `{key}`"},
+    "obs.agent_id": {
+        "en": "{where}: an agent id is written `ag:<name>` in lower case ({value})",
+        "fr": "{where}: un id d'agent s'écrit `ag:<nom>` en minuscules ({value})"},
+    "obs.agent_exists": {
+        "en": "{where}: the agent {agent} is already in agents.yaml: propose its fields one by "
+              "one (`agent: {agent}`)",
+        "fr": "{where}: l'agent {agent} est déjà dans agents.yaml : proposer ses champs un par "
+              "un (`agent: {agent}`)"},
+    "obs.agent_unknown": {
+        "en": "{where}: the agent {agent} is not in agents.yaml",
+        "fr": "{where}: l'agent {agent} n'est pas dans agents.yaml"},
+    "obs.label_new_agent": {"en": "new agent", "fr": "nouvel agent"},
     "obs.new_blocker_shape": {
         "en": "{where}: a new blocker is written `blocker: new`, `field: blocker`, `after: "
               "{{text, type, tasks}}` (README_operations.md §1.14)",
