@@ -1,0 +1,80 @@
+# RPT configuration of an organization, rpt-config/v1 format. Template to fill in: replace each
+# <…>, remove the lines that are not used, then check:
+#   python3 teamstarter-os/tools/build_rpt.py --config-check rpt-config.yaml
+# The file goes at the root of the organization's OS folder (Drive or repository), next to the
+# intake folder. It is all the mapping needs: the referential and the catalogues can come later. Filled-in example: teamstarter-os/rpt-config.yaml (Teamstarter). Rules and
+# deployment: teamstarter-os/OS/Operations/README_operations.md §3.3.
+format: rpt-config/v1
+updated: '<YYYY-MM-DD>'
+
+organization:
+  name: <Organization name>
+  language: en   # a code of tools/rpt_i18n.py LANGUAGES (en, fr today)
+  description: <one sentence on what the organization does>
+
+# The referential: role files, catalogues, task index. At least drive_folder or
+# repository_path. While it does not exist yet, keep the planned paths.
+referential:
+  # The https:// address where people open this file: the link of the folder at whose root it
+  # is (known before the file exists), or the file's own link. global_context cites it: the
+  # skills, the same for every organization, find the file through the organization's
+  # instructions.
+  config_url: <link of the Drive folder <Organization>/OS/>
+  drive_folder: <Organization>/OS/Operations/
+  repository: null
+  repository_path: null
+  tools_path: null
+  index: index-taches.json
+  explorer: null
+  archive_drive_folder: <Organization>/OS/documents-processed/Operations/
+
+# Where the maps and the observations arrive. At least drive_folder or email.
+intake:
+  drive_folder: <Organization>/OS/to-process/
+  drive_folder_id: <folder id, at the end of its Drive link>
+  email: <intake address>
+  visibility: "<who can read this folder, for example 'readable by the whole company'>"
+  merged_by: "<who merges the maps, for example 'the product team'>"
+
+# Who is responsible for what: a role of the referential, or the person's first and last name. No other data.
+owners:
+  referential: {role: null, first_name: <first and last name>, what: structure of the referential, merge of the maps}
+  ai_policy: {role: null, first_name: null, what: ai-policy.yaml (the person in charge of data)}
+
+# The teams: the code (lowercase) prefixes the identifiers (ops → OPS-R1, OPS-T1.2).
+teams:
+  - {code: <code>, name: <team name>, scope: <the business areas it covers>}
+
+# The catalogues of the referential, relative to referential. Absent = not used; a map then
+# borrows the generic catalogues shipped with the skills.
+catalogues:
+  departments: departments.yaml
+  ai_policy: ai-policy.yaml
+
+skills:
+  - {name: ts-general-check-process-cartography, where: claude.ai}
+  - {name: ts-general-rpt-observe, where: claude.ai}
+  - {name: ts-general-rpt-file, where: claude.ai}
+  - {name: ts-general-data-crawl, where: claude.ai}
+  - {name: ts-general-rpt-merge, where: claude-code}
+  - {name: ts-general-data-merge, where: claude-code}
+
+privacy:
+  excluded: [private matters, internal reviews, HR discussions, the company's financial health, personal data (address, gender, phone…), client names]
+  allowed_personal_data: the first and last name of a person who holds a role or does a task
+
+# The text to paste in the organization's instructions; under 900 characters. Write it in the
+# organization's language (`organization.language`): the sample below is in English, Teamstarter's
+# French text is in teamstarter-os/rpt-config.yaml. Replace the name, the paths and the example id.
+global_context: |
+  <Organization> — task referential (RPT)
+
+  RPT config (rpt-config.yaml): <link of the Drive folder <Organization>/OS/>; tasks: index-taches.json
+
+  Applies when I do a task (OPS-T1.2, a skill of the index) or when we change its tooling (skill, scheduled task, agent, connector). Not one-off or personal.
+
+  Start: find the entry without saying so (or those that cite the skill); start from its template (templates).
+  End: propose ts-general-rpt-file (output_files) if a deliverable is ready, then ts-general-rpt-observe if the entry is no longer true (status, tools, who, blocker). With nobody to answer: flag it in the recap.
+  Propose ts-general-check-process-cartography if I ask, join, change position, or if two tasks I do often are missing.
+
+  One proposal per conversation. Nothing is sent without my approval, given on a preview. No client name and no personal data.

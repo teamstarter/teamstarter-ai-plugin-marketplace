@@ -1,0 +1,24 @@
+# RPT observation — valid example (format rpt-observation/v1) on a known blocker of the register
+# (blockers.yaml): one blocker per file, and the file name ends with its id (BLK-12 → blk-12).
+# A blocker is never deleted: it is resolved (with what lifted it) or dropped (with why).
+# Rules: references/format-observation.md. The values are in the person's language (French
+# here); the keys and enum values are in English.
+format: rpt-observation/v1
+meta:
+  date: '2026-10-13'
+  observer: Alex
+  surface: claude-ai
+  source: conversation claude.ai du 2026-10-13
+changes:
+  - blocker: BLK-12
+    field: state
+    before: open
+    after: resolved
+    basis: observed
+    evidence: Le rapport mensuel a été produit par le skill planifié, sans préparation à la main.
+  - blocker: BLK-12
+    field: resolution
+    before: null
+    after: skill planifié écrit et lancé chaque lundi
+    basis: declared
+    evidence: La personne dit que le skill planifié tourne chaque lundi depuis cette semaine.

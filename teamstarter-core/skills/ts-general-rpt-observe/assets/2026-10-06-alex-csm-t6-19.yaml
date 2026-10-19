@@ -1,0 +1,35 @@
+# RPT observation — valid example (format rpt-observation/v1): one task per file, and the file
+# name ends with the task. A new blocker goes in the file of the first task it holds back. Rules: references/format-observation.md. The values are in the
+# person's language (French here); the keys and enum values are in English.
+format: rpt-observation/v1
+meta:
+  date: '2026-10-06'
+  observer: Alex
+  surface: claude-ai
+  source: conversation claude.ai du 2026-10-06
+changes:
+  - task: CSM-T6.19
+    field: measure
+    before: null
+    after: {minutes: 45}
+    basis: observed
+    evidence: Le support du point a été produit en 45 minutes dans la session, de l'export des chiffres à la relecture.
+  - task: CSM-T6.19
+    field: output_files
+    before: null
+    after:
+      - kind: folder
+        url: https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUv
+        pattern: Clients/[Client]/2. Support/point-[AAAA-MM-JJ].pptx
+        tool: saas:google-drive
+        what: le support du point avec le client
+    basis: declared
+    evidence: La personne range chaque support de point dans le dossier Support du client.
+  - blocker: new
+    field: blocker
+    after:
+      text: Pas d'accès en lecture aux statistiques d'usage de l'instance du client
+      type: access
+      tasks: [CSM-T6.19]
+    basis: observed
+    evidence: Dans la session, l'export des statistiques d'usage a été refusé faute de droits ; les chiffres du point ont été repris du mois précédent.
