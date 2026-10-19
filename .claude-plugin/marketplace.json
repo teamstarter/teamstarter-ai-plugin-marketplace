@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Plugins Teamstarter pour les outils IA (Claude, ChatGPT) : faire avancer ses projets Teamstarter depuis sa conversation, par le connecteur MCP Teamstarter.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "teamstarter-core",
       "source": "./teamstarter-core",
       "description": "Pour tous les collaborateurs : créer un projet jusqu'à sa proposition, reprendre un brouillon, lister ses projets par statut, créer un skill par un projet et suivre son utilisation, sans quitter l'outil IA.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "category": "productivity",
       "keywords": [
         "teamstarter",

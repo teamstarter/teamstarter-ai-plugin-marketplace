@@ -23,6 +23,7 @@ dans ChatGPT et dans l'app.
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun, et choisir lequel reprendre | « Où en sont mes projets ? », « Mes brouillons », « Qu'est-ce qu'il me reste à faire sur Teamstarter ? » |
 | `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Reprends mon skill », « Dépose la nouvelle version de mon skill », « Mon skill est bloqué » |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
+| `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation déposées dans la boîte à idées et les ateliers : celles à prendre, celles déjà lancées en projet ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill », « Qu'est-ce que les collègues veulent automatiser ? » |
 
 Inutile de nommer le skill : l'outil IA le choisit d'après la demande.
 
@@ -68,8 +69,11 @@ parcours commun, avec les questions que votre organisation a définies.
 `ts-general-creer-skill` passe avant le skill `skill-creator` d'Anthropic : un skill de
 l'organisation naît d'un projet Teamstarter.
 
-1. **Projet.** L'IA crée et propose un projet « Automatisation de processus avec l'IA » avec
-   `ts-general-creer-projet`, en reprenant ce que vous avez dit de la tâche.
+1. **Projet de création de skill.** L'IA crée et propose un projet « Automatisation de processus
+   avec l'IA » avec `ts-general-creer-projet`, depuis une idée de la boîte à idées si vous en
+   choisissez une. Elle vous demande la **tâche** à automatiser, qui devient le titre du projet,
+   puis pose chaque question de structuration **avec son libellé exact dans Teamstarter**, sans la
+   reformuler ; ce que vous avez déjà dit de la tâche apparaît comme proposition sous la question.
 2. **Validation.** Si votre organisation relit les projets, le projet attend la validation des
    animateurs : revenez quand il est validé, l'IA reprend là. Sans relecture, le projet passe
    directement en réalisation.
@@ -92,6 +96,15 @@ Le prompt de création, le dépôt du skill, la validation des étapes et la dé
 utilisations demandent des outils du connecteur que votre accès n'a peut-être pas encore. Sans
 eux, l'IA vous dit quoi faire dans l'app : copier le prompt, déposer le fichier, cocher l'étape.
 Sans eux, les utilisations ne sont pas comptées.
+
+### Lister les idées d'automatisation
+
+`ts-general-lister-idees-automatisation` lit les idées de la boîte à idées et des ateliers dont le
+type est « Automatisation de processus avec l'IA » ou « AI Skill » : celles à prendre, les plus
+récentes d'abord, avec leur auteur, leurs réactions et leurs commentaires, puis celles déjà
+lancées, avec le projet qui les porte. Sur demande, il cherche aussi parmi les idées déposées sans
+type celles qui parlent d'automatisation, à confirmer. Il propose ensuite de créer le skill d'une
+idée avec `ts-general-creer-skill`. Lecture seule.
 
 ### Lister ses projets
 
@@ -181,7 +194,8 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │       ├── ts-general-creer-projet/    # créer un projet jusqu'à sa proposition ; reprendre un brouillon
 │       ├── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
 │       ├── ts-general-creer-skill/     # créer un skill par un projet : écrire, déposer, tester, blocages
-│       └── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
+│       ├── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
+│       └── ts-general-lister-idees-automatisation/  # idées d'automatisation : à prendre, lancées
 └── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés, empaqueter
 ```
 

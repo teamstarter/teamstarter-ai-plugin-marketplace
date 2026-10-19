@@ -17,6 +17,7 @@ avec Claude, et inversement.
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun | « Où en sont mes projets ? », « Mes brouillons » |
 | `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Reprends mon skill », « Mon skill est bloqué » |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
+| `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation de la boîte à idées : à prendre, déjà lancées ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill » |
 
 **Créer un projet** suit le parcours de l'app : choix du type et de l'objectif, recherche des
 projets et idées proches, création du brouillon, questions de structuration, fiche du projet
@@ -24,13 +25,18 @@ projets et idées proches, création du brouillon, questions de structuration, f
 l'a activé, puis proposition du projet. Vous pouvez vous arrêter à chaque étape et reprendre plus
 tard.
 
-**Créer un skill** passe par un projet : il est créé et proposé, puis, une fois validé par
+**Créer un skill** passe par un projet de création de skill, dont le titre est la tâche à
+automatiser et dont les questions sont posées avec leur libellé exact : il est créé et proposé,
+puis, une fois validé par
 l'organisation, Claude écrit le skill à partir du prompt de création généré par Teamstarter (avec
 le skill `skill-creator` d'Anthropic), le dépose sur le projet, coche les étapes « Créer mon agent
 IA » et « Tester l'agent en conditions réelles » avec votre accord, et déclare les points de
 blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
 ensuite déclarée à Teamstarter ; les statistiques sont dans la carte « Utilisation du skill » de
 la page de gestion du projet.
+
+**Lister les idées d'automatisation** montre celles de la boîte à idées et des ateliers, à prendre
+ou déjà lancées, et propose de créer le skill de l'une d'elles.
 
 **Lister ses projets** les regroupe comme la page « Mes projets » de l'app, et propose de
 reprendre un brouillon.
