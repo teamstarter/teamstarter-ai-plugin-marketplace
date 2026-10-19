@@ -1,0 +1,468 @@
+# Fictitious example of an rpt/v1 map (recruiting in a small company).
+# Copy the structure, not the content: the map to produce describes the real work of the
+# person being mapped, in their language (here, French). The organization of the example has no
+# tool catalogue: every tool cited is declared in the `tools` list of the file (with one, a
+# map reuses the ids of catalogues/tools.yaml and declares only the others). The data sources
+# data:agendas, data:documents and data:comptes-equipe are common data types
+# (references/data-sources.yaml); data:candidatures, which is not there, is declared in
+# `data_sources`, with its sensitivity. The method link is fictitious:
+# write only the real URL of a document the person can open. What keeps a task from reaching
+# its `target` is an entry of the `blockers` list (ids local to the map, renumbered at the
+# merge), not a `blocker` text on the task: one problem, one entry, with every task it holds
+# back. BLK-6 was inferred from a Slack message and confirmed by the person; BLK-8 is resolved.
+format: rpt/v1
+
+meta:
+  title: Carte RPT du recrutement
+  organization: Acme
+  team: rh
+  authors: [Alex Martin, Claude]
+  updated: '2026-09-24'
+  detector: ts-general-check-process-cartography@2.10
+  sources:
+    - mémoire de Claude
+    - conversations des 3 derniers mois
+    - agenda (récurrences)
+    - Slack (canal du recrutement, 3 derniers mois)
+    - réponses du 2026-09-24
+  notes: 'Mode complet. Sources écartées : boîte e-mail (refusée).'
+
+tools:
+  - id: saas:claude
+    name: Claude
+    type: saas
+    status: external
+    description: Assistant IA de l'entreprise.
+
+  - id: saas:gmail
+    name: Gmail
+    type: saas
+    status: external
+    description: Messagerie de l'entreprise.
+
+  - id: saas:google-calendar
+    name: Google Agenda
+    type: saas
+    status: external
+    description: Agendas et réunions.
+
+  - id: saas:notion
+    name: Notion
+    type: saas
+    status: external
+    description: Documents de l'équipe.
+
+  - id: saas:welcome-to-the-jungle
+    name: Welcome to the Jungle
+    type: saas
+    status: external
+    description: 'Logiciel de recrutement : offres et candidatures.'
+
+  - id: skill:tri-cv
+    name: Prompt de tri de CV
+    type: skill
+    status: live
+    description: 'Prompt enregistré dans un projet Claude : compare un CV aux critères du poste.'
+
+data_sources:
+  - id: data:candidatures
+    name: Candidatures
+    description: Offres publiées, candidatures reçues et leur avancement.
+    sensitivity: [personal, hr]
+    tools:
+      - tool: saas:welcome-to-the-jungle
+        where: offres et candidatures
+        connector: none
+        notes: aucun connecteur dans la liste des outils de la conversation
+      - tool: saas:gmail
+        where: candidatures spontanées reçues par e-mail
+        connector: native
+    basis: {sensitivity: declared}
+    sources: [conversations (18 tris de CV avec Claude), réponses du 2026-09-24]
+
+roles:
+  - id: RH-R1
+    name: Recruter pour un poste ouvert
+    team: rh
+    departments: [people-hr]
+    mission: Transformer un poste ouvert en candidat recruté, dans le délai convenu avec le manager du poste.
+    holders: [Alex Martin]
+    fallback: le manager du poste
+    entries:
+      - what: Poste ouvert validé
+        from: comité de direction
+        trigger: manual
+        volume: 2 à 3 par trimestre
+      - what: Candidature reçue
+        from: site carrière, LinkedIn
+        trigger: event
+        volume: environ 40 par poste
+    routing:
+      - {case: Nouveau poste à pourvoir, to: RH-P1, status: S}
+      - {case: Candidature à un poste ouvert, to: RH-P2, status: S}
+      - {case: Candidature spontanée, to: RH-T1.6, status: M}
+      - {case: Profil atypique ou senior, to: le manager du poste, status: J}
+    gates: [le manager valide la fiche de poste, le manager décide de l'offre]
+    supervision: Délai de recrutement par poste, relevé à la main chaque mois.
+    criteria: {entry: partial, routing: 'no', key_tasks: partial, fallback: 'yes', supervision: partial}
+    level: '01'
+    verdict: Le tri des candidatures est assisté par Claude ; la publication des offres, les entretiens et les décisions restent humains.
+    gaps: ['Qui valide la fiche de poste quand le manager est absent ?']
+    sources: [conversations (18 tris de CV avec Claude), réponses du 2026-09-24]
+
+  - id: RH-R2
+    name: Accueillir un nouvel arrivant
+    team: rh
+    departments: [people-hr, it-operations]
+    mission: Qu'un nouvel arrivant ait ses accès, son matériel et son programme dès son premier jour.
+    holders: [Alex Martin]
+    fallback: le responsable des opérations
+    entries:
+      - what: Promesse d'embauche signée
+        from: fin du recrutement (RH-R1)
+        trigger: event
+        volume: 2 à 3 par trimestre
+    routing:
+      - {case: Arrivée confirmée, to: RH-P3, status: M}
+    criteria: {entry: 'no', routing: 'yes', key_tasks: 'no', fallback: 'yes', supervision: 'no'}
+    verdict: Tout est manuel ; la liste des accès à créer pour chaque poste n'est écrite nulle part.
+    gaps: ['La liste des accès par poste existe-t-elle quelque part ?']
+    sources: [agenda (3 accueils depuis juin), réponses du 2026-09-24]
+
+processes:
+  - id: RH-P1
+    name: Publier une offre d'emploi
+    role: RH-R1
+    state: active
+    trigger: {what: Un poste ouvert est validé, type: manual}
+    steps: [RH-T1.1, RH-T1.2, RH-T1.3]
+    gates: [le manager valide la fiche de poste]
+    exit: Offre en ligne sur le site carrière et sur LinkedIn
+    fixed_path: true
+    blockers: la validation de la fiche de poste par le manager
+    automation: assisted
+    sources: [conversations, réponses du 2026-09-24]
+
+  - id: RH-P2
+    name: Traiter une candidature
+    role: RH-R1
+    state: active
+    trigger: {what: Une candidature arrive dans le logiciel de recrutement, type: event}
+    steps: [RH-T1.9, RH-T1.4, RH-T1.5, RH-T1.7]
+    exit: Candidat convié à un entretien, ou candidature classée non retenue
+    fixed_path: true
+    blockers: la décision d'entretien reste humaine
+    automation: assisted
+    tools: ['saas:welcome-to-the-jungle']
+    handoffs:
+      - to: le manager du poste
+        what: candidatures retenues pour un entretien
+        via: saas:welcome-to-the-jungle
+        issues: le manager voit les candidatures retenues plusieurs jours après le tri
+    basis: {handoffs: declared}
+    sources: [conversations (18 tris de CV), réponses du 2026-09-24]
+
+  - id: RH-P3
+    name: Préparer l'arrivée d'un nouvel arrivant
+    role: RH-R2
+    state: active
+    trigger: {what: Une promesse d'embauche est signée, type: event}
+    steps: [RH-T2.1, RH-T2.2, RH-T2.3]
+    exit: Accès créés, matériel livré, programme de la première semaine envoyé
+    fixed_path: true
+    blockers: aucune liste écrite des accès par poste
+    automation: manual
+    sources: [agenda (3 accueils depuis juin), réponses du 2026-09-24]
+
+  - id: RH-P4
+    name: Répondre aux candidatures non retenues
+    role: RH-R1
+    state: proposed
+    trigger: {what: Une candidature est classée non retenue, type: event}
+    steps: [RH-T1.5, RH-T1.8]
+    exit: Réponse personnalisée envoyée sous 48 h
+    fixed_path: true
+    blockers: un modèle de réponse validé
+    automation: one-change-away
+    notes: Souhait exprimé le 2026-09-24 ; aujourd'hui, une partie des candidats ne reçoit pas de réponse.
+    sources: [réponses du 2026-09-24]
+
+tasks:
+  - id: RH-T1.1
+    name: Rédiger la fiche de poste
+    role: RH-R1
+    state: active
+    input: besoin exprimé par le manager du poste
+    output: fiche de poste prête à valider
+    tools: ['saas:claude']
+    data: ['data:documents']
+    method: https://www.notion.so/exemple/modele-de-fiche-de-poste
+    by: [Claude, Alex Martin]
+    status: S
+    frequency: 2 à 3 par trimestre
+    measure: {minutes: 45, runs: 1, basis: declared}
+    stakes: {level: 2, text: le recrutement prend du retard et le manager attend}
+    relevance: {reach: 1, frequency: 1, effort: 2, describability: 2, payback: 2}
+    basis: {data: inferred, method: observed, status: observed, relevance: inferred}
+    sources: [conversations (fiches rédigées avec Claude)]
+
+  - id: RH-T1.2
+    name: Valider la fiche de poste
+    role: RH-R1
+    state: active
+    input: fiche de poste rédigée
+    output: fiche validée ou corrigée
+    data: ['data:documents']
+    by: [le manager du poste]
+    status: J
+    relevance: {reach: 1, frequency: 1, effort: 1, describability: 2, payback: null}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T1.3
+    name: Publier l'offre
+    role: RH-R1
+    state: active
+    input: fiche de poste validée
+    output: offre en ligne sur le site carrière et sur LinkedIn
+    tools: ['saas:welcome-to-the-jungle']
+    data: ['data:candidatures']
+    by: [Alex Martin]
+    status: M
+    target: A
+    build: {size: M, kind: workflow}
+    measure: {minutes: 20, runs: 1, basis: declared}
+    stakes: {level: 1, text: l'offre paraît un jour plus tard}
+    relevance: {reach: 1, frequency: 1, effort: 1, describability: 3, payback: 2}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T1.4
+    name: Trier une candidature selon les critères du poste
+    role: RH-R1
+    state: active
+    input: CV et lettre, critères du poste
+    output: candidature classée à rencontrer, à discuter ou non retenue
+    tools: ['saas:claude', 'skill:tri-cv']
+    data: ['data:candidatures']
+    by: [Claude, Alex Martin]
+    status: S
+    target: A
+    build: {size: S, kind: skill}
+    frequency: environ 40 par poste
+    measure: {minutes: 5, runs: 30, basis: observed}
+    stakes: {level: 2, text: un bon candidat attend et peut accepter une autre offre}
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 1, payback: 2}
+    basis: {data: observed, status: observed, frequency: declared}
+    sources: [conversations (18 tris de CV avec Claude)]
+
+  - id: RH-T1.5
+    name: Décider de la suite d'une candidature
+    role: RH-R1
+    state: active
+    input: candidature classée
+    output: entretien proposé ou candidature non retenue
+    data: ['data:candidatures']
+    by: [Alex Martin, le manager du poste]
+    status: J
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 2, payback: null}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T1.6
+    name: Répondre à une candidature spontanée
+    role: RH-R1
+    state: active
+    input: candidature spontanée
+    output: réponse envoyée, CV gardé ou non
+    data: ['data:candidatures']
+    by: [Alex Martin]
+    status: M
+    frequency: environ 5 par mois
+    measure: {minutes: 10, runs: 5, basis: declared}
+    stakes: {level: 1, text: le candidat attend sa réponse}
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 1, payback: 2}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T1.7
+    name: Convier le candidat à un entretien
+    role: RH-R1
+    state: active
+    input: candidature retenue
+    output: entretien planifié dans l'agenda du manager
+    tools: ['saas:google-calendar']
+    data: ['data:agendas', 'data:candidatures']
+    by: [Alex Martin]
+    status: M
+    target: A
+    build: {size: S, kind: workflow}
+    measure: {minutes: 15, runs: 10, basis: observed}
+    stakes: {level: 2, text: l'entretien est fixé plus tard et le recrutement prend du retard}
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 2, payback: 2}
+    sources: [agenda (entretiens récurrents)]
+
+  - id: RH-T1.8
+    name: Envoyer une réponse personnalisée aux candidats non retenus
+    role: RH-R1
+    state: proposed
+    input: candidature non retenue
+    output: réponse envoyée sous 48 h
+    tools: ['saas:welcome-to-the-jungle']
+    data: ['data:candidatures']
+    by: [Alex Martin]
+    status: M
+    target: A
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 1, payback: 2}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T1.9
+    name: Accuser réception de la candidature
+    role: RH-R1
+    state: active
+    input: candidature reçue
+    output: e-mail d'accusé de réception envoyé au candidat
+    tools: ['saas:welcome-to-the-jungle']
+    data: ['data:candidatures']
+    by: [Welcome to the Jungle]
+    status: A
+    relevance: {reach: 1, frequency: 2, effort: 1, describability: 3, payback: 3}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T2.1
+    name: Créer les accès du nouvel arrivant
+    role: RH-R2
+    state: active
+    input: poste et date d'arrivée
+    output: comptes créés (messagerie, Drive, outils du poste)
+    data: ['data:comptes-equipe']
+    by: [le responsable des opérations]
+    status: M
+    target: A
+    build: {size: M, kind: script}
+    measure: {minutes: 60, runs: 1, basis: declared}
+    stakes: {level: 2, text: le nouvel arrivant ne peut pas travailler le premier jour}
+    relevance: {reach: 1, frequency: 1, effort: 2, describability: 2, payback: 1}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T2.2
+    name: Commander le matériel
+    role: RH-R2
+    state: active
+    input: poste et date d'arrivée
+    output: ordinateur livré avant le premier jour
+    data: ['data:candidatures']
+    by: [Alex Martin]
+    status: M
+    measure: {minutes: 20, runs: 1, basis: declared}
+    stakes: {level: 2, text: le nouvel arrivant attend son ordinateur}
+    relevance: {reach: 1, frequency: 1, effort: 1, describability: 2, payback: 1}
+    sources: [réponses du 2026-09-24]
+
+  - id: RH-T2.3
+    name: Envoyer le programme de la première semaine
+    role: RH-R2
+    state: active
+    input: poste, manager, date d'arrivée
+    output: page de programme partagée avec le nouvel arrivant
+    tools: ['saas:notion']
+    data: ['data:documents']
+    by: [Alex Martin]
+    status: M
+    target: S
+    build: {size: S, kind: prompt}
+    measure: {minutes: 30, runs: 1, basis: declared}
+    stakes: {level: 1, text: le nouvel arrivant découvre son programme le premier jour}
+    relevance: {reach: 1, frequency: 1, effort: null, describability: 1, payback: null}
+    sources: [agenda (3 accueils depuis juin)]
+
+blockers:
+  - id: BLK-1
+    text: La diffusion automatique des offres du logiciel de recrutement vers LinkedIn n'est pas réglée
+    type: tool
+    state: open
+    tasks: [RH-T1.3]
+    opened: '2026-09-24'
+    source: map
+    basis: declared
+    sources: [réponses du 2026-09-24]
+
+  - id: BLK-2
+    text: Les critères de tri ne sont pas écrits ni validés par le manager du poste
+    type: method
+    state: in_progress
+    tasks: [RH-T1.4]
+    opened: '2026-09-24'
+    source: map
+    basis: declared
+    notes: Une première liste de critères est en relecture chez le manager du poste depuis le 2026-09-22.
+    sources: [réponses du 2026-09-24]
+
+  - id: BLK-3
+    text: L'agenda du manager n'a pas de lien de prise de rendez-vous
+    type: tool
+    state: open
+    tasks: [RH-T1.7]
+    opened: '2026-09-24'
+    source: map
+    basis: declared
+    sources: [réponses du 2026-09-24]
+
+  - id: BLK-4
+    text: Aucun modèle de réponse validé pour les candidatures non retenues
+    type: method
+    state: open
+    tasks: [RH-T1.8]
+    opened: '2026-09-24'
+    owner: RH-R1
+    source: map
+    basis: declared
+    sources: [réponses du 2026-09-24]
+
+  - id: BLK-5
+    text: La liste des accès à créer pour chaque poste n'est écrite nulle part
+    type: method
+    state: open
+    tasks: [RH-T2.1]
+    opened: '2026-09-24'
+    source: map
+    basis: declared
+    sources: [réponses du 2026-09-24]
+
+  - id: BLK-6
+    text: Pas d'accès administrateur au logiciel de recrutement pour régler la diffusion des offres et l'envoi automatique des réponses
+    type: access
+    state: open
+    tasks: [RH-T1.3, RH-T1.8]
+    opened: '2026-09-18'
+    source: slack
+    basis: inferred
+    evidence: 'Slack #recrutement, 2026-09-18'
+    notes: Signal relevé sur Slack, confirmé par la personne le 2026-09-24.
+    sources: [Slack (canal du recrutement, 3 derniers mois), réponses du 2026-09-24]
+
+  - id: BLK-7
+    text: Pas de modèle de programme de première semaine par poste
+    type: method
+    state: open
+    tasks: [RH-T2.3]
+    opened: '2026-09-24'
+    source: map
+    basis: declared
+    sources: [agenda (3 accueils depuis juin)]
+
+  - id: BLK-8
+    text: Les candidatures du site carrière n'arrivaient pas dans le logiciel de recrutement
+    type: connector
+    state: resolved
+    tasks: [RH-T1.9]
+    opened: '2026-08-20'
+    resolved: '2026-09-15'
+    resolution: Formulaire du site carrière relié au logiciel de recrutement ; l'accusé de réception part seul depuis.
+    source: map
+    basis: declared
+    sources: [réponses du 2026-09-24]
+
+# The person mapped, in their first map only (format §12). The organization of the example has
+# no OS yet: no `os_access`, and its notes say so.
+people:
+  - id: person:alex
+    name: Alex Martin
+    ai_plan: {tool: 'saas:claude', plan: Team, tier: standard, modes: [thinking, work], basis: declared}
+    notes: pas encore d'OS dans l'organisation

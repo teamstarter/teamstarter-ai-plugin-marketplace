@@ -1,0 +1,65 @@
+# Filled-in example, for a fictitious organization (Acme) that works in French. Do not copy its
+# values: they show the expected form of each field. Values are written in the organization's
+# language (`organization.language`).
+format: rpt-config/v1
+updated: '2026-10-09'
+
+organization:
+  name: Acme
+  language: fr
+  description: Éditeur de logiciels de gestion pour les cabinets d'architectes.
+
+referential:
+  config_url: https://drive.google.com/drive/folders/1AcmeOsFolderExampleId
+  drive_folder: Acme/OS/Operations/
+  repository: null
+  repository_path: null
+  tools_path: null
+  index: index-taches.json
+  explorer: null
+  archive_drive_folder: Acme/OS/documents-processed/Operations/
+
+intake:
+  drive_folder: Acme/OS/to-process/
+  drive_folder_id: 1AbCdEfGhIjKlMnOpQrStUvWxYz012345
+  email: rpt@acme.example
+  visibility: lisible par toute l'entreprise
+  merged_by: Camille Durand, responsable des opérations
+
+owners:
+  referential: {role: null, first_name: Camille Durand, what: structure du référentiel, fusion des cartes}
+  ai_policy: {role: null, first_name: Karim Benali, what: ai-policy.yaml (la personne chargée des données)}
+
+teams:
+  - {code: dir, name: Direction, scope: direction, stratégie}
+  - {code: sales, name: Ventes, scope: ventes, renouvellements}
+  - {code: support, name: Support, scope: support client, formation}
+  - {code: tech, name: Tech, scope: développement, infrastructure}
+  - {code: fin, name: Finance, scope: finance, administration, juridique}
+
+catalogues:
+  departments: departments.yaml
+  ai_policy: ai-policy.yaml
+
+skills:
+  - {name: ts-general-check-process-cartography, where: claude.ai}
+  - {name: ts-general-rpt-observe, where: claude.ai}
+  - {name: ts-general-rpt-file, where: claude.ai}
+  - {name: ts-general-data-crawl, where: claude.ai}
+
+privacy:
+  excluded: [sujets privés, revues internes, discussions RH, santé de l'entreprise, données personnelles (adresse, sexe, téléphone…), noms de clients]
+  allowed_personal_data: le prénom et le nom d'une personne qui tient un rôle ou fait une tâche
+
+global_context: |
+  Acme — référentiel des tâches (RPT)
+
+  Config RPT (rpt-config.yaml) : https://drive.google.com/drive/folders/1AcmeOsFolderExampleId ; tâches : index-taches.json
+
+  S'applique quand je fais une tâche (SALES-T1.2, skill de l'index) ou qu'on change son outillage (skill, tâche planifiée, agent, connecteur). Pas du ponctuel ni du perso.
+
+  Début : retrouve sans le dire la fiche (ou celles du skill) ; pars de son modèle (templates).
+  Fin : propose ts-general-rpt-file (output_files) si un livrable est prêt, puis ts-general-rpt-observe si la fiche ne dit plus vrai (statut, outils, qui, bloqueur). Sans personne : note-le au compte rendu.
+  Propose ts-general-check-process-cartography si je le demande, arrive, change de poste, ou si deux tâches que je refais manquent.
+
+  Une proposition par conversation. Rien ne part sans mon accord sur un aperçu. Ni nom de client ni donnée personnelle.

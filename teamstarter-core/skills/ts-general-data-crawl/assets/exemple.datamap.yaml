@@ -1,0 +1,175 @@
+# Data map of a fictitious organization (Acme Conseil), made by the skill ts-general-data-crawl
+# from the connectors of one person. The structure only: places, sizes, dates of last change,
+# column names. No document, no message, no value. A name that varies is a placeholder.
+format: rpt/v1
+meta:
+  title: Carte des données — Alex Martin
+  organization: Acme Conseil
+  authors: [Alex Martin, Claude]
+  updated: '2026-10-19'
+  detector: ts-general-data-crawl@1.0
+  sources: [Google Drive (Drive partagé « Commercial »), HubSpot, Notion, Slack, Gmail, Jira]
+  notes: 'Mon Drive non lu (refusé). Noms de colonnes lus sur la première ligne des tableurs (accepté). 2 emplacements laissés de côté (privés ou confidentiels).'
+
+tools:
+  - id: saas:google-drive
+    name: Google Drive
+    type: saas
+    status: external
+    description: Fichiers partagés de l'équipe.
+
+  - id: saas:hubspot
+    name: HubSpot
+    type: saas
+    status: external
+    description: CRM.
+
+  - id: saas:notion
+    name: Notion
+    type: saas
+    status: external
+    description: Documents et bases de l'équipe.
+
+  - id: saas:slack
+    name: Slack
+    type: saas
+    status: external
+    description: Messagerie interne.
+
+  - id: saas:gmail
+    name: Gmail
+    type: saas
+    status: external
+    description: Messagerie de l'entreprise.
+
+  - id: saas:jira
+    name: Jira
+    type: saas
+    status: external
+    description: Suivi des tickets.
+
+containers:
+  - id: DC-1
+    name: Drive partagé Commercial
+    tool: saas:google-drive
+    kind: folder
+    data: data:offres
+    path: Commercial/
+    holds: les propositions, devis et contrats de l'équipe commerciale
+    items: {count: 3, unit: sous-dossiers}
+    freshness: {last_modified: '2026-10-17', modified_90d: 214, checked: '2026-10-19'}
+    access: {connector: native, state: works}
+    basis: observed
+
+  - id: DC-2
+    name: Propositions
+    tool: saas:google-drive
+    kind: folder
+    parent: DC-1
+    data: data:offres
+    path: Commercial/Propositions/[Client]/
+    holds: un dossier par client, avec ses propositions commerciales en PDF et en Slides
+    naming: Proposition [Client] [AAAA-MM-JJ].pdf
+    items: {count: 46, unit: dossiers clients}
+    freshness: {last_modified: '2026-10-17', modified_90d: 58, checked: '2026-10-19'}
+    activity: {editors_90d: 4}
+    basis: observed
+
+  - id: DC-3
+    name: Grille tarifaire
+    tool: saas:google-drive
+    kind: spreadsheet
+    parent: DC-1
+    data: data:offres
+    path: Commercial/Grille tarifaire
+    holds: les prix de chaque offre, une ligne par offre
+    fields: [Offre, Format, Durée, Prix HT, Remise max]
+    items: {count: 1, unit: fichier}
+    freshness: {last_modified: '2026-03-02', modified_90d: 0, checked: '2026-10-19'}
+    basis: observed
+
+  - id: DC-4
+    name: Devis
+    tool: saas:hubspot
+    kind: object
+    data: data:offres
+    path: CRM › Devis
+    holds: les devis émis depuis les affaires
+    fields: [Titre, Montant, Statut, Date d'expiration, Affaire associée]
+    items: {count: 312, unit: devis, approx: true}
+    freshness: {last_modified: '2026-10-18', modified_90d: 41, checked: '2026-10-19'}
+    access: {connector: native, state: works}
+    basis: observed
+
+  - id: DC-5
+    name: Pipeline Ventes
+    tool: saas:hubspot
+    kind: pipeline
+    data: data:pipe-prospects
+    path: CRM › Affaires › Pipeline Ventes
+    fields: [Découverte, Proposition envoyée, Négociation, Gagné, Perdu]
+    items: {count: 128, unit: affaires ouvertes}
+    freshness: {last_modified: '2026-10-19', modified_90d: 96, checked: '2026-10-19'}
+    basis: observed
+    notes: 'fields : les étapes du pipeline.'
+
+  - id: DC-6
+    name: Base Clients
+    tool: saas:notion
+    kind: database
+    data: data:comptes-clients
+    path: Espace Clients › Base Clients
+    holds: une page par compte client, avec son interlocuteur et son état
+    fields: [Nom, Statut, Responsable de compte, Date de renouvellement, Offre]
+    items: {count: 52, unit: pages}
+    freshness: {last_modified: '2026-10-14', checked: '2026-10-19'}
+    access: {connector: native, state: works}
+    basis: observed
+
+  - id: DC-7
+    name: Canaux clients
+    tool: saas:slack
+    kind: channel
+    data: data:messages-internes
+    path: '#client-[client]'
+    holds: un canal par compte client, pour l'équipe
+    items: {count: 38, unit: canaux}
+    freshness: {last_modified: '2026-10-19', checked: '2026-10-19'}
+    basis: observed
+    notes: 'de 4 à 12 membres par canal.'
+
+  - id: DC-8
+    name: Libellé Devis signés
+    tool: saas:gmail
+    kind: label
+    data: data:emails
+    path: Devis signés
+    holds: les e-mails de retour des devis signés
+    items: {count: 87, unit: fils}
+    freshness: {last_modified: '2026-10-16', checked: '2026-10-19'}
+    basis: observed
+
+  - id: DC-9
+    name: Projet Support
+    tool: saas:jira
+    kind: project
+    data: data:demandes-utilisateurs
+    path: SUP
+    holds: les demandes des clients, une par ticket
+    fields: [Bug, Demande, Question]
+    items: {count: 1240, unit: tickets, approx: true}
+    freshness: {last_modified: '2026-10-19', modified_90d: 233, checked: '2026-10-19'}
+    basis: observed
+    notes: 'fields : les types de ticket. Statuts : À faire, En cours, En attente client, Résolu.'
+
+  - id: DC-10
+    name: Archives propositions 2022
+    tool: saas:google-drive
+    kind: folder
+    parent: DC-1
+    data: data:offres
+    path: Commercial/Archives 2022/
+    items: {count: 112, unit: fichiers}
+    freshness: {last_modified: '2023-01-12', modified_90d: 0, checked: '2026-10-19'}
+    state: archived
+    basis: observed

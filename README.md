@@ -3,7 +3,8 @@
 Ce dépôt est un marketplace de plugins pour les outils IA. Il contient le plugin
 **`teamstarter-core`**, qui permet à tout collaborateur d'une organisation Teamstarter de créer
 un projet, de le mener jusqu'à sa proposition et de suivre où en sont ses projets, sans quitter
-sa conversation avec Claude ou ChatGPT.
+sa conversation avec Claude ou ChatGPT. Il contient aussi les skills RPT côté utilisateur, qui
+décrivent les rôles, processus et tâches de l'organisation et ce qui peut en être confié à l'IA.
 
 Le plugin est au format des plugins Claude, que ChatGPT sait aussi lire. Il réunit :
 
@@ -24,6 +25,16 @@ dans ChatGPT et dans l'app.
 | `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Reprends mon skill », « Dépose la nouvelle version de mon skill », « Mon skill est bloqué » |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation déposées dans la boîte à idées et les ateliers : celles à prendre, celles déjà lancées en projet ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill », « Qu'est-ce que les collègues veulent automatiser ? » |
+
+Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartographier-ses-rôles-processus-et-tâches-rpt)) :
+
+| Skill | Pour | Exemples de demandes |
+|---|---|---|
+| `ts-general-rpt-setup` | Mettre en place RPT dans l'organisation : écrire son fichier `rpt-config.yaml` et le texte à coller dans les instructions de Claude. Une fois par organisation | « Configure RPT pour ma boîte », « Mets en place RPT » |
+| `ts-general-check-process-cartography` | Cartographier ses rôles, processus et tâches, ou ceux de son équipe, avec le niveau d'automatisation de chaque tâche, puis déposer la carte dans le dossier de réception de l'organisation | « Fais la carte de mes rôles », « Cartographie mon équipe », « Qu'est-ce que je pourrais automatiser ? » |
+| `ts-general-data-crawl` | Décrire où sont les données de l'organisation, outil par outil (Drive, Notion, HubSpot, Slack, Gmail, Jira), sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
+| `ts-general-rpt-observe` | À la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche (durée, outils, méthode, blocage) | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
+| `ts-general-rpt-file` | Ranger le livrable d'une tâche là où sa fiche le dit, sous le bon nom | « Où je range ça ? », « Range ce fichier au bon endroit » |
 
 Inutile de nommer le skill : l'outil IA le choisit d'après la demande.
 
@@ -120,6 +131,38 @@ que vos brouillons et vos projets en attente de modération, et dit ce qu'elle n
 
 Ce skill est en lecture seule : il ne modifie rien.
 
+### Cartographier ses rôles, processus et tâches (RPT)
+
+Le référentiel RPT d'une organisation décrit ses **rôles**, ses **processus** et ses **tâches**.
+Pour chaque tâche, il dit si elle est automatisée, assistée par une IA, faite à la main ou
+décidée par une personne, quelles données elle utilise et ce qui la bloque. Il sert à choisir ce
+qui peut être confié ensuite à un agent IA, et les connecteurs à activer pour qu'il ait ces
+données.
+
+Les skills RPT ne passent pas par le connecteur Teamstarter. Ils ne contiennent aucune donnée
+d'une organisation : ils lisent son fichier `rpt-config.yaml` (nom, langue, dossiers du
+référentiel et de réception, équipes, responsables, ce qui n'est jamais envoyé), dont l'adresse
+est dans les instructions de Claude de l'organisation.
+
+1. **Mise en place, une fois** : `ts-general-rpt-setup` écrit `rpt-config.yaml` avec la personne
+   qui met RPT en place, le dépose à la racine du dossier de l'OS de l'organisation, et donne le
+   texte à coller dans les instructions de Claude (le contexte global de l'organisation).
+2. **Cartographie** : `ts-general-check-process-cartography` lit, avec votre accord, ce que vos
+   connecteurs montrent de votre travail (agenda, e-mails envoyés, documents, tickets), vous
+   interroge, vous fait valider la carte, la vérifie avec un script, vous montre un aperçu de tout
+   ce qui sera envoyé, puis, après votre accord, la dépose dans le dossier de réception (Google
+   Drive) ou l'envoie à l'adresse de réception. `ts-general-data-crawl` fait de même pour la
+   carte des données : noms de dossiers, fichiers, tables, canaux, leur taille et leur date de
+   mise à jour, jamais leur contenu.
+3. **Au fil du travail** : à la fin d'une tâche faite avec Claude, `ts-general-rpt-file` range le
+   livrable à l'endroit que dit la fiche de la tâche, et `ts-general-rpt-observe` propose la mise
+   à jour de la fiche quand la session a appris ce qu'elle ne dit pas.
+
+La personne ou l'équipe qui tient le référentiel fusionne ensuite les cartes et les observations
+reçues ; cette fusion ne se fait pas avec le plugin. Les consignes des skills RPT sont écrites en
+anglais ; l'IA vous parle dans votre langue, et la carte est écrite dans la langue de
+l'organisation.
+
 ### Garde-fous
 
 - **Rien n'est écrit sans votre accord** : chaque écriture suit une validation, et la proposition
@@ -130,6 +173,10 @@ Ce skill est en lecture seule : il ne modifie rien.
 - Une réponse ou une section n'est jamais réécrite sans vous le dire, et seulement celle que vous
   avez demandée.
 - Un projet proposé n'est jamais repassé en brouillon sans votre demande.
+- **RPT : rien ne part sans aperçu ni accord.** Une carte, une observation ou un fichier rangé
+  n'est envoyé, créé ou déplacé qu'après votre validation de ce qui sera envoyé. La carte des
+  données ne lit que des noms et des métadonnées : aucun contenu de document, aucun message, aucun
+  nom de client, aucun montant.
 
 ### Ce qui se fait dans l'app
 
@@ -147,6 +194,12 @@ Teamstarter.
 - **Créer un projet demande l'accès en écriture**, que l'administrateur de votre organisation
   doit avoir ouvert. En lecture seule, la liste des projets fonctionne, et la création produit une
   fiche Markdown à recopier dans l'app.
+- **Les skills RPT** demandent que RPT soit mis en place dans l'organisation
+  (`ts-general-rpt-setup`, puis le texte qu'il donne collé dans les instructions de Claude), les
+  connecteurs des outils où vous travaillez (Google Drive pour déposer la carte ; Gmail, Slack,
+  Notion, HubSpot, Jira selon les cas), et l'exécution de code avec Python 3 et PyYAML pour leurs
+  scripts de vérification. Sans connecteur Google Drive ni outil d'envoi d'e-mail, la carte vous
+  est donnée en fichier, à déposer vous-même.
 
 ### Selon l'outil
 
@@ -177,6 +230,7 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 | Génération de fiche ou audit absents de votre accès | Rédige la fiche elle-même, et passe l'audit en vous le disant. |
 | Génération ou audit qui dépasse 5 minutes | Arrête d'attendre, dit où en est le projet ; reprenez plus tard avec « reprends mon projet <numéro> ». |
 | Plusieurs connecteurs Teamstarter, ou un accès à plusieurs organisations | Vous demande lequel ou laquelle utiliser. |
+| Skill RPT sans adresse de `rpt-config.yaml` dans les instructions de Claude | Cherche le fichier dans Google Drive et vous le fait confirmer ; sinon vous demande de l'ajouter à la conversation. Sans ce fichier nulle part, RPT n'est pas encore mis en place : `ts-general-rpt-setup`. |
 
 ## Pour les mainteneurs
 
@@ -195,7 +249,12 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │       ├── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
 │       ├── ts-general-creer-skill/     # créer un skill par un projet : écrire, déposer, tester, blocages
 │       ├── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
-│       └── ts-general-lister-idees-automatisation/  # idées d'automatisation : à prendre, lancées
+│       ├── ts-general-lister-idees-automatisation/  # idées d'automatisation : à prendre, lancées
+│       ├── ts-general-rpt-setup/                    # RPT : écrire le rpt-config.yaml de l'organisation
+│       ├── ts-general-check-process-cartography/   # RPT : carte des rôles, processus et tâches
+│       ├── ts-general-data-crawl/                   # RPT : carte des données, outil par outil
+│       ├── ts-general-rpt-observe/                  # RPT : proposer la mise à jour d'une fiche de tâche
+│       └── ts-general-rpt-file/                     # RPT : ranger le livrable d'une tâche
 └── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés, empaqueter
 ```
 
@@ -211,8 +270,9 @@ versionné.
 
 ### Modifier un skill
 
-1. Écrire dans le dossier du skill. Règles de forme : frontmatter limité à `name` et
-   `description` (l'import claude.ai refuse d'autres clés), `name` = nom du dossier, format
+1. Écrire dans le dossier du skill. Règles de forme : frontmatter limité aux clés du format
+   agentskills.io (`name`, `description`, et au besoin `metadata`, `license`, `compatibility`,
+   `allowed-tools` ; l'import claude.ai refuse les autres), `name` = nom du dossier, format
    `ts-<domaine>-<verbe>-<objet>`, description de 1024 caractères au plus, sans chevrons, avec les
    phrases qui déclenchent le skill. Corps adressé au modèle, à l'infinitif.
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
@@ -221,6 +281,20 @@ versionné.
    dans `ts-general-creer-projet`.
 3. `python3 scripts/check_plugins.py` doit répondre `OK`.
 4. Monter la version dans `plugin.json` et dans `marketplace.json`.
+
+### Mettre à jour les skills RPT
+
+Les cinq skills RPT ne s'écrivent pas ici. Leur source est dans le dépôt `teamstarter`,
+`teamstarter-os/skills/<skill>/`, et `teamstarter-os/tools/package_rpt_skill.py` y ajoute leurs
+scripts et catalogues génériques ; leur version et leur source sont dans le `metadata` de leur
+frontmatter. Une modification faite ici serait écrasée à la copie suivante. Pour les mettre à
+jour :
+
+1. Dans le dépôt `teamstarter` :
+   `python3 teamstarter-os/tools/package_rpt_skill.py --stage <dossier> --out-dir <dossier>`
+   écrit les cinq dossiers complets dans `<dossier>`.
+2. Remplacer chaque `teamstarter-core/skills/<skill>/` de ce dépôt par le dossier du même nom.
+3. `python3 scripts/check_plugins.py`, puis monter la version du plugin.
 
 Pas de hook ni de dossier `bin/` : le chat claude.ai et ChatGPT ne les exécutent pas, et
 claude.ai refuse un plugin qui a un `bin/` à sa racine. Le script le vérifie.

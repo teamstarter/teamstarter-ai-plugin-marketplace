@@ -9,6 +9,9 @@ Teamstarter reste la source de vérité. Statuts, réponses et fiches sont écri
 Teamstarter, jamais seulement dans la conversation : un brouillon commencé dans l'app se reprend
 avec Claude, et inversement.
 
+Le plugin contient aussi les skills RPT côté utilisateur : ils décrivent les rôles, processus et
+tâches de votre organisation, avec ce qui en est automatisé ou peut être confié à l'IA.
+
 ## Ce que fait le plugin
 
 | Skill | Pour | Exemples de demandes |
@@ -18,6 +21,11 @@ avec Claude, et inversement.
 | `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Reprends mon skill », « Mon skill est bloqué » |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation de la boîte à idées : à prendre, déjà lancées ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill » |
+| `ts-general-rpt-setup` | RPT : mettre en place le référentiel dans l'organisation (son `rpt-config.yaml`), une fois | « Configure RPT pour ma boîte » |
+| `ts-general-check-process-cartography` | RPT : cartographier ses rôles, processus et tâches, ou ceux de son équipe, et déposer la carte | « Fais la carte de mes rôles », « Qu'est-ce que je pourrais automatiser ? » |
+| `ts-general-data-crawl` | RPT : décrire où sont les données de l'organisation, outil par outil, sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
+| `ts-general-rpt-observe` | RPT : à la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
+| `ts-general-rpt-file` | RPT : ranger le livrable d'une tâche là où sa fiche le dit | « Où je range ça ? » |
 
 **Créer un projet** suit le parcours de l'app : choix du type et de l'objectif, recherche des
 projets et idées proches, création du brouillon, questions de structuration, fiche du projet
@@ -41,6 +49,16 @@ ou déjà lancées, et propose de créer le skill de l'une d'elles.
 **Lister ses projets** les regroupe comme la page « Mes projets » de l'app, et propose de
 reprendre un brouillon.
 
+**Les skills RPT** tiennent à jour le référentiel des rôles, processus et tâches (RPT) de
+l'organisation : pour chaque tâche, ce qui est automatisé, assisté par une IA, fait à la main ou
+décidé par une personne, les données qu'elle utilise et ce qui la bloque. Ils ne passent pas par
+le connecteur Teamstarter et ne contiennent aucune donnée d'une organisation : ils lisent son
+`rpt-config.yaml`, dont l'adresse est dans les instructions de Claude de l'organisation.
+`ts-general-rpt-setup` écrit ce fichier une fois. La cartographie lit, avec votre accord, ce que
+vos connecteurs montrent de votre travail, vous interroge, vous montre un aperçu de ce qui sera
+envoyé, puis dépose la carte dans le dossier de réception de l'organisation ; la personne qui
+tient le référentiel la fusionne ensuite, hors du plugin.
+
 ## Ce dont vous avez besoin
 
 - Un compte Teamstarter dans une organisation hébergée sur `app.teamstarter.co`.
@@ -49,12 +67,27 @@ reprendre un brouillon.
 - Pour créer un projet, l'accès en écriture, que l'administrateur de votre organisation doit
   avoir ouvert. En lecture seule, la liste des projets fonctionne, et la création produit une
   fiche en Markdown à recopier dans l'app.
+- Pour les skills RPT : RPT mis en place dans l'organisation (`ts-general-rpt-setup`, puis le
+  texte qu'il donne collé dans les instructions de Claude), les connecteurs des outils où vous
+  travaillez (Google Drive pour déposer la carte), et l'exécution de code avec Python 3 et PyYAML.
 
 ## Ce que le plugin lit, écrit et exécute
 
-- **Un seul service contacté** : le serveur MCP Teamstarter, `https://app.teamstarter.co/mcp`
-  (HTTP, authentification OAuth avec votre compte Teamstarter). Le plugin n'envoie de données à
-  aucun autre service.
+- **Un seul serveur déclaré** : le serveur MCP Teamstarter, `https://app.teamstarter.co/mcp`
+  (HTTP, authentification OAuth avec votre compte Teamstarter). Les skills de projet n'envoient
+  de données à aucun autre service.
+- **Skills RPT : vos autres connecteurs.** Ils n'utilisent pas le connecteur Teamstarter, mais
+  ceux que vous avez déjà activés dans l'outil IA, avec votre compte et votre accord :
+  - lecture, pour la cartographie : agenda, e-mails envoyés, documents, tickets, canaux, en
+    n'en retenant que les types, les fréquences et les volumes, jamais le texte d'un message ni
+    le nom ou l'adresse d'un destinataire ; pour la carte des données
+    (`ts-general-data-crawl`), seulement des noms et des métadonnées (dossiers, fichiers, tables,
+    canaux, taille, date de mise à jour), jamais le contenu ;
+  - lecture du fichier `rpt-config.yaml` de l'organisation et des catalogues qu'il nomme ;
+  - écriture, après un aperçu de tout ce qui sera envoyé et votre accord : la carte déposée dans
+    le dossier de réception de l'organisation (Google Drive) ou envoyée par e-mail à son adresse
+    de réception, une observation de fiche de tâche, un livrable rangé ou renommé,
+    `rpt-config.yaml` déposé dans le dossier de l'OS.
 - **Lecture** dans votre organisation Teamstarter : types de projet, objectifs, projets, idées,
   questions et sections de vos projets, et les noms des collaborateurs, pour retrouver un
   co-porteur ou vous identifier.
@@ -69,13 +102,20 @@ reprendre un brouillon.
   Teamstarter l'id du projet, l'heure, la durée, les tokens (estimés quand l'outil ne les affiche
   pas) et le résultat ; la personne enregistrée est celle du connecteur. La déclaration est
   annoncée dans la réponse. Rien n'est déclaré pour un autre skill.
-- **Script local** : `skills/ts-general-creer-projet/scripts/tiptap.py` convertit du Markdown
-  simple en document tiptap, le format des sections de fiche de Teamstarter. Il tourne sur la
-  machine, sans accès réseau. Sans Python, Claude construit ce document lui-même.
+- **Scripts locaux**, sans accès réseau :
+  - `skills/ts-general-creer-projet/scripts/tiptap.py` convertit du Markdown simple en document
+    tiptap, le format des sections de fiche de Teamstarter. Sans Python, Claude construit ce
+    document lui-même ;
+  - dans les skills RPT, `scripts/build_rpt.py` et `validate_rpt.py` vérifient une carte, une
+    observation ou un `rpt-config.yaml`, `preview_rpt.py` produit l'aperçu de ce qui sera envoyé
+    et signale les données personnelles, `check_datamap.py` vérifie la carte des données,
+    `rpt_i18n.py` porte leurs messages. Ils demandent Python 3 et PyYAML.
 - **Fichiers locaux** : sans connecteur ou en lecture seule, la création livre un fichier
   `fiche-projet-<titre>.md` dans la conversation ; la création d'un skill livre le dossier du
   skill et son zip, prêts à installer.
-- Le plugin ne stocke rien en dehors de Teamstarter : aucune mémoire, aucun cache.
+- Le plugin ne garde rien de son côté : aucune mémoire, aucun cache. Les skills de projet
+  écrivent dans Teamstarter ; les skills RPT, dans les dossiers de l'organisation que nomme son
+  `rpt-config.yaml`.
 
 ## Garde-fous
 
@@ -86,6 +126,8 @@ reprendre un brouillon.
   préciser ».
 - Une réponse ou une section n'est jamais réécrite sans vous le dire.
 - Pas de donnée personnelle ni de nom de client dans la fiche d'un projet d'automatisation.
+- RPT : aucune carte, observation ou fichier n'est envoyé, créé ou déplacé sans un aperçu de ce
+  qui part et votre accord.
 
 ## Support
 

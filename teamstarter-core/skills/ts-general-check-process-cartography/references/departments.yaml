@@ -1,0 +1,299 @@
+# Departments (business verticals) of the RPT referential, rpt/v1 format.
+# Rules: README_operations.md. The first department of a role, a process or a task is its main
+# department. The human text fields (`name`, `description`, `examples`, `aliases`) are maps by
+# language code ({en: …, fr: …}); a plain string or list is read as valid in every language. The
+# `aliases` are used to file a map written with other words (skill ts-general-rpt-merge); an alias
+# belongs to one department only, across all languages.
+format: rpt/v1
+meta: {updated: '2026-09-24'}
+
+departments:
+  - id: strategy-management
+    name: {en: Strategy & management, fr: Direction et stratégie}
+    description:
+      en: Set the direction, decide priorities and budgets, run the company and its governance.
+      fr: Fixer le cap, arbitrer les priorités et les budgets, piloter l'entreprise et sa gouvernance.
+    examples:
+      en: [strategy offsite, annual objectives, investment decision, leadership committee]
+      fr:
+        - séminaire stratégique
+        - objectifs annuels
+        - arbitrage d'investissement
+        - comité de direction
+    aliases:
+      en: [management, strategy, executive, general management, governance, leadership]
+      fr: [direction, stratégie, codir, gouvernance, direction générale]
+
+  - id: product-design
+    name: {en: Product management & design, fr: Conception produit}
+    description:
+      en: Decide what to build and why, design the solution (journeys, mock-ups, copy), specify it, then check and measure what was delivered from the product side.
+      fr: Décider quoi construire et pourquoi, concevoir la solution (parcours, maquettes, textes), la spécifier, puis vérifier et mesurer ce qui a été livré du point de vue du produit.
+    examples:
+      en:
+        - roadmap
+        - opportunity
+        - user interview
+        - mock-up
+        - user story
+        - PO review
+        - feature measurement
+      fr:
+        - roadmap
+        - opportunité
+        - entretien utilisateur
+        - maquette
+        - user story
+        - relecture PO
+        - mesure d'une feature
+    aliases:
+      en:
+        - product
+        - product management
+        - product design
+        - design
+        - ux
+        - ui
+        - discovery
+        - pm
+        - po
+        - product owner
+      fr: [produit, gestion de produit, design produit]
+
+  - id: software-development
+    name: {en: Software development, fr: Développement logiciel}
+    description:
+      en: Write, test, review, integrate and ship the product's code, and check that it works once shipped.
+      fr: Écrire, tester, relire, intégrer et livrer le code du produit, et vérifier qu'il marche une fois livré.
+    examples:
+      en: [ticket, pull request, tests, code review, release, staging check]
+      fr: [ticket, pull request, tests, revue de code, release, vérification en staging]
+    aliases:
+      en:
+        - dev
+        - development
+        - engineering
+        - software engineering
+        - qa
+        - quality assurance
+        - release management
+      fr: [développement, ingénierie logicielle, recette, équipe tech]
+
+  - id: it-operations
+    name: {en: IT operations & DevOps, fr: Infrastructure et exploitation}
+    description:
+      en: Host, deploy, monitor and evolve what runs the product and the internal tools.
+      fr: Héberger, déployer, surveiller et faire évoluer ce qui fait tourner le produit et les outils internes.
+    examples:
+      en:
+        - CI/CD
+        - cloud hosting
+        - monitoring
+        - backups
+        - access
+        - infrastructure costs
+        - production incident
+      fr:
+        - CI/CD
+        - hébergement cloud
+        - monitoring
+        - sauvegardes
+        - accès
+        - coûts d'infrastructure
+        - incident de production
+    aliases:
+      en: [ops, devops, infrastructure, sre, it, sysadmin, platform engineering]
+      fr: [infra, exploitation, informatique, DSI, hébergement]
+
+  - id: data-analytics
+    name: {en: Data & analytics, fr: Données et mesure}
+    description:
+      en: Extract, analyze and present data to measure usage, impact and results.
+      fr: Extraire, analyser et présenter les données pour mesurer l'usage, l'impact et les résultats.
+    examples:
+      en: [SQL extract, dashboard, usage statistics, feature measurement]
+      fr: [extraction SQL, tableau de bord, statistiques d'usage, mesure d'une feature]
+    aliases:
+      en: [data, analytics, bi, reporting, business intelligence, statistics]
+      fr: [statistiques, données, analyse de données]
+
+  - id: customer-support
+    name: {en: Customer support, fr: Support client}
+    description:
+      en: Answer users' questions and problems, qualify reported bugs, handle the incidents that affect them.
+      fr: Répondre aux questions et aux problèmes des utilisateurs, qualifier les bugs signalés, traiter les incidents qui les touchent.
+    examples:
+      en: [support request, reported bug, diagnostic question, customer incident]
+      fr: [demande de support, bug signalé, question de diagnostic, incident client]
+    aliases:
+      en: [support, consumer support, customer service, helpdesk, run, tier 1, tier 2]
+      fr: [service client, n1, n2, assistance, support utilisateur]
+
+  - id: customer-success
+    name: {en: Customer success & delivery, fr: Succès client et accompagnement}
+    description:
+      en: 'Make signed clients succeed: launch, support through the cycles, follow-up meetings, training, renewal.'
+      fr: Faire réussir les clients signés — lancement, accompagnement des cycles, points de suivi, formation, renouvellement.
+    examples:
+      en:
+        - kick-off
+        - follow-up meeting
+        - cycle review
+        - workshop
+        - client onboarding
+        - IT meeting
+      fr:
+        - kick-off
+        - point de suivi
+        - bilan de cycle
+        - atelier
+        - onboarding client
+        - point IT
+    aliases:
+      en:
+        - csm
+        - customer success
+        - delivery
+        - account management
+        - customer onboarding
+        - professional services
+      fr: [accompagnement, onboarding client, succès client, gestion de compte]
+
+  - id: sales
+    name: {en: Sales, fr: Ventes}
+    description:
+      en: Find, qualify and sign new clients, and sell more to existing clients.
+      fr: Trouver, qualifier et signer de nouveaux clients, et vendre plus aux clients existants.
+    examples:
+      en:
+        - prospecting
+        - sales meeting
+        - demo
+        - commercial proposal
+        - pre-sales security questionnaire
+      fr:
+        - prospection
+        - rendez-vous
+        - démo
+        - proposition commerciale
+        - questionnaire de sécurité en avant-vente
+    aliases:
+      en:
+        - sales
+        - business development
+        - bizdev
+        - presales
+        - account executive
+        - sales development
+      fr:
+        - vente
+        - ventes
+        - commercial
+        - avant-vente
+        - développement commercial
+        - prospection
+
+  - id: marketing
+    name: {en: Marketing & communication, fr: Marketing et communication}
+    description:
+      en: Make the offer known, generate contacts, announce new features, produce content.
+      fr: Faire connaître l'offre, générer des contacts, annoncer les nouveautés, produire le contenu.
+    examples:
+      en: [newsletter, changelog, event, content, campaign, feature launch]
+      fr: [newsletter, changelog, événement, contenu, campagne, lancement d'une feature]
+    aliases:
+      en: [communications, growth, product marketing, content, brand]
+      fr: [communication, com, contenu, marque]
+
+  - id: people-hr
+    name: {en: People & HR, fr: RH et recrutement}
+    description:
+      en: Recruit, welcome, train, develop and support the company's people.
+      fr: Recruter, accueillir, former, faire évoluer et accompagner les personnes de l'entreprise.
+    examples:
+      en:
+        - recruitment
+        - employee onboarding
+        - annual review
+        - internal training
+        - skills transfer
+      fr:
+        - recrutement
+        - accueil d'un salarié
+        - entretien annuel
+        - formation interne
+        - transmission des compétences
+    aliases:
+      en: [hr, human resources, people, recruiting, talent]
+      fr: [rh, recrutement, ressources humaines, gestion des talents]
+
+  - id: finance-admin
+    name: {en: 'Finance, admin & legal', fr: 'Finance, administration et juridique'}
+    description:
+      en: Keep the accounts, billing, purchasing, contracts and legal obligations.
+      fr: Tenir la comptabilité, la facturation, les achats, les contrats et les obligations légales.
+    examples:
+      en: [invoicing, budget, client contract, purchase, payroll]
+      fr: [facturation, budget, contrat client, achat, paie]
+    aliases:
+      en: [finance, admin, administration, accounting, legal, procurement]
+      fr: [comptabilité, juridique, achats, facturation, administratif]
+
+  - id: security-compliance
+    name: {en: Security & compliance, fr: Sécurité et conformité}
+    description:
+      en: Protect data and systems, comply with the GDPR and with the security commitments made to clients.
+      fr: Protéger les données et les systèmes, respecter le RGPD et les engagements de sécurité pris auprès des clients.
+    examples:
+      en: [security questionnaire, data breach, secrets management, audit, GDPR register]
+      fr:
+        - questionnaire de sécurité
+        - violation de données
+        - gestion des secrets
+        - audit
+        - registre RGPD
+    aliases:
+      en: [security, compliance, gdpr, privacy, dpo, infosec]
+      fr: [sécurité, conformité, rgpd, protection des données]
+
+  - id: knowledge-ai-tooling
+    name: {en: Knowledge & AI tooling, fr: Savoir et outillage IA}
+    description:
+      en: Write the rules, skills, agents and documentation that make the other roles' work transferable and automatable, and improve the way of working.
+      fr: Écrire les règles, les skills, les agents et la documentation qui rendent le travail des autres rôles transmissible et automatisable, et améliorer la façon de travailler.
+    examples:
+      en:
+        - skill
+        - agent
+        - team rule
+        - documentation
+        - knowledge base
+        - continuous improvement
+      fr:
+        - skill
+        - agent
+        - règle d'équipe
+        - documentation
+        - base de connaissance
+        - amélioration continue
+    aliases:
+      en:
+        - knowledge management
+        - documentation
+        - ai enablement
+        - tooling
+        - process improvement
+        - continuous improvement
+      fr: [outillage, amélioration continue, gestion des connaissances, outillage IA]
+
+  - id: operations-supply
+    name: {en: Production & logistics, fr: Production et logistique}
+    description:
+      en: Make, stock and deliver what the organization sells when it is a physical good or an on-site service; supply the materials it needs.
+      fr: Fabriquer, stocker et livrer ce que l'organisation vend quand c'est un bien physique ou un service sur place ; approvisionner les matières dont elle a besoin.
+    examples:
+      en: [production planning, batch of the day, inventory count, supplier order of raw materials, delivery round, quality control]
+      fr: [planning de production, fournée du jour, inventaire, commande de matières premières, tournée de livraison, contrôle qualité]
+    aliases:
+      en: [production, manufacturing, logistics, supply chain, supply, inventory, warehouse, quality control]
+      fr: [production, fabrication, logistique, chaîne d'approvisionnement, approvisionnement, stock, inventaire, entrepôt, contrôle qualité]
