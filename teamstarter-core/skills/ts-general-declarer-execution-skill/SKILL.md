@@ -18,10 +18,12 @@ description: >-
 ## Quand utiliser ce skill
 
 Un skill créé par un projet Teamstarter (skill `ts-general-creer-skill`) porte l'id de son projet
-dans ses métadonnées. Teamstarter enregistre ses utilisations dans le journal du projet, pour
-ses statistiques : nombre d'exécutions, personnes distinctes, tokens, durée, dernière
-utilisation. Teamstarter ne les connaît que si **l'agent qui exécute le skill les déclare** : c'est ce que fait ce skill, par un appel au tool `report-skill-execution` à la fin de
-chaque exécution, au nom de la personne qui a branché le connecteur.
+dans ses métadonnées. Teamstarter enregistre chacune de ses exécutions et en tire les
+statistiques du projet, affichées dans la carte « Utilisation du skill » de sa page `/manage` :
+nombre d'exécutions, échecs, personnes distinctes, tokens, durée moyenne, dernière utilisation.
+Teamstarter ne les connaît que si **l'agent qui exécute le skill les déclare** : c'est ce que
+fait ce skill, par un appel au tool `report-skill-execution` à la fin de chaque exécution, au nom
+de la personne qui a branché le connecteur.
 
 Ne pas utiliser pour autre chose : ce skill n'écrit rien d'autre dans Teamstarter.
 
@@ -88,12 +90,12 @@ report-skill-execution {
 | `durationMs` | de la première étape à la dernière, d'après l'heure notée au début ; `0` sans horloge, en le disant |
 | `executedAt` | l'heure de début ; omise, Teamstarter prend l'heure de réception |
 | `outcome` | `success` si le skill a livré ce qu'il devait ; `failure` sur une erreur, une interruption, un résultat non livré |
-| `executionId` | le même pour toute nouvelle tentative de la même déclaration : Teamstarter n'écrit rien de plus et répond `created: false` |
+| `executionId` | le même pour toute nouvelle tentative de la même déclaration : Teamstarter n'écrit rien de plus et répond `created: false`. 255 caractères au plus : un UUID convient |
 
 ## Ce que répond Teamstarter
 
-- `created: true` : l'exécution est enregistrée dans le journal du projet, au nom de la personne
-  du connecteur. Aucune notification n'est envoyée.
+- `created: true` : l'exécution est enregistrée au nom de la personne du connecteur, et comptée
+  dans la carte « Utilisation du skill » du projet. Aucune notification n'est envoyée.
 - `created: false` : cette exécution était déjà déclarée. Ne pas rappeler avec un autre id.
 - **Refus** (projet d'une autre organisation, projet d'un type qui ne compte pas les
   exécutions, accès qui ne peut pas écrire) : ne pas réessayer, ne pas contourner ; rapporter la

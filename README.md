@@ -82,7 +82,9 @@ l'organisation naît d'un projet Teamstarter.
    l'agent en conditions réelles » une fois le test concluant.
 6. **Utilisation.** Chaque exécution du skill est déclarée à Teamstarter par
    `ts-general-declarer-execution-skill` : heure, durée, tokens (estimés quand l'outil ne les
-   affiche pas) et personne qui l'utilise, pour les statistiques d'utilisation du projet.
+   affiche pas) et personne qui l'utilise. Les statistiques sont dans la carte « Utilisation du
+   skill » de la page `/manage` du projet, réservée aux porteurs et aux admins, et l'IA les lit
+   sur demande (« combien de fois mon skill a été utilisé ? »).
 7. **Blocage.** Un problème qui empêche de créer ou d'utiliser le skill devient, avec votre accord,
    un point de blocage sur le projet.
 
