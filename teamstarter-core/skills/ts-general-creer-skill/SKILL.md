@@ -7,12 +7,12 @@ description: >-
   le projet avec ts-general-creer-projet, attend sa validation, puis, le projet en réalisation,
   récupère le prompt de création, fait écrire le skill par skill-creator avec l'id du projet
   dans ses métadonnées, le dépose dans Teamstarter à chaque version, valide l'étape « Créer mon
-  agent IA », fait tester le skill et déclare les points de blocage. Déclenche
+  agent IA », fait tester le skill, déclare les blocages et lit son usage. Déclenche
   SYSTÉMATIQUEMENT, avant skill-creator, dès que l'utilisateur mentionne "créer un skill",
-  "nouveau skill", "fabriquer un skill", "créer un agent", "créer mon agent IA", "automatiser
+  "nouveau skill", "créer un agent", "créer mon agent IA", "automatiser
   une tâche avec Claude", "reprendre mon skill", "continuer mon skill", "nouvelle version de mon
-  skill", "déposer mon skill", "mon skill est bloqué". Pour seulement lister ses projets :
-  ts-general-lister-projets.
+  skill", "déposer mon skill", "mon skill est bloqué", "usage de mon skill".
+  Pour seulement lister ses projets : ts-general-lister-projets.
 ---
 
 # Créer un skill par un projet Teamstarter
@@ -53,6 +53,7 @@ voir ses projets (`ts-general-lister-projets`).
 [6] Déposer le skill dans Teamstarter      ←── validation, à chaque nouvelle version
 [7] Valider l'étape « Créer mon agent IA »
 [8] Tester, valider « Tester l'agent en conditions réelles »
+[U] Utilisation du skill, à tout moment après [6]
 [B] Point de blocage, à tout moment après [3]   ←── validation
 ```
 
@@ -77,6 +78,7 @@ Lire `references/regles-api.md` avant le premier appel.
 | tool `report-skill-execution` | déclarer chaque utilisation (skill `ts-general-declarer-execution-skill`) | les utilisations ne sont pas comptées |
 | mutation `setProjectWorkflowActionStatus` | valider une étape de `/manage` (étapes 7 et 8) | l'utilisateur coche l'étape dans `/manage` |
 | mutation `projectBlockerCreate` | déclarer un blocage | l'utilisateur le déclare dans `/manage` |
+| query `projectSkillUsage` | lire l'utilisation du skill (étape U) | l'utilisateur ouvre la carte « Utilisation du skill » de `/manage` |
 
 Dire en une phrase ce qui se fera dans l'app faute de capacité, une seule fois. Ne jamais
 contourner un tool absent par `run-mutation` sur une mutation que `list-schema` ne montre pas.
@@ -93,14 +95,16 @@ query($where: SequelizeJSON) {
   project(where: $where, order: "reverse:updatedAt", limit: 20) {
     id title status decisionMode updatedAt
     projectType { tag }
+    skillFileId
     projectDeliveryActions { id type doneAt skippedAt }
-    projectFiles { id deliverableType createdAt file { title } }
   }
 }
 ```
 variables : `{"where": {"d_organizerIds": {"contains": [<moi>]}}}`, garder `projectType.tag` =
-`PROCESS_AUTOMATION_WITH_AI`. Un brouillon de ce type sans identité confirmée : `scopeForMe: true`
-avec `{"statusGroup": {"in": ["structuration", "writing"]}}`.
+`PROCESS_AUTOMATION_WITH_AI`, ou `AI_SKILL` (l'autre type de projet d'agent IA, que les tools de
+skill acceptent aussi). `skillFileId` nomme le dernier skill déposé ; vide, aucun ne l'est.
+Un brouillon de ce type sans identité confirmée : `scopeForMe: true` avec
+`{"statusGroup": {"in": ["structuration", "writing"]}}`.
 
 Proposer de reprendre un projet ou d'en créer un. Pour reprendre, aller à la première étape non
 faite :
@@ -109,10 +113,10 @@ faite :
 |---|---|
 | `EMPTY` ou `DRAFT` | étape 2 (`ts-general-creer-projet` reprend le brouillon) |
 | `UNDER_REVIEW`, ou `PUBLISHED` (vote, financement) | étape 3 : en attente |
-| `CASHEDOUT`, aucun fichier `AI_AUTOMATION` | étape 4 |
-| `CASHEDOUT`, un fichier déposé, `create-my-agent` sans `doneAt` | étape 7 |
+| `CASHEDOUT`, `skillFileId` vide | étape 4 |
+| `CASHEDOUT`, `skillFileId` renseigné, `create-my-agent` sans `doneAt` | étape 7 |
 | `CASHEDOUT`, `create-my-agent` fait, `test-agent` sans `doneAt` | étape 8 |
-| `CASHEDOUT` ou `DELIVERED`, tout fait | nouvelle version (étapes 5 et 6) ou blocage (B), selon la demande |
+| `CASHEDOUT` ou `DELIVERED`, tout fait | nouvelle version (étapes 5 et 6), utilisation (U) ou blocage (B), selon la demande |
 | `CAMPAIGN_FAILED`, `CANCELLED`, `ENDED` | le dire ; un nouveau skill passe par un nouveau projet |
 
 Dire en une phrase où en est le skill avant de continuer (« Ton projet *X* est validé et le skill
@@ -159,8 +163,11 @@ l'organisation, la tâche, les réponses de structuration, la fiche. C'est la sp
 skill.
 
 - **Tool `get-skill-creation-instructions`** : `{"projectId": <id>}`. La réponse est le prompt
-  lui-même, en markdown. Un refus « structuration incomplète » liste les questions obligatoires
-  sans réponse : y répondre avec `ts-general-creer-projet` (étape 4), puis rappeler le tool.
+  lui-même, en markdown ; il demande déjà au skill la métadonnée `teamstarter-project-id`.
+  - Un refus « structuration incomplète » liste les questions obligatoires sans réponse : y
+    répondre avec `ts-general-creer-projet` (étape 4), puis rappeler le tool.
+  - Le prompt est réservé à l'auteur, aux porteurs et aux admins du projet : un autre compte
+    reçoit un refus. Le dire, et demander à un porteur de reprendre.
 - **Sans le tool** : demander à l'utilisateur d'ouvrir `<adresse de l'app>/<tag de
   l'organisation>/project/<id>/manage`, l'étape « Créer mon agent IA », bouton « Copier le
   prompt », et de le coller dans la conversation.
@@ -219,8 +226,11 @@ Livrer aussi le skill prêt à installer : un zip dont le dossier du skill est l
   - 1 Mo au plus une fois décodé ; extensions `.md`, `.json`, `.yaml`, `.yml`, `.txt`, `.xml`.
   - Un fichier par appel : le `SKILL.md` principal, celui qui porte la métadonnée.
   - Un nouveau dépôt s'ajoute aux précédents ; le projet montre le dernier comme son skill.
-  - Relire : `projectFile(where: {"projectId": <id>}) { id deliverableType size createdAt file { title } }`,
-    attendu une ligne `AI_AUTOMATION` à la date du jour.
+  - Seuls les porteurs du projet déposent : un autre compte, admin compris, reçoit « Only the
+    organizers of the project can manage its files. ». Le dire, et demander à un porteur de
+    déposer, ou de vous ajouter comme porteur.
+  - Relire : la réponse donne `project.skillFileId`, égal à l'id du `projectFile` créé ; c'est le
+    skill du projet.
 - **Sans le tool** : demander à l'utilisateur de déposer le `SKILL.md` dans la section Fichiers
   de la page `/manage` du projet.
 
@@ -240,7 +250,9 @@ mutation($actionId: Int!, $status: String!) { setProjectWorkflowActionStatus(act
 ```
 variables : `{"actionId": <id de l'action>, "status": "done"}`
 
-Sans la mutation : demander à l'utilisateur de cocher « Créer mon agent IA » dans `/manage`.
+Seuls l'auteur et les porteurs du projet cochent une étape ; un admin qui n'est pas porteur reçoit
+un refus. Sans la mutation : demander à l'utilisateur de cocher « Créer mon agent IA » dans
+`/manage`.
 
 ## Étape 8 — Tester le skill
 
@@ -254,6 +266,27 @@ Sans la mutation : demander à l'utilisateur de cocher « Créer mon agent IA »
 
 Les étapes suivantes de `/manage` (« Faire valider mon agent par mon ambassadeur », « Partager mon
 agent au collectif », « Déclarer mis en place ») se font dans l'app : les nommer, donner le lien.
+
+## Étape U — Utilisation du skill
+
+Quand l'utilisateur demande comment son skill est utilisé (« combien de fois », « qui s'en sert »,
+« combien de tokens ») :
+
+```graphql
+query($projectId: Int!) {
+  projectSkillUsage(projectId: $projectId) {
+    executionsCount failuresCount distinctUsersCount tokensCount averageDurationMs lastExecutionAt
+    topUsers { executionsCount lastExecutionAt user { fullname } }
+  }
+}
+```
+variables : `{"projectId": <id>}`
+
+- Réservé à l'auteur, aux porteurs et aux admins du projet ; un autre compte reçoit un refus.
+- Les chiffres sont ceux que le skill a déclarés (`ts-general-declarer-execution-skill`) : une
+  exécution non déclarée n'est pas comptée, et `tokensCount` à 0 veut dire « tokens non
+  déclarés », pas « aucun token ».
+- Les mêmes chiffres sont dans la carte « Utilisation du skill » de la page `/manage` du projet.
 
 ## Étape B — Point de blocage
 

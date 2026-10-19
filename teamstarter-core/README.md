@@ -29,7 +29,8 @@ l'organisation, Claude écrit le skill à partir du prompt de création génér�
 le skill `skill-creator` d'Anthropic), le dépose sur le projet, coche les étapes « Créer mon agent
 IA » et « Tester l'agent en conditions réelles » avec votre accord, et déclare les points de
 blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
-ensuite déclarée à Teamstarter pour les statistiques du projet.
+ensuite déclarée à Teamstarter ; les statistiques sont dans la carte « Utilisation du skill » de
+la page de gestion du projet.
 
 **Lister ses projets** les regroupe comme la page « Mes projets » de l'app, et propose de
 reprendre un brouillon.
