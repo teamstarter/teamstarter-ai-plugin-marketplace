@@ -21,6 +21,7 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 | `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, prompt de création récupéré automatiquement, écriture du skill, test, points de blocage | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
 | `ts-general-deposer-skill` | Déposer sur son projet chaque version d'un skill rattaché à un projet | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
+| `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Le blocage est levé » ; proposé seul quand un skill de projet échoue |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation de la boîte à idées : à prendre, déjà lancées ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill » |
 | `ts-general-rpt-setup` | RPT : mettre en place le référentiel dans l'organisation (son `rpt-config.yaml`), une fois | « Configure RPT pour ma boîte » |
 | `ts-general-check-process-cartography` | RPT : cartographier ses rôles, processus et tâches, ou ceux de son équipe, et déposer la carte | « Fais la carte de mes rôles », « Qu'est-ce que je pourrais automatiser ? » |
@@ -43,6 +44,14 @@ projet, coche les étapes « Créer mon agent IA » et « Tester l'agent en cond
 votre accord, et déclare les points de blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
 ensuite déclarée à Teamstarter ; les statistiques sont dans la carte « Utilisation du skill » de
 la page de gestion du projet.
+
+**Remonter les blocages** : sur un projet en réalisation ou mis en place, de n'importe quel type,
+dès qu'un problème que vous ne pouvez pas lever seul empêche d'avancer, Claude propose de le
+déclarer comme blocage du projet ; il le fait de lui-même quand l'exécution d'un skill de projet
+échoue sur un tel problème. Il vérifie que le même blocage n'est pas déjà ouvert, rédige le
+titre, la catégorie et la description, et ne déclare qu'après votre validation. Le blocage est
+visible par les porteurs et les admins, et devient une tâche des admins ; personne n'est prévenu
+au moment de la déclaration.
 
 **Lister les idées d'automatisation** montre celles de la boîte à idées et des ateliers, à prendre
 ou déjà lancées, et propose de créer le skill de l'une d'elles.
@@ -94,12 +103,13 @@ tient le référentiel la fusionne ensuite, hors du plugin.
     de réception, une observation de fiche de tâche, un livrable rangé ou renommé,
     `rpt-config.yaml` déposé dans le dossier de l'OS.
 - **Lecture** dans votre organisation Teamstarter : types de projet, objectifs, projets, idées,
-  questions et sections de vos projets, et les noms des collaborateurs, pour retrouver un
-  co-porteur ou vous identifier.
+  questions et sections de vos projets, blocages de vos projets et leurs commentaires, et les noms
+  des collaborateurs, pour retrouver un co-porteur ou vous identifier.
 - **Écriture**, seulement après votre validation dans la conversation : création et mise à jour
   de vos projets, réponses aux questions de structuration, lignes de dépense, co-porteurs (qui
   reçoivent une notification de Teamstarter), statut du projet, validation des étapes « Créer mon
-  agent IA » et « Tester l'agent en conditions réelles », points de blocage. La proposition d'un projet demande une confirmation explicite.
+  agent IA » et « Tester l'agent en conditions réelles », blocages du projet (déclaration,
+  commentaire, résolution). La proposition d'un projet demande une confirmation explicite.
   Lister ses projets n'écrit rien.
 - **Dépôt du skill**, sans validation à chaque fois : à chaque écriture ou modification du
   `SKILL.md` d'un skill qui porte l'id d'un projet Teamstarter, `ts-general-deposer-skill` dépose

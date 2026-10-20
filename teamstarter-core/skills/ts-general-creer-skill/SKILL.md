@@ -54,7 +54,7 @@ voir ses projets (`ts-general-lister-projets`).
 [7] Valider l'étape « Créer mon agent IA »
 [8] Tester, valider « Tester l'agent en conditions réelles »
 [U] Utilisation du skill, à tout moment après [6]
-[B] Point de blocage, à tout moment après [3]   ←── validation
+[B] Point de blocage, à tout moment après [3] (ts-general-declarer-blocage)   ←── validation
 ```
 
 Chaque étape peut être la dernière de la conversation : l'état est dans Teamstarter, et le skill
@@ -216,7 +216,10 @@ metadata:
 ## Après chaque exécution
 
 Déclarer l'exécution à Teamstarter avec le skill `ts-general-declarer-execution-skill` du plugin
-Teamstarter. S'il n'est pas disponible, ne rien faire.
+Teamstarter. Si l'exécution a échoué sur un problème que l'utilisateur ne peut pas lever seul
+(accès refusé, outil indisponible, donnée manquante, règle de sécurité), proposer de le déclarer
+comme blocage du projet avec le skill `ts-general-declarer-blocage`. Si ces skills ne sont pas
+disponibles, ne rien faire.
 
 ## Après chaque modification de ce fichier
 
@@ -316,7 +319,9 @@ variables : `{"projectId": <id>}`
 ## Étape B — Point de blocage
 
 Dès qu'un problème empêche de créer ou d'utiliser le skill, et que l'utilisateur ne peut pas le
-lever seul : proposer de le déclarer sur le projet.
+lever seul : proposer de le déclarer sur le projet, en suivant le skill
+`ts-general-declarer-blocage` (proposition, blocages déjà ouverts, rédaction, validation,
+déclaration, suivi). S'il est absent de la conversation, ces règles suffisent :
 
 - Le projet doit être en `CASHEDOUT` ou `DELIVERED` ; avant, le dire : un blocage ne se déclare
   qu'en réalisation.
@@ -371,6 +376,7 @@ du skill, automatique et annoncé. Produit un fichier local (le zip du skill).
 - `references/regles-api.md` — règles du connecteur, statuts, identité de l'utilisateur.
 - Skills voisins : `ts-general-creer-projet` (créer et proposer le projet),
   `ts-general-deposer-skill` (déposer chaque version du skill),
+  `ts-general-declarer-blocage` (déclarer et suivre les blocages du projet),
   `ts-general-declarer-execution-skill` (déclarer chaque utilisation du skill),
   `ts-general-lister-projets` (voir ses projets).
 - Skill d'Anthropic : `skill-creator` (écrire et évaluer le skill).

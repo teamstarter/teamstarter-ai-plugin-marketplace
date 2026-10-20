@@ -87,8 +87,8 @@ Une seule requête, avec un alias par groupe :
 query($moderation: SequelizeJSON, $published: SequelizeJSON, $realization: SequelizeJSON, $done: SequelizeJSON) {
   moderation: project(where: $moderation, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId underReviewAt updatedAt }
   published: project(where: $published, order: "reverse:updatedAt", limit: 50) { id title status decisionMode projectTypeId publishedAt fundingEndedAt estimate d_credit d_backersCount updatedAt }
-  realization: project(where: $realization, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId committedDeliveredAt updatedAt }
-  done: project(where: $done, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId deliveredAt updatedAt }
+  realization: project(where: $realization, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId committedDeliveredAt openBlockersCount updatedAt }
+  done: project(where: $done, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId deliveredAt openBlockersCount updatedAt }
 }
 ```
 variables, avec `<moi>` l'id confirmé :
@@ -122,8 +122,8 @@ Un tableau par groupe non vide, dans cet ordre, avec le libellé de l'app :
 | `funding` | En cours de financement | financé à `d_credit` / `estimate` (montants en centimes), `d_backersCount` contributeurs, fin `fundingEndedAt` |
 | `participantSearch` | Recherche de participants | inscriptions en cours |
 | `campaignFailed` | Campagne échouée | peut être proposé à nouveau |
-| `realization` | En cours de réalisation | date de mise en place prévue (`committedDeliveredAt`) |
-| `delivered` | Mis en place | mis en place le `deliveredAt` |
+| `realization` | En cours de réalisation | date de mise en place prévue (`committedDeliveredAt`) ; blocages ouverts (`openBlockersCount`) s'il y en a |
+| `delivered` | Mis en place | mis en place le `deliveredAt` ; blocages ouverts s'il y en a |
 | `ended` | Terminé | — |
 
 Colonnes : titre, `#id`, type, mis à jour le (date seule), étape suivante.
@@ -145,6 +145,9 @@ Donner le lien de chaque projet quand l'adresse de l'app est connue
 Proposer de reprendre un brouillon (« Je reprends lequel ? »). Sur choix de l'utilisateur, passer
 la main à `ts-general-creer-projet` avec l'id du projet : il relit l'état et repart de la
 première étape non faite. Un projet en campagne échouée se propose à nouveau par le même skill.
+
+Un projet en réalisation ou mis en place qui a des blocages ouverts, ou dont l'utilisateur dit
+qu'il est bloqué : proposer de les voir ou d'en déclarer un avec `ts-general-declarer-blocage`.
 
 Un projet de création de skill (`PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL`) se reprend avec
 `ts-general-creer-skill`, à tout statut : il continue la structuration, attend la validation, ou,
@@ -175,7 +178,8 @@ aucun : lecture seule, pas de fichier produit.
 
 - `references/regles-api.md` — règles du connecteur, table des statuts, identité de
   l'utilisateur (même fichier que dans `ts-general-creer-projet`).
-- Skill voisin : `ts-general-creer-projet` (créer, reprendre, proposer un projet).
+- Skills voisins : `ts-general-creer-projet` (créer, reprendre, proposer un projet),
+  `ts-general-declarer-blocage` (les blocages d'un projet en réalisation).
 - Parcours Teamstarter : étape `PMG-B-15`, l'équivalent de la page « Mes projets » (`/myspace`).
 
 ## Convention de nommage

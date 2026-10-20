@@ -12,7 +12,7 @@
     {
       "name": "teamstarter-core",
       "source": "./teamstarter-core",
-      "description": "Pour tous les collaborateurs : créer un projet jusqu'à sa proposition, reprendre un brouillon, lister ses projets par statut, créer un skill par un projet et suivre son utilisation, sans quitter l'outil IA ; et les skills RPT pour cartographier ses rôles, processus et tâches.",
+      "description": "Pour tous les collaborateurs : créer un projet jusqu'à sa proposition, reprendre un brouillon, lister ses projets par statut, créer un skill par un projet et suivre son utilisation, remonter les blocages d'un projet en réalisation, sans quitter l'outil IA ; et les skills RPT pour cartographier ses rôles, processus et tâches.",
       "version": "0.6.0",
       "category": "productivity",
       "keywords": [
