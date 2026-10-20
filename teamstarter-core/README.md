@@ -18,7 +18,8 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, ou reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Reprends mon brouillon », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun | « Où en sont mes projets ? », « Mes brouillons » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Reprends mon skill », « Mon skill est bloqué » |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, prompt de création récupéré automatiquement, écriture du skill, test, points de blocage | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
+| `ts-general-deposer-skill` | Déposer sur son projet chaque version d'un skill rattaché à un projet | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation de la boîte à idées : à prendre, déjà lancées ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill » |
 | `ts-general-rpt-setup` | RPT : mettre en place le référentiel dans l'organisation (son `rpt-config.yaml`), une fois | « Configure RPT pour ma boîte » |
@@ -36,10 +37,10 @@ tard.
 **Créer un skill** passe par un projet de création de skill, dont le titre est la tâche à
 automatiser et dont les questions sont posées avec leur libellé exact : il est créé et proposé,
 puis, une fois validé par
-l'organisation, Claude écrit le skill à partir du prompt de création généré par Teamstarter (avec
-le skill `skill-creator` d'Anthropic), le dépose sur le projet, coche les étapes « Créer mon agent
-IA » et « Tester l'agent en conditions réelles » avec votre accord, et déclare les points de
-blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
+l'organisation, Claude récupère de lui-même le prompt de création généré par Teamstarter, écrit le
+skill (avec le skill `skill-creator` d'Anthropic), dépose automatiquement chaque version sur le
+projet, coche les étapes « Créer mon agent IA » et « Tester l'agent en conditions réelles » avec
+votre accord, et déclare les points de blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
 ensuite déclarée à Teamstarter ; les statistiques sont dans la carte « Utilisation du skill » de
 la page de gestion du projet.
 
@@ -67,6 +68,10 @@ tient le référentiel la fusionne ensuite, hors du plugin.
 - Pour créer un projet, l'accès en écriture, que l'administrateur de votre organisation doit
   avoir ouvert. En lecture seule, la liste des projets fonctionne, et la création produit une
   fiche en Markdown à recopier dans l'app.
+- Pour que le prompt de création et le dépôt du skill se fassent sans clic : « Toujours
+  autoriser » les outils `get-skill-creation-instructions` et `upload-project-skill` du
+  connecteur quand l'outil IA le demande (claude.ai, Cowork), ou une règle dans `/permissions`
+  (Claude Code).
 - Pour les skills RPT : RPT mis en place dans l'organisation (`ts-general-rpt-setup`, puis le
   texte qu'il donne collé dans les instructions de Claude), les connecteurs des outils où vous
   travaillez (Google Drive pour déposer la carte), et l'exécution de code avec Python 3 et PyYAML.
@@ -93,10 +98,14 @@ tient le référentiel la fusionne ensuite, hors du plugin.
   co-porteur ou vous identifier.
 - **Écriture**, seulement après votre validation dans la conversation : création et mise à jour
   de vos projets, réponses aux questions de structuration, lignes de dépense, co-porteurs (qui
-  reçoivent une notification de Teamstarter), statut du projet, dépôt du fichier d'un skill sur
-  son projet, validation des étapes « Créer mon agent IA » et « Tester l'agent en conditions
-  réelles », points de blocage. La proposition d'un projet demande une confirmation explicite.
+  reçoivent une notification de Teamstarter), statut du projet, validation des étapes « Créer mon
+  agent IA » et « Tester l'agent en conditions réelles », points de blocage. La proposition d'un projet demande une confirmation explicite.
   Lister ses projets n'écrit rien.
+- **Dépôt du skill**, sans validation à chaque fois : à chaque écriture ou modification du
+  `SKILL.md` d'un skill qui porte l'id d'un projet Teamstarter, `ts-general-deposer-skill` dépose
+  ce fichier sur le projet, au nom de la personne du connecteur, qui doit être porteuse du
+  projet. Chaque dépôt crée pour les admins de l'organisation une tâche « partager ce fichier » ;
+  un fichier inchangé n'est pas redéposé. Le dépôt est annoncé dans la réponse.
 - **Déclaration d'utilisation**, sans validation à chaque fois : à la fin de chaque exécution d'un
   skill qui porte l'id d'un projet Teamstarter, `ts-general-declarer-execution-skill` envoie à
   Teamstarter l'id du projet, l'heure, la durée, les tokens (estimés quand l'outil ne les affiche
@@ -119,9 +128,8 @@ tient le référentiel la fusionne ensuite, hors du plugin.
 
 ## Garde-fous
 
-- Rien n'est écrit dans Teamstarter sans votre accord, sauf la déclaration d'utilisation d'un
-  skill de projet, annoncée à chaque fois.
-- Aucune version d'un skill n'est déposée sans que vous l'ayez validée.
+- Rien n'est écrit dans Teamstarter sans votre accord, sauf le dépôt de chaque version d'un skill
+  de projet et la déclaration de ses utilisations, annoncés à chaque fois.
 - Rien n'est inventé : date, lieu, montant, prestataire, co-porteur sont demandés, ou notés « à
   préciser ».
 - Une réponse ou une section n'est jamais réécrite sans vous le dire.
