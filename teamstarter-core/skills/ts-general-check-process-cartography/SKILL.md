@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.17 (2026-10-20)"
+  version: "2.18 (2026-10-20)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -588,6 +588,11 @@ tools (Cowork, Claude Code, artifacts, generation of images or documents). In a 
 conversation you can read the plan and the modes from the settings when the person shows them;
 otherwise `basis: declared`. No AI for work: no `ai_plan`, and say so in `notes`. The
 organization counts, per team, how many people have each access (README_operations.md §1.18).
+
+**Shared assistant.** Ask whether the team talks to a bot in its chat tool (Slack, Teams) whose AI
+reads the company's data or its OS. If so, declare the bot in `tools` (type `bot`) with `shared`
+(format §6): its channel, who can talk to it (`all` or the team codes), whether it reads the OS.
+A person without an AI of their own reaches the data through it (README_operations.md §1.18).
 
 **Recurring agents.** List what runs for the person without being launched by hand: the
 scheduled tasks of their Claude (list them with the tool when it exists; otherwise ask), their
