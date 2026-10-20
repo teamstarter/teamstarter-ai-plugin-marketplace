@@ -15,7 +15,7 @@ departments, tools and data sources of the organization's catalogues (--catalogu
 by the generic ones of ../references/ (departments, common data types), then adds seven checks specific to
 a map about to be sent: one code per map (one map per hat), the declared automation of each
 process against the statuses of its steps, the relevance of each task, the data sources of
-manual or assisted tasks, their measures and their stakes, the blockers (where an inferred one
+manual, conversational or skilled tasks, their measures and their stakes, the blockers (where an inferred one
 was seen, a task that still writes its own `blocker`), and possible personal or confidential
 data (preview_rpt.py), blocker texts and evidence included. build_rpt.py checks the form of the
 `blockers` list (fields, values, dates, tasks of the map), as for the referential's register.
@@ -68,16 +68,16 @@ MESSAGES = {
               "personne ce qui ne s'estime pas, null si elle ne sait pas (SKILL.md, « The "
               "model »)"},
     "validate.data": {
-        "en": "{count} M or S task(s) without `data` ({ids}): write the data sources they read "
+        "en": "{count} M, C or S task(s) without `data` ({ids}): write the data sources they read "
               "or write, ids of catalogues/data-sources.yaml or sources declared in "
               "`data_sources` (SKILL.md, \"The model\")",
-        "fr": "{count} tâche(s) M ou S sans `data` ({ids}) : écrire les sources de données "
+        "fr": "{count} tâche(s) M, C ou S sans `data` ({ids}) : écrire les sources de données "
               "qu'elles lisent ou écrivent, identifiants de catalogues/data-sources.yaml ou "
               "sources déclarées dans `data_sources` (SKILL.md, « The model »)"},
     "validate.measure": {
-        "en": "{count} M or S task(s) without `{field}` ({ids}): ask {what} (SKILL.md, \"The "
+        "en": "{count} M, C or S task(s) without `{field}` ({ids}): ask {what} (SKILL.md, \"The "
               "model\")",
-        "fr": "{count} tâche(s) M ou S sans `{field}` ({ids}) : demander {what} (SKILL.md, "
+        "fr": "{count} tâche(s) M, C ou S sans `{field}` ({ids}) : demander {what} (SKILL.md, "
               "« The model »)"},
     "validate.measure_what": {
         "en": "the minutes per run and the number of times per month",
@@ -115,15 +115,15 @@ MESSAGES = {
     "validate.total": {"en": "Total", "fr": "Total"},
     "validate.percent": {"en": "{value}%", "fr": "{value} %"},
     "validate.role_summary": {
-        "en": "{label}: {total} active tasks (A {A}, S {S}, M {M}, J {J}), coverage {cover}",
-        "fr": "{label} : {total} tâches actives (A {A}, S {S}, M {M}, J {J}), couverture "
+        "en": "{label}: {total} active tasks (A {A}, S {S}, C {C}, M {M}, J {J}), coverage {cover}",
+        "fr": "{label} : {total} tâches actives (A {A}, S {S}, C {C}, M {M}, J {J}), couverture "
               "{cover}"},
     "validate.processes": {
         "en": "Processes that run on their own: {alone} · proposed processes: {proposed}",
         "fr": "Processus qui tournent seuls : {alone} · processus proposés : {proposed}"},
     "validate.connector_item": {
-        "en": "{name} ({labels}, {count} M or S task(s))",
-        "fr": "{name} ({labels}, {count} tâche(s) M ou S)"},
+        "en": "{name} ({labels}, {count} M, C or S task(s))",
+        "fr": "{name} ({labels}, {count} tâche(s) M, C ou S)"},
     "validate.connectors": {
         "en": "Connectors to activate first: {todo} · already reachable by the AI: {done}",
         "fr": "Connecteurs à activer en premier : {todo} · déjà accessibles à l'IA : {done}"},
@@ -160,6 +160,10 @@ MESSAGES = {
 }
 rpt_i18n.register(MESSAGES)
 
+
+# The statuses where a person still does part of the work (README_operations.md §1.2): the
+# manual, conversational and skilled tasks.
+OPEN_STATUSES = ("M", "C", "S")
 
 def main(argv):
     import preview_rpt
@@ -273,20 +277,21 @@ def relevance_warnings(ref, axes):
 
 
 def data_warnings(ref):
-    """The manual or assisted tasks that do not say which data they read or write: a connector
-    would help most to automate them."""
+    """The manual, conversational or skilled tasks that do not say which data they read or
+    write: a connector would help most to automate them."""
     missing = [t["id"] for t in ref["tasks"] if t.get("state") != "retired"
-               and t.get("status") in ("M", "S") and not t.get("data")]
+               and t.get("status") in OPEN_STATUSES and not t.get("data")]
     if not missing:
         return []
     return [tr("validate.data", count=len(missing), ids=", ".join(missing))]
 
 
 def measure_warnings(ref):
-    """The active manual or assisted tasks without a measure or without stakes: without them,
-    their gain stays an estimate drawn from the ratings, and the action plan cannot tell which
+    """The active manual, conversational or skilled tasks without a measure or without stakes:
+    without them, their gain stays an estimate drawn from the ratings, and the action plan cannot tell which
     ones to take first. A proposed task does not exist yet: it has nothing to measure."""
-    live = [t for t in ref["tasks"] if t.get("state") == "active" and t.get("status") in ("M", "S")]
+    live = [t for t in ref["tasks"]
+            if t.get("state") == "active" and t.get("status") in OPEN_STATUSES]
     warnings = []
     for field, what in (("measure", "validate.measure_what"), ("stakes", "validate.stakes_what")):
         missing = [t["id"] for t in live if not t.get(field)]
@@ -416,7 +421,7 @@ def automation_value(work, manual):
     if len(other) == 1 and (other[0].get("blocker") or other[0].get("_open_blocker")):
         return "one-change-away"
     m = status.count("M")
-    if m > status.count("A") and m >= status.count("S") + status.count("J"):
+    if m > status.count("A") and m >= sum(status.count(x) for x in ("S", "C", "J")):
         return "manual"
     return "assisted"
 
@@ -455,7 +460,7 @@ def relevance_line(ref, build_rpt):
     """How many active tasks have a relevance, and the most relevant M and S tasks."""
     tasks = build_rpt.active(ref["tasks"])
     rated = [t for t in tasks if build_rpt.relevance_score(t)]
-    top = sorted((t for t in rated if t.get("status") in ("M", "S")),
+    top = sorted((t for t in rated if t.get("status") in OPEN_STATUSES),
                  key=lambda t: -build_rpt.relevance_score(t))[:5]
     best = (", ".join(f"{t['id']} {build_rpt.relevance_label(t)}" for t in top)
             or tr("validate.none_f"))
@@ -466,7 +471,7 @@ def summary(label, build_rpt, tasks):
     c = build_rpt.counts(build_rpt.active(tasks))
     cover = "—" if c["coverage"] is None else tr("validate.percent", value=c["coverage"])
     return tr("validate.role_summary", label=label, total=c["total"], A=c["A"], S=c["S"],
-              M=c["M"], J=c["J"], cover=cover)
+              C=c["C"], M=c["M"], J=c["J"], cover=cover)
 
 
 if __name__ == "__main__":

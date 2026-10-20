@@ -238,7 +238,8 @@ LABELS = {
         "retired": {"en": "retired", "fr": "retiré"}},
     "status": {
         "A": {"en": "automated", "fr": "automatisée"},
-        "S": {"en": "assisted", "fr": "assistée"},
+        "S": {"en": "skilled", "fr": "skillisée"},
+        "C": {"en": "conversational", "fr": "conversationnelle"},
         "M": {"en": "manual", "fr": "manuelle"},
         "J": {"en": "judgment", "fr": "jugement"}},
     "basis": {
@@ -618,6 +619,12 @@ MESSAGES = {
         "fr": "{where}: `rules` cite `{key}`, attendu une catégorie parmi {values}"},
 
     # Warnings of the referential.
+    "warn.skilled_without_skill": {
+        "en": "{where}: status S (skilled), but `tools` cites no skill, agent or routine: C (conversational) if the AI only helps in a chat, or the skill to cite",
+        "fr": "{where} : statut S (skillisée), mais `tools` ne cite aucun skill, agent ou routine : C (conversationnelle) si l'IA aide seulement dans un chat, sinon le skill à citer"},
+    "warn.no_config": {
+        "en": "{folder}: no rpt-config.yaml (here, in its two parent folders, --config or RPT_CONFIG): the views are built without a global context or an intake address",
+        "fr": "{folder} : aucune rpt-config.yaml (ici, dans ses deux dossiers parents, --config ou RPT_CONFIG) : les vues sont construites sans contexte global ni adresse de dépôt"},
     "warn.source_without_tool": {
         "en": "{where}: data source without a tool (where is it?)",
         "fr": "{where}: source de données sans outil (où se trouve-t-elle ?)"},
@@ -1261,13 +1268,13 @@ MESSAGES = {
               "> qu'elle lit ou écrit (`data-sources.yaml`, README_operations.md §1.7)."},
     "md.figures": {"en": "## In figures", "fr": "## En chiffres"},
     "md.teams_header": {
-        "en": "| Team | Roles | Active processes | Proposed processes | Tasks | A | S | M | J | "
+        "en": "| Team | Roles | Active processes | Proposed processes | Tasks | A | S | C | M | J | "
               "Coverage |",
-        "fr": "| Équipe | Rôles | Processus actifs | Processus proposés | Tâches | A | S | M | J "
+        "fr": "| Équipe | Rôles | Processus actifs | Processus proposés | Tâches | A | S | C | M | J "
               "| Couverture |"},
     "md.departments_header": {
-        "en": "| Department | Tasks | A | S | M | J | Coverage |",
-        "fr": "| Département | Tâches | A | S | M | J | Couverture |"},
+        "en": "| Department | Tasks | A | S | C | M | J | Coverage |",
+        "fr": "| Département | Tâches | A | S | C | M | J | Couverture |"},
     "md.shared": {
         "en": "- Active tasks that are steps of several processes: {count} ({ids}).",
         "fr": "- Tâches actives étapes de plusieurs processus : {count} ({ids})."},
@@ -1304,14 +1311,14 @@ MESSAGES = {
         "fr": "### Connecteurs à activer en priorité"},
     "md.connectors_intro": {
         "en": "Tools that hold the data of active tasks and that the AI does not reach\n"
-              "yet (not connected, manual export, access to be specified), by number of manual\n"
-              "or assisted tasks, then by estimated gain.",
+              "yet (not connected, manual export, access to be specified), by number of manual,\n"
+              "conversational or skilled tasks, then by estimated gain.",
         "fr": "Outils qui contiennent les données de tâches actives et que l'IA n'atteint pas\n"
               "encore (pas connecté, export à la main, accès à préciser), par nombre de tâches\n"
-              "manuelles ou assistées, puis par gain estimé."},
+              "manuelles, conversationnelles ou skillisées, puis par gain estimé."},
     "md.connectors_header": {
-        "en": "| Tool | AI access | Data | M or S tasks | Active tasks | Estimated gain |",
-        "fr": "| Outil | Accès de l'IA | Données | Tâches M ou S | Tâches actives | Gain estimé |"},
+        "en": "| Tool | AI access | Data | M, C or S tasks | Active tasks | Estimated gain |",
+        "fr": "| Outil | Accès de l'IA | Données | Tâches M, C ou S | Tâches actives | Gain estimé |"},
     "md.gain": {
         "en": "≈ {hours} h/month ({count} estimated task(s))",
         "fr": "≈ {hours} h/mois ({count} tâche(s) estimée(s))"},
@@ -1325,9 +1332,9 @@ MESSAGES = {
               "non décidées (aucun flux, aucun choix écrit)."},
     "md.sources_header": {
         "en": "| Source | In the OS | Sensitivity (AI rule) | Tools (AI access) | Active tasks "
-              "| A | S | M | J |",
+              "| A | S | C | M | J |",
         "fr": "| Source | Dans l'OS | Sensibilité (règle IA) | Outils (accès de l'IA) "
-              "| Tâches actives | A | S | M | J |"},
+              "| Tâches actives | A | S | C | M | J |"},
     "md.pair": {"en": "{name}: {value}", "fr": "{name} : {value}"},
     "md.separator": {"en": "; ", "fr": " ; "},
     "md.policy_none": {
@@ -1358,8 +1365,8 @@ MESSAGES = {
         "en": "- **Level reached**: {level} · **Conditions**: {criteria}",
         "fr": "- **Niveau atteint** : {level} · **Conditions** : {criteria}"},
     "md.role_tasks": {
-        "en": "- **Active tasks**: {total} (A {A}, S {S}, M {M}, J {J}) · coverage {coverage}",
-        "fr": "- **Tâches actives** : {total} (A {A}, S {S}, M {M}, J {J}) · couverture "
+        "en": "- **Active tasks**: {total} (A {A}, S {S}, C {C}, M {M}, J {J}) · coverage {coverage}",
+        "fr": "- **Tâches actives** : {total} (A {A}, S {S}, C {C}, M {M}, J {J}) · couverture "
               "{coverage}"},
     "md.role_verdict": {"en": "- **Verdict**: {verdict}", "fr": "- **Verdict** : {verdict}"},
     "md.gaps": {"en": "**Gaps**", "fr": "**Manques**"},
@@ -1449,9 +1456,9 @@ MESSAGES = {
               "servis, {several} servent plusieurs types"},
     "stats.team": {
         "en": "{team}: {roles} roles, {processes} active processes (+{proposed} proposed), "
-              "{total} active tasks A {A} S {S} M {M} J {J}, coverage {coverage}",
+              "{total} active tasks A {A} S {S} C {C} M {M} J {J}, coverage {coverage}",
         "fr": "{team}: {roles} rôles, {processes} processus actifs (+{proposed} proposés), "
-              "{total} tâches actives A {A} S {S} M {M} J {J}, couverture {coverage}"},
+              "{total} tâches actives A {A} S {S} C {C} M {M} J {J}, couverture {coverage}"},
     "stats.department": {
         "en": "  {department}: {total} tasks, coverage {coverage}",
         "fr": "  {department}: {total} tâches, couverture {coverage}"},

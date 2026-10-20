@@ -1,8 +1,8 @@
 ---
 name: ts-general-check-process-cartography
-description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, assisted by AI, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
+description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.16 (2026-10-18)"
+  version: "2.17 (2026-10-20)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -14,7 +14,7 @@ Speak and write to the person in their language; this file is in English. The co
 and the enum values stay as in the format (`references/format-rpt-v1.md`).
 
 The organization keeps a shared referential of the **roles**, **processes** and **tasks** (RPT)
-of each team. For each task, it says whether it is already automated, assisted by an AI, done by
+of each team. For each task, it says whether it is already automated, run by the AI with a skill, helped by a chat, done by
 hand, or a human decision, and which data it uses. It is used to choose what to hand over next to
 AI agents, and the connectors to activate so that they have this data.
 
@@ -310,11 +310,17 @@ The status of each task, **today**:
 | Status | Meaning |
 |---|---|
 | **A** automated | An agent, a script or a tool does it; a human steps in only if it fails. |
-| **S** assisted | An AI or a tool does it, a human validates or triggers before what follows. |
+| **S** skilled | The AI runs the method of the task through a skill or an agent (cited in `tools`) and produces the result; a human validates or triggers before what follows. |
+| **C** conversational | The AI only helps through a conversation: a chat (Claude, ChatGPT…) or a bot that answers. The person asks, copies, adapts and does the work; no skill carries the method. |
 | **M** manual | A human does it; no tool carries it. |
 | **J** judgment | A human decision on value, priority, risk or the relationship, or a live exchange that depends on the person (running a client meeting, a webinar, negotiating). It will stay human. |
 
-Three cases that cause confusion:
+Four cases that cause confusion:
+
+- A task done with Claude by writing or pasting a prompt each time is **C**; when its method is
+  written in a skill (or an agent) that Claude runs, it is **S**, and that skill is in `tools`.
+  Ask: "When you use the AI for it, does it follow a skill, or do you explain what to do in the
+  chat?"
 
 - A decision that applies simple and stable criteria (company size, sector, amount) is **M**,
   not J: it would become A if its criteria were written, and that is its blocker (section
@@ -415,7 +421,7 @@ of the company this data is found and, for each tool, how the AI reaches it (`co
 | `null` | to be specified |
 
 The referential uses it to rank the connectors to activate first: those that give the AI the
-data of the largest number of manual or assisted tasks. The organization's data sources are in
+data of the largest number of manual, conversational or skilled tasks. The organization's data sources are in
 `catalogues/data-sources.yaml`. The first tool of a source is its reference tool: a task that
 cites a source without citing any of its tools in `tools` counts for it.
 
@@ -709,12 +715,12 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    (section "The model").
 5. **Write the tasks**: name "verb + object", input → deliverable, tools (including the skill
    they launch for this task), data sources (`data`, point 6), who does it today (`by`), status
-   A/S/M/J, and its relevance (`relevance`: rate the axes you can estimate, keep the others for
+   A/S/C/M/J, and its relevance (`relevance`: rate the axes you can estimate, keep the others for
    step 4). A task belongs to a single role, the one that holds it; it can be the step of
    several processes, or of none. Put `target` when an automation is conceivable, and write in
    the `blockers` list what is missing to get there (written rules, a trigger, an access, a
    tool), with the signals of step 2 (section "Blockers"); `build` when you know how to estimate
-   the work. For each M or S task, write `measure` with
+   the work. For each M, C or S task, write `measure` with
    what the sources give (`basis: observed`) and `stakes` when the consequence of a delay is
    clear; the rest is asked at step 4. Write `method` when a source shows where the method is
    written.
@@ -822,7 +828,7 @@ the map is never sent.
    The script prints its messages in the organization's language (`--lang en` or `--lang fr` to
    choose). For each file, it lists the errors (the file cannot be merged as long as some
    remain), the warnings (a code that is not the map's, the personal data alerts, the declared
-   automations that the step statuses contradict, the tasks without relevance, the M or S tasks
+   automations that the step statuses contradict, the tasks without relevance, the M, C or S tasks
    without `data`, without `measure` or without `stakes`, a measured duration that the effort
    rating contradicts, a blocker found in a source without `evidence`, a task that still writes
    its own `blocker`), then the figures of each role and the "Relevance", "Blockers" and
@@ -830,7 +836,7 @@ the map is never sent.
    Fix the form yourself (quotes, ids, undeclared tool, value outside the list) and run it again
    until 0 errors. Handle each warning: file the element in the map of its hat, remove the data
    flagged, correct the automation, rate the missing relevance or ask for it (`null` if the
-   person does not know), write the data sources of an M or S task, ask for its measures and its
+   person does not know), write the data sources of an M, C or S task, ask for its measures and its
    stakes, correct the effort rating a measure contradicts, ask who does an M or J task
    without `by`, write where and when a blocker was seen (`evidence`), or move the `blocker` of
    a task to the `blockers` list. If PyYAML is missing, run `pip install pyyaml`. Add `--format`
