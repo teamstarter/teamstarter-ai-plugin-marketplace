@@ -2252,17 +2252,22 @@ def task_hours(t):
     return round(numbers[0] * numbers[1], 1) if numbers else None
 
 
-def task_flow(t):
+def task_flow(t, crew=1):
     """How fast work goes through a task (README_operations.md §1.19): the hours of a run
-    (`run`), the runs a month (`runs`), and when a stock is measured at its input (`queue`), the
-    days that stock waits at the pace of the task (`wait_days`: count ÷ runs a month × 30.4)."""
+    (`run`), the runs a month for one person (`runs`), and when a stock is measured at its input
+    (`queue`), the days that stock waits at the pace of the task (`wait_days`: count ÷ (runs a
+    month × the people who do it) × 30.4): two people who each do 40 a month empty the queue at
+    80 a month."""
     out, numbers, q = {}, run_numbers(t), t.get("queue")
     if numbers:
         out["runs"], out["run"] = round(numbers[0], 2), round(numbers[1], 2)
     if isinstance(q, dict) and isinstance(q.get("count"), (int, float)):
         out["queue"] = {k: q[k] for k in ("count", "unit", "at", "basis", "source") if k in q}
-        if out.get("runs"):
-            out["wait_days"] = round(q["count"] / out["runs"] * 30.4)
+        # The pace needs the runs only: a task measured in runs without a duration has one.
+        m = t.get("measure") if isinstance(t.get("measure"), dict) else {}
+        runs = out.get("runs") or (m["runs"] if positive(m.get("runs")) else runs_per_month(t)[0])
+        if runs:
+            out["wait_days"] = round(q["count"] / (runs * crew) * 30.4)
     return out
 
 
@@ -2292,7 +2297,7 @@ def link_chains(ref, idx):
     chains = []
     for procs in members.values():
         procs.sort(key=lambda i: (rank[i], i))
-        chains.append(chain_view(procs, live, rank, pairs, tasks))
+        chains.append(chain_view(procs, live, rank, pairs, tasks, role_people(ref)))
     chains.sort(key=lambda c: (-len(c["processes"]), -(c["hours"] or 0), c["id"]))
     for t in ref["tasks"]:
         t["_priority"] = t["_score"]
@@ -2310,7 +2315,7 @@ def link_chains(ref, idx):
     return chains
 
 
-def chain_view(procs, live, rank, pairs, tasks):
+def chain_view(procs, live, rank, pairs, tasks, names=frozenset()):
     """One chain: its processes in order, its tasks with their place (`at`, the rank of their
     process plus their place among its steps), hours and status, the volume entering its first
     process, where full automation starts, its balance, and the task whose measured stock
@@ -2328,7 +2333,7 @@ def chain_view(procs, live, rank, pairs, tasks):
             seen.add(step)
             steps.append(dict({"id": step, "process": i, "at": round(rank[i] + j / n, 3),
                                "status": t.get("status"), "hours": task_hours(t)},
-                              **task_flow(t)))
+                              **task_flow(t, people(t, names))))
     known = [x["hours"] for x in steps if x["hours"]]
     volume = (live[head].get("trigger") or {}).get("volume")
     start = next((x["id"] for x in steps if x["status"] != "A"), None)
