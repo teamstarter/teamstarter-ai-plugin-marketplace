@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.18 (2026-10-20)"
+  version: "2.19 (2026-10-20)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -388,15 +388,18 @@ Every task carries its **job** (`references/format-rpt-v1.md`):
   so_that: "the kick-off workshop starts on a ready platform"}`. Write it for every task, with
   `basis: {job: inferred}` when you deduced it from the map rather than heard it.
 
-The ratings rank tasks against each other; for **M and S** tasks, the map also carries figures,
-which make the action plan of the referential:
+The ratings rank tasks against each other; the map also carries figures, which make the action
+plan of the referential and the volumes of the chains of production:
 
-- `measure`: the duration of one execution in minutes (`minutes`) and the number of executions
-  per month for one person (`runs`), with their origin (`basis`): `observed` when you counted
-  them in a source (36 meetings per month in the calendar, 120 tickets per month, a skill
-  launched 11 times in three months), `declared` when the person gives them. The duration sets
-  the effort rating (up to 30 minutes: 1; up to 2 h: 2; beyond: 3): the script flags a gap;
-- `stakes`: what happens when the task is done late or badly, a rating (`level`) and a sentence
+- `measure`, for **every** task: the number of executions per month for one person (`runs`),
+  and for an M, C, S or J task the duration of one execution in minutes (`minutes`), with their
+  origin (`basis`): `observed` when you counted them in a source (36 meetings per month in the
+  calendar, 120 tickets per month, a skill launched 11 times in three months), `declared` when
+  the person gives them. An A task gives `runs` alone (`{runs: 60, basis: observed}`): nobody
+  spends time on it, but its volume is what passes through the chain. `frequency` stays a free
+  text ("every Monday"); `runs` is the number. The duration sets the effort rating (up to 30
+  minutes: 1; up to 2 h: 2; beyond: 3): the script flags a gap;
+- `stakes`, for an M, C or S task: what happens when the task is done late or badly, a rating (`level`) and a sentence
   (`text`): 1, an internal nuisance, caught up without visible cost; 2, a visible cost (someone
   waits, work is redone); 3, a loss (a client, revenue, a compliance risk). The sentence
   describes the consequence, without a client name or an amount;
@@ -707,7 +710,8 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    that a tool triggers, on an event or at a date, has no launch task; a date the person must
    remember (an end-of-quarter review) is a `manual` trigger, and the launch follows the rule
    above. Write the order of the processes: `next` (the processes that start when this one
-   ends), and on the first process of a chain how many documents or events enter it a month
+   ends; `next: []` when it ends the chain: its deliverable leaves the team or is used as is),
+   and on the first process of a chain how many documents or events enter it a month
    (`trigger.volume`: `{count: 200, kind: document, unit: e-mails}`, `kind` `document` or
    `event`; ask it when the sources do not give it). When a source shows what waits at the input
    of a task (a board column, a status, an unread folder), write the count and its date on the
@@ -725,9 +729,9 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    several processes, or of none. Put `target` when an automation is conceivable, and write in
    the `blockers` list what is missing to get there (written rules, a trigger, an access, a
    tool), with the signals of step 2 (section "Blockers"); `build` when you know how to estimate
-   the work. For each M, C or S task, write `measure` with
-   what the sources give (`basis: observed`) and `stakes` when the consequence of a delay is
-   clear; the rest is asked at step 4. Write `method` when a source shows where the method is
+   the work. For each task, A and J included, write `measure` with
+   what the sources give (`basis: observed`): `runs` for all, `minutes` except for an A task;
+   for each M, C or S task, `stakes` when the consequence of a delay is clear; the rest is asked at step 4. Write `method` when a source shows where the method is
    written.
 6. **Note the data sources**, in every mode. For each task, the business data it reads or writes
    (`data`): writing the minutes of a meeting reads "Meetings and minutes" and writes "Pipeline
@@ -775,11 +779,14 @@ which you do not know whether the AI reaches it (a single question for all these
 relevance axes you could not estimate make a single question: your message shows a table of the
 tasks concerned, with the missing axis and your estimate when you have one, and the tool asks
 whether these estimates are right ("yes, keep them", or the person writes their corrections).
-The measures and the stakes of the M and S tasks likewise make a single question: a table with,
-for each task, the minutes per execution, the number of times per month and what happens when it
-is done late or badly (1, 2 or 3, with a sentence), your figures when you have them, and the tool
-asks to correct or complete; a figure given by the person is written `basis: declared`. The
-handoffs also make a single question: a table of the processes that end with someone else, with
+The measures and the stakes likewise make a single question: a table of **every** task, A and J
+included, with the number of times per month, the minutes per execution (except for an A task:
+nobody spends time on it) and, for an M, C or S task, what happens when it is done late or badly
+(1, 2 or 3, with a sentence), your figures when you have them; the tool asks to correct or
+complete. A figure given by the person is written `basis: declared`. The order of the processes
+also makes a single question: a table of the processes with, for each one, the processes that
+start when it ends, or "end of chain"; the person corrects or completes, and you write `next`
+(`next: []` for an end of chain). The handoffs also make a single question: a table of the processes that end with someone else, with
 who takes over the work, through which tool, and what gets lost or delayed at this handoff; the
 person corrects or completes. The links to the OKRs make a single question: a table of the tasks
 linked to a KR, with the KR and the deliverable that moves it, and of the tasks whose link is
@@ -832,17 +839,19 @@ the map is never sent.
 
    The script prints its messages in the organization's language (`--lang en` or `--lang fr` to
    choose). For each file, it lists the errors (the file cannot be merged as long as some
-   remain), the warnings (a code that is not the map's, the personal data alerts, the declared
+   remain), the warnings (a `meta.detector` absent or of another version than this skill, a code
+   that is not the map's, the personal data alerts, the declared
    automations that the step statuses contradict, the tasks without relevance, the M, C or S tasks
-   without `data`, without `measure` or without `stakes`, a measured duration that the effort
-   rating contradicts, a blocker found in a source without `evidence`, a task that still writes
+   without `data`, the active tasks without `measure.runs`, the M, C, S or J tasks without
+   `measure.minutes`, the M, C or S tasks without `stakes`, the active processes without `next`,
+   a measured duration that the effort rating contradicts, a blocker found in a source without `evidence`, a task that still writes
    its own `blocker`), then the figures of each role and the "Relevance", "Blockers" and
    "Connectors" lines.
    Fix the form yourself (quotes, ids, undeclared tool, value outside the list) and run it again
    until 0 errors. Handle each warning: file the element in the map of its hat, remove the data
    flagged, correct the automation, rate the missing relevance or ask for it (`null` if the
    person does not know), write the data sources of an M, C or S task, ask for its measures and its
-   stakes, correct the effort rating a measure contradicts, ask who does an M or J task
+   stakes, ask what follows a process (`next`, `next: []` at the end of a chain), correct the effort rating a measure contradicts, ask who does an M or J task
    without `by`, write where and when a blocker was seen (`evidence`), or move the `blocker` of
    a task to the `blockers` list. If PyYAML is missing, run `pip install pyyaml`. Add `--format`
    to rewrite the files in the referential's style, and `--since <starting map>` last for an
