@@ -765,6 +765,9 @@ MESSAGES = {
               "(`written_by`) and no role owns it (`owner`)",
         "fr": "{where}: personne n'est nommé pour ce contenant actif : aucune tâche ne l'écrit "
               "(`written_by`) et aucun rôle n'en est responsable (`owner`)"},
+    "check.shared_shape": {
+        "en": "{where}: `shared` is a mapping with `channel` (slack, teams…), `audience` (all, or a list of team codes), `state` (works, not_found, unchecked), and optionally `reaches: os`, `checked`, `basis`, `evidence`, `notes`",
+        "fr": "{where} : `shared` est un dictionnaire avec `channel` (slack, teams…), `audience` (all, ou une liste de codes d'équipe), `state` (works, not_found, unchecked), et en option `reaches: os`, `checked`, `basis`, `evidence`, `notes`"},
     "check.access_shape": {
         "en": "{where}: `os_access` is a list of mappings, each with `mode` (connector, local, "
               "repository, none) and `state` (works, not_found, unchecked)",

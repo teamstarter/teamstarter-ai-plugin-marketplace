@@ -96,7 +96,7 @@ KEYS = {
     # `rights`: what the AI may do in the tool through its connector, right by right, with the
     # state of each (README_operations.md §1.7); `rights_checked`: when they were last read.
     "tool": ["id", "name", "type", "where", "status", "description", "rights", "rights_checked",
-             "aliases"],
+             "shared", "aliases"],
     "data_source": ["id", "name", "description", "sensitivity", "tools", "basis", "notes",
                     "aliases", "sources", "os"],
     # An objective of the company and its key results (okrs.yaml, README_operations.md §1.13).
@@ -935,7 +935,41 @@ def check_tool(t):
     prefix = str(t.get("id", "")).split(":")[0]
     if t.get("type") and prefix != t.get("type"):
         errors.append(tr("check.tool_prefix", where=where, type=t.get("type")))
-    return errors + check_rights(t, where)
+    return errors + check_rights(t, where) + check_shared(t, where)
+
+
+# A shared assistant (README_operations.md §1.18): a bot that people reach in the team's chat
+# tool, whose AI is connected to the company's data. `audience`: `all` or team codes;
+# `reaches: os` when its AI reads the OS; `state`, `checked`, `basis`, `evidence` as for the
+# access of a person (§1.16).
+SHARED_KEYS = ("channel", "audience", "reaches", "state", "checked", "basis", "evidence", "notes")
+
+
+def check_shared(t, where):
+    s = t.get("shared")
+    if s is None:
+        return []
+    at = f"{where} shared"
+    aud = s.get("audience") if isinstance(s, dict) else None
+    if not isinstance(s, dict) or not s.get("channel") or not s.get("state") or \
+            not (aud == "all" or (isinstance(aud, list) and aud and
+                                  all(TEAM_RE.match(str(x)) for x in aud))) or \
+            s.get("reaches") not in (None, "os") or set(s) - set(SHARED_KEYS):
+        return [tr("check.shared_shape", where=at)]
+    errors = check_enum(at, "state", s.get("state"), "access_state")
+    errors += check_enum(at, "basis", s.get("basis"), "fact_basis")
+    if s.get("checked") is not None and not DATE_RE.match(str(s["checked"])):
+        errors.append(tr("check.blocker_date", where=at, field="checked",
+                         value=repr(s["checked"])))
+    return errors
+
+
+def shared_assistants(ref):
+    """The shared assistants whose AI reads the OS (README_operations.md §1.18): a tool in use
+    with `shared.reaches: os` and `shared.state: works`."""
+    return [t for t in ref["tools"] if isinstance(t.get("shared"), dict)
+            and t.get("status") in ("live", "external") and t["shared"].get("reaches") == "os"
+            and t["shared"].get("state") == "works"]
 
 
 def check_rights(t, where):
@@ -2454,6 +2488,7 @@ def link_people(ref):
     `unknown` (never surveyed) (§1.16). Each
     agent gets the tasks it does that are active."""
     tasks = {t["id"]: t for t in ref["tasks"]}
+    shared = shared_assistants(ref)
     for x in ref["people"]:
         x["_roles"] = [r["id"] for r in ref["roles"] if any(
             names_person(ref["people"], x, human_name(h)) for h in r.get("holders") or []
@@ -2464,6 +2499,9 @@ def link_people(ref):
         states = [a.get("state") for a in access if a.get("mode") != "none" and a.get("state")]
         x["_access"] = min(states, key=lambda k: ACCESS_RANK.get(k, 9)) if states else \
             "none" if access else "unknown"
+        # The shared assistants the person can talk to, whose AI reads the OS (§1.18).
+        x["_shared"] = [t["id"] for t in shared if t["shared"]["audience"] == "all"
+                        or set(t["shared"]["audience"]) & set(x["_teams"])]
     for a in ref["agents"]:
         a["_active_tasks"] = [t for t in a.get("tasks") or []
                               if (tasks.get(t) or {}).get("state") == "active"]
@@ -2953,7 +2991,8 @@ def _missing(share, total, have):
     return max(0, math.ceil(share * total - 1e-9) - have)
 
 
-def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=0):
+def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=0,
+                     reading_shared=0):
     """What the axes read, for a set of active tasks and what goes with them."""
     def framed(r):
         crit = r.get("criteria") if isinstance(r.get("criteria"), dict) else {}
@@ -2988,7 +3027,7 @@ def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=
             "with_data": sum(1 for t in tasks if t.get("_data_links")),
             "reached": sum(1 for t in tasks if t.get("_data_links")
                            and all(x["connector"] in CONNECTED for x in t["_data_links"])),
-            "people": people, "reading": reading}
+            "people": people, "reading": reading, "reading_shared": reading_shared}
 
 
 def axis_execution(m):
@@ -3052,8 +3091,9 @@ def axis_infrastructure(m):
 
 def axis_sharing(m, live_share):
     """0 copy and paste; 1 the AI reaches all the data of under half the tasks that use data;
-    2 from half; 3 that and 30 % of the people with access to the OS; 4 that and half the
-    leaves of the OS filled by a flow in place."""
+    2 from half; 3 that and 30 % of the people reach the OS through an AI: their own, or a
+    shared assistant they can talk to (a bot of the team's chat tool connected to the data,
+    §1.18); 4 that and half the leaves of the OS filled by a flow in place."""
     d = m["reached"] / m["with_data"] if m["with_data"] else 0
     o = m["reading"] / m["people"] if m["people"] else 0
     if d >= 0.50 and o >= 0.30:
@@ -3136,15 +3176,21 @@ def axis_investment(v):
                                              _missing(0.50, people, have[level]))
 
 
-def profile_of(levels):
+def profile_of(levels, sharing_own=None):
     """Augmented (the six axes at 3 or more), else the profile of the leading axis when it
     reaches level 2 (industrializer: infrastructure, delegator: delegation, executor:
     execution, controller: control, investor: investment, cautious and equipped: sharing; on a
-    tie, in that order), else manual."""
+    tie, in that order), else manual. `sharing_own`: the sharing level without the shared
+    assistants; when sharing leads only thanks to them, the profile is read with that level
+    (Vincent, 2026-10-20: the profile stays that of the next axis)."""
     if min(levels[k] for k in PROFILE_AXES) >= 3:
         return "augmented"
     lead = max(PROFILE_LEAD, key=lambda k: levels[k])
-    return PROFILE_LEAD[lead] if levels[lead] >= 2 else "manual"
+    profile = PROFILE_LEAD[lead] if levels[lead] >= 2 else "manual"
+    if profile == PROFILE_LEAD["sharing"] and sharing_own is not None \
+            and sharing_own < levels["sharing"]:
+        return profile_of(dict(levels, sharing=sharing_own))
+    return profile
 
 
 def profile_grade(levels):
@@ -3172,8 +3218,12 @@ def profile_entry(m, policy, live_share, invest):
     for k, (level, score, nxt) in axes.items():
         out[k] = {"level": level, "score": round(score, 2),
                   "next": {"key": nxt[0], "count": nxt[1]} if nxt else None}
+    # The sharing level without the shared assistants (§1.18), for the profile.
+    own = axis_sharing(dict(m, reading=m["reading"] - m.get("reading_shared", 0)), live_share)[0]
+    out["sharing"]["own"] = own
     levels = {k: out[k]["level"] for k in PROFILE_AXES}
-    out.update(profile=profile_of(levels), grade=profile_grade(levels), force=profile_force(out))
+    out.update(profile=profile_of(levels, own), grade=profile_grade(levels),
+               force=profile_force(out))
     return out
 
 
@@ -3211,8 +3261,12 @@ def company_entry(pooled, teams):
             if own and (axis, own["key"]) in COMPANY_WIDE_NEXT and pooled[axis]["level"] == level:
                 nxt = own
         out[axis] = {"level": level, "score": round(mean, 2), "next": nxt}
+    own = sum(t["sharing"].get("own", t["sharing"]["level"]) * weight[k]
+              for k, t in teams.items()) / total
+    out["sharing"]["own"] = min(4, math.floor(own + 1e-9))
     levels = {k: out[k]["level"] for k in PROFILE_AXES}
-    out.update(profile=profile_of(levels), grade=profile_grade(levels), force=profile_force(out))
+    out.update(profile=profile_of(levels, out["sharing"]["own"]), grade=profile_grade(levels),
+               force=profile_force(out))
     return out
 
 
@@ -3241,8 +3295,9 @@ def ai_profile(ref):
         ps = [p for p in procs if keep(team.get(p.get("role")))]
         rs = [r for r in ref["roles"] if keep(r.get("team")) and r.get("state", "active") == "active"]
         ags = [a for a in ref["agents"] if keep(owner[a["id"]])]
-        m = profile_measures(ts, ps, rs, ags, types, len(folk),
-                             sum(1 for x in folk if x.get("_access") == "works"))
+        own = sum(1 for x in folk if x.get("_access") == "works")
+        via = sum(1 for x in folk if x.get("_access") != "works" and x.get("_shared"))
+        m = profile_measures(ts, ps, rs, ags, types, len(folk), own + via, via)
         return profile_entry(m, policy, live_share,
                              investment_measures(ref.get("ai_investment"), folk))
     teams = {}

@@ -165,6 +165,7 @@ tools:
 | `type` | yes | `skill` (skill or saved prompt of an AI assistant), `agent` (configured AI agent), `script`, `bot` (an automaton that reacts to an event: a Zap, a Make scenario, a Slack bot), `saas` (software or service), `reference` (procedure or written rule), `routine` (scheduled task), `ci`, `hook`, `command`. |
 | `status` | yes | `external` for software or a service of a vendor; `live` for what the team built and uses; `deprecated`, `removed`. |
 | `description` | | One sentence. |
+| `shared` | | For a `bot` that people talk to in the team's chat tool and whose AI reads the company's data (a shared assistant): `{channel: slack, audience: all, reaches: os, state: works, checked: '2026-10-20', basis: declared, evidence: …}`. `audience` is `all` or a list of team codes; `reaches: os` when its AI reads the OS; `state` `works`, `not_found` or `unchecked`. The people of its audience count as reaching the OS (README_operations.md §1.18). |
 
 Declare in `data_sources` each data source cited that is not in `catalogues/data-sources.yaml` (without it, `references/data-sources.yaml`),
 and declare again, complete, a source of the catalogue when what you observed differs from it
