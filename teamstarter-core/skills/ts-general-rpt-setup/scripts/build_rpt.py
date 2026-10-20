@@ -19,7 +19,14 @@ sources it does not declare from OS/Operations, or from the folder given by --ca
 ts-general-check-process-cartography ships this script with the generic departments and common
 data types only; it reads the organization's catalogues at each use, from the rpt-config.yaml
 whose address the organization's instructions give, and its validate_rpt.py passes them with
---catalogues).
+--catalogues). The views of such a folder show only the borrowed entries its maps cite; a
+referential of another organization never borrows Teamstarter's AI policy.
+
+Configuration. The views of --dir are built with its organization's rpt-config.yaml (the
+organization's name, its intake, its global context): --config FILE, else the environment
+variable RPT_CONFIG, else rpt-config.yaml in --dir or one of its two parents (an OS keeps it at
+its root, next to OS/Operations/). A folder without one is built without a configuration, never
+with Teamstarter's.
 
 Languages. The messages a person reads come from rpt_i18n.py (shipped next to this script), in
 the language of the run: --lang, else the environment variable RPT_LANG, else
@@ -254,12 +261,20 @@ RELEVANCE_RETIRED = {"simplicity": "check.simplicity_retired"}
 # relevance.effort. No target, or a target that is not more automated than the status: A.
 GAIN_RUNS = {1: 1 / 12, 2: 4, 3: 20}
 GAIN_HOURS = {1: 0.25, 2: 1, 3: 3}
-GAIN_SHARE = {("M", "A"): 1, ("M", "S"): 0.5, ("S", "A"): 0.5}
-# The share of a task's manual time that a person still spends on it, by status: GAIN_SHARE is
-# the difference between two statuses. It gives the hours a task no longer takes when its
-# status changes between two relevés.
-TIME_LEFT = {"M": 1, "S": 0.5, "A": 0}
-STATUS_RANK = {"J": 0, "M": 1, "S": 2, "A": 3}
+# The share of a task's manual time that a person still spends on it, by status (README §1.2):
+# a conversational task (C, the AI only talks) keeps three quarters of it, a skilled one (S, the
+# AI runs a method through a skill, a person validates) half. GAIN_SHARE, the share a step
+# removes, is the difference between two statuses; TIME_LEFT also gives the hours a task no
+# longer takes when its status changes between two relevés.
+TIME_LEFT = {"M": 1, "C": 0.75, "S": 0.5, "A": 0}
+STATUS_RANK = {"J": 0, "M": 1, "C": 2, "S": 3, "A": 4}
+GAIN_SHARE = {(a, b): TIME_LEFT[a] - TIME_LEFT[b] for a in TIME_LEFT for b in TIME_LEFT
+              if STATUS_RANK[b] > STATUS_RANK[a]}
+# The statuses of a task, from the most to the least automated (counts, tables).
+STATUS_ORDER = "ASCMJ"
+# The statuses where a person still does part of the work that the AI could take: the action
+# plan sorts them.
+OPEN_STATUSES = ("M", "C", "S")
 # What enters a process (`trigger.volume`, README_operations.md §1.19): a number of documents
 # or of events a month (`kind`), with an optional label of what they are (`unit`: e-mails).
 VOLUME_KINDS = ("document", "event")
@@ -323,7 +338,7 @@ RECAP_WHEN = ("daily", "weekly", "monthly")
 
 
 ENUMS = {
-    "status": {"A", "S", "M", "J"}, "state": {"active", "proposed", "retired"},
+    "status": {"A", "S", "C", "M", "J"}, "state": {"active", "proposed", "retired"},
     "trigger": {"auto", "event", "schedule", "manual"},
     "automation": {"end-to-end", "once-launched", "one-change-away", "assisted", "manual",
                    "routing"},
@@ -332,7 +347,7 @@ ENUMS = {
     "tool_type": {"skill", "agent", "managed-agent", "hook", "ci", "bot", "script", "saas",
                   "reference", "routine", "command"},
     "tool_status": {"live", "deprecated", "removed", "external"},
-    "route_status": {"A", "S", "M", "J", "-"},
+    "route_status": {"A", "S", "C", "M", "J", "-"},
     "connector": {"native", "mcp", "api", "export", "none"},
     # What is missing to reach the target (`blocker_type`), where a measure comes from, the
     # size and the kind of the work to automate a task (README_operations.md §1.6).
@@ -493,12 +508,48 @@ def all_aliases(item):
     return localized_list(item.get("aliases"))
 
 
+# The configuration of the referential being built (main: use_config). None = not chosen yet
+# (a module that imports build_rpt): RPT_CONFIG, else Teamstarter's. "" = no configuration.
+ACTIVE_CONFIG = None
+
+
 def config_path():
-    """The organization's configuration: the file named by RPT_CONFIG, else rpt-config.yaml at
-    the root of the OS. A packaged skill carries no configuration: it reads the file at the
-    address the organization's instructions give, saves it, and its scripts take it with
-    --config."""
+    """The organization's configuration: the one main chose for --dir (use_config), else the
+    file named by RPT_CONFIG, else rpt-config.yaml at the root of Teamstarter's OS. A packaged
+    skill carries no configuration: it reads the file at the address the organization's
+    instructions give, saves it, and its scripts take it with --config."""
+    if ACTIVE_CONFIG is not None:
+        return ACTIVE_CONFIG
     return os.environ.get("RPT_CONFIG") or CONFIG
+
+
+def find_config(folder):
+    """rpt-config.yaml of the referential in `folder`: in the folder or in one of its two
+    parents (an OS keeps it at its root, next to OS/Operations/). None when there is none."""
+    here = os.path.abspath(folder if os.path.isdir(folder) else os.path.dirname(folder))
+    for _ in range(3):
+        path = os.path.join(here, "rpt-config.yaml")
+        if os.path.exists(path):
+            return path
+        here = os.path.dirname(here)
+    return None
+
+
+def use_config(cli, folder):
+    """Choose the configuration of the referential in `folder`: --config, else RPT_CONFIG,
+    else the rpt-config.yaml found next to it (find_config). Without one, the views are built
+    with no configuration: never with Teamstarter's, which would put its global context and
+    its intake address in another organization's explorer. Returns the path, or ""."""
+    global ACTIVE_CONFIG
+    ACTIVE_CONFIG = cli or os.environ.get("RPT_CONFIG") or find_config(folder) or ""
+    return ACTIVE_CONFIG
+
+
+def other_organization():
+    """True when the configuration in use is not Teamstarter's: a referential of another
+    organization, which must not borrow Teamstarter's AI policy."""
+    path = config_path()
+    return bool(path) and os.path.abspath(path) != os.path.abspath(CONFIG)
 
 
 def org_language(cfg=None):
@@ -567,13 +618,14 @@ def normalize(value, key=None):
     return value
 
 
-def load(path, catalogues=True, catalogue_dir=DEFAULT_DIR):
+def load(path, catalogues=True, catalogue_dir=DEFAULT_DIR, policy=True):
     """Read every file; return (referential, errors). Keeps the file of each entity.
 
     A referential other than the catalogue folder (a mapping sent by someone, a client's
     folder) borrows the departments, the tool catalogue and the data sources of that folder
     (OS/Operations by default) for the ids it does not declare itself; borrowed entries are
-    marked `_borrowed` and never reported as unused."""
+    marked `_borrowed` and never reported as unused. `policy=False`: the AI policy of that
+    folder is not borrowed (another organization's referential, borrow_policy)."""
     ref = {name: [] for name in LISTS}
     ref["files"], ref["ai_policy"], ref["ai_investment"], errors = {}, None, None, []
     ref["dir"] = os.path.abspath(path if os.path.isdir(path) else os.path.dirname(path))
@@ -588,14 +640,14 @@ def load(path, catalogues=True, catalogue_dir=DEFAULT_DIR):
         errors += read_file(f, data, ref)
     catalogue_dir = os.path.abspath(catalogue_dir)
     if catalogues and os.path.abspath(path) != catalogue_dir:
-        borrow(ref, catalogue_dir)
+        borrow(ref, catalogue_dir, policy)
     return ref, errors
 
 
-def borrow(ref, folder=DEFAULT_DIR):
+def borrow(ref, folder=DEFAULT_DIR, policy=True):
     label = "OS/Operations" if folder == DEFAULT_DIR else os.path.basename(folder)
     policy_file = os.path.join(folder, "ai-policy.yaml")
-    if ref["ai_policy"] is None and os.path.exists(policy_file):
+    if policy and ref["ai_policy"] is None and os.path.exists(policy_file):
         policy = (yaml.safe_load(read_text(policy_file)) or {}).get("ai_policy")
         if isinstance(policy, dict):
             ref["ai_policy"] = dict(normalize(policy), _file=f"{label}/ai-policy.yaml",
@@ -1045,6 +1097,10 @@ def check_task(t, idx, dept_ids, tool_ids, type_ids=()):
     warnings += measure_warnings(t, where)
     if t.get("status") in ("M", "J") and not t.get("by"):
         warnings.append(tr("warn.task_without_by", where=where, status=t.get("status")))
+    # A skilled task runs its method through a skill or an agent (README_operations.md §1.2).
+    if t.get("status") == "S" and not any((idx.get(x) or {}).get("type") in SKILL_TOOL_TYPES
+                                          for x in t.get("tools") or []):
+        warnings.append(tr("warn.skilled_without_skill", where=where))
     if type_ids and t.get("state") == "active" and not t.get("type"):
         warnings.append(tr("warn.task_without_type", where=where))
     return errors, warnings
@@ -2727,7 +2783,7 @@ def connector_rows(ref):
             row["tasks"][t["id"]] = t
     for row in rows.values():
         tasks = list(row["tasks"].values())
-        row["ms"] = sum(t["status"] in ("M", "S") for t in tasks)
+        row["ms"] = sum(t["status"] in OPEN_STATUSES for t in tasks)
         row["gains"] = [t["_gain"]["hours"] for t in tasks if t.get("_gain")]
         row["gain"] = round(sum(row["gains"]), 1)
     return sorted(rows.values(), key=lambda r: (-r["ms"], -r["gain"], -len(r["tasks"]),
@@ -2736,10 +2792,10 @@ def connector_rows(ref):
 
 def counts(tasks):
     """Tasks by status and coverage = automated / (tasks − judgement)."""
-    c = {s: 0 for s in "ASMJ"}
+    c = {s: 0 for s in STATUS_ORDER}
     for t in tasks:
         c[t["status"]] += 1
-    c["total"] = sum(c[s] for s in "ASMJ")
+    c["total"] = sum(c[s] for s in STATUS_ORDER)
     base = c["total"] - c["J"]
     c["coverage"] = round(100 * c["A"] / base) if base else None
     return c
@@ -2909,7 +2965,9 @@ def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=
                for a in live]
     return {"tasks": len(tasks), "judgment": sum(1 for t in tasks if t.get("status") == "J"),
             "automated": sum(1 for t in tasks if t.get("status") == "A"),
-            "assisted": sum(1 for t in tasks if t.get("status") == "S"),
+            "assisted": sum(1 for t in tasks if t.get("status") in ("S", "C")),
+            "skilled": sum(1 for t in tasks if t.get("status") == "S"),
+            "conversational": sum(1 for t in tasks if t.get("status") == "C"),
             "processes": len(procs),
             "proc_assisted": sum(1 for p in procs if p.get("automation") not in (None, "manual")),
             "proc_launched": sum(1 for p in procs if p.get("automation") in
@@ -3258,10 +3316,12 @@ CONFIG_KEYS = ["format", "updated", "organization", "referential", "intake", "ow
                "catalogues", "skills", "privacy", "global_context"]
 
 
-def load_config(path=CONFIG):
+def load_config(path=None):
     """The organization's configuration (rpt-config.yaml, README_operations.md §3.3): what
-    changes from one organization to another. None when the file does not exist."""
-    if not os.path.exists(path):
+    changes from one organization to another; default: the one in use (config_path). None when
+    there is none or the file does not exist."""
+    path = config_path() if path is None else path
+    if not path or not os.path.exists(path):
         return None
     return yaml.safe_load(read_text(path)) or {}
 
@@ -3389,7 +3449,7 @@ def explorer_data(ref):
     every language; `ai_labels` keeps the AI tables in the organization's language (older
     templates read it)."""
     policy, lang = ref.get("ai_policy"), view_language()
-    labels = explorer_labels(lang)
+    labels, cited = explorer_labels(lang), cited_ids(ref)
     return {"format": FORMAT, "updated": last_updated(ref), "stats": stats(ref),
             "prompt": mapping_prompt(), "context": claude_context(),
             "config": public_config(load_config()),
@@ -3408,7 +3468,63 @@ def explorer_data(ref):
                           "order": list(SENSITIVITY_ORDER), "rules": labels["rules"],
                           "rule_text": labels["rule_text"], "rule_order": list(AI_RULES)},
             "chains": ref.get("_chains") or [],
-            **{name: [public(x) for x in ref[name]] for name in LISTS}}
+            **{name: [public(x) for x in published(ref, name, cited)] for name in LISTS}}
+
+
+def scalars(value):
+    """Every text of a value: its strings, the keys of its dicts."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            yield str(k)
+            yield from scalars(v)
+    elif isinstance(value, (list, tuple)):
+        for v in value:
+            yield from scalars(v)
+    elif isinstance(value, str):
+        yield value
+
+
+def cited_ids(ref):
+    """The ids the referential's own entries cite, and those the borrowed entries they cite
+    cite in turn (the department of a task type, the tools of a data source, the objective of a
+    key result and its parents). None when nothing is borrowed."""
+    borrowed = [x for name in LISTS for x in ref[name] if x.get("_borrowed")]
+    if not borrowed:
+        return None
+    idx = index(ref)
+
+    def ids(items):
+        out = set()
+        for text in (t for item in items for t in scalars(item)):
+            item = idx.get(text)
+            if item:
+                out.add(item.get("id"))
+                if item.get("_okr"):
+                    out.add(item["_okr"])
+        return out
+
+    used = ids(x for name in LISTS for x in ref[name] if not x.get("_borrowed"))
+    while True:
+        more = ids(x for x in borrowed if x.get("id") in used) - used
+        if not more:
+            return used
+        used |= more
+
+
+def for_views(ref):
+    """The referential the views are written from: the borrowed catalogue entries it does not
+    cite are left out (published), in the explorer and in referentiel.md alike."""
+    cited = cited_ids(ref)
+    if cited is None:
+        return ref
+    return dict(ref, **{name: published(ref, name, cited) for name in LISTS})
+
+
+def published(ref, name, cited):
+    """The entries of a list the explorer shows: the referential's own, and the borrowed ones it
+    cites. Another organization's explorer never carries Teamstarter's whole catalogues (its
+    internal skills, its OKRs)."""
+    return [x for x in ref[name] if cited is None or not x.get("_borrowed") or x.get("id") in cited]
 
 
 # ---------------------------------------------------------------------------- relevés
@@ -4452,7 +4568,7 @@ def fmt_percent(value, lang=None):
 
 def fmt_counts(c, lang=None):
     cov = "—" if c["coverage"] is None else fmt_percent(c["coverage"], lang)
-    return f"{c['total']} | {c['A']} | {c['S']} | {c['M']} | {c['J']} | {cov}"
+    return f"{c['total']} | {c['A']} | {c['S']} | {c['C']} | {c['M']} | {c['J']} | {cov}"
 
 
 def md_header(ref, lang=None):
@@ -4554,7 +4670,7 @@ def md_sources(ref, lang=None):
         lines.append(f"| {cell(entry_name(d, lang))} (`{d['id']}`) | "
                      f"{label('os_status', (d.get('_os') or {}).get('status'), lang, '—')} | "
                      f"{sensitivity_cell(d, policy, lang)} | "
-                     f"{cell(tools) or '—'} | {c['total']} | {c['A']} | {c['S']} | {c['M']} | "
+                     f"{cell(tools) or '—'} | {c['total']} | {c['A']} | {c['S']} | {c['C']} | {c['M']} | "
                      f"{c['J']} |")
     return lines + [""]
 
@@ -4630,7 +4746,8 @@ def md_role(r, ref, idx, lang=None):
                 fallback=r.get("fallback") or "—"),
              tr("md.role_level", lang, level=r.get("level", "—"),
                 criteria=", ".join(f"{k} {v}" for k, v in crit.items())),
-             tr("md.role_tasks", lang, total=c["total"], A=c["A"], S=c["S"], M=c["M"], J=c["J"],
+             tr("md.role_tasks", lang, total=c["total"], A=c["A"], S=c["S"], C=c["C"], M=c["M"],
+                J=c["J"],
                 coverage=coverage),
              tr("md.role_verdict", lang, verdict=r.get("verdict", "")), ""]
     lines += md_routing(r, idx, lang) + md_processes(r, ref, idx, lang) + md_tasks(tasks, lang)
@@ -5161,7 +5278,7 @@ def print_stats(ref):
     for team, s in st["teams"].items():
         c = s["tasks"]
         print(tr("stats.team", team=team, roles=s["roles"], processes=s["processes"],
-                 proposed=s["proposed"], total=c["total"], A=c["A"], S=c["S"], M=c["M"],
+                 proposed=s["proposed"], total=c["total"], A=c["A"], S=c["S"], C=c["C"], M=c["M"],
                  J=c["J"], coverage=fmt_percent(c["coverage"])))
     for dept, c in st["departments"].items():
         if c["total"]:
@@ -5213,6 +5330,10 @@ def main(argv=None):
     parser.add_argument("--datamap-plan", metavar="FILE",
                         help="the containers of a crawl (data-map) matched against those of "
                              "--dir: same container, or new (README_operations.md §1.20)")
+    parser.add_argument("--config", metavar="FILE",
+                        help="the organization's rpt-config.yaml; default: the environment "
+                             "variable RPT_CONFIG, else rpt-config.yaml in --dir or one of its "
+                             "two parents, else none (never Teamstarter's for another folder)")
     parser.add_argument("--config-check", metavar="FILE", nargs="?", const=CONFIG,
                         help="check an organization's rpt-config.yaml (default: the OS's)")
     parser.add_argument("--lang", metavar="CODE",
@@ -5220,6 +5341,17 @@ def main(argv=None):
                              "variable RPT_LANG, else organization.language of rpt-config.yaml, "
                              "else en. The generated views stay in the organization's language")
     args = parser.parse_args(argv)
+    global ACTIVE_CONFIG
+    before = ACTIVE_CONFIG
+    use_config(args.config, args.dir)
+    try:
+        return dispatch(args)
+    finally:
+        ACTIVE_CONFIG = before
+
+
+def dispatch(args):
+    """The run main asks for, once the configuration of --dir is chosen."""
     setup_language(args.lang)
     if args.config_check:
         return check_config_file(args.config_check)
@@ -5341,14 +5473,25 @@ def check_one_observation(args):
     return 1 if errors else 0
 
 
+def borrow_policy(args):
+    """Whether --dir borrows the AI policy of --catalogues: not when it is Teamstarter's folder
+    and the referential is another organization's."""
+    folder = os.path.abspath(getattr(args, "catalogues", DEFAULT_DIR))
+    return not (folder == os.path.abspath(DEFAULT_DIR) and other_organization())
+
+
 def run(args):
-    ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR))
+    ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR),
+                       policy=borrow_policy(args))
     if not errors:
         more, warnings = validate(ref)
         errors += more
         more, obs_warnings = check_observations(ref)
         errors, warnings = errors + more, warnings + obs_warnings
-        cfg = load_config() if os.path.abspath(args.dir) == os.path.abspath(DEFAULT_DIR) else None
+        cfg = load_config()
+        if cfg is None and not args.validate_only and \
+                os.path.abspath(args.dir) != os.path.abspath(DEFAULT_DIR):
+            warnings.append(tr("warn.no_config", folder=args.dir))
         if cfg is not None:
             errors += check_config(cfg) + config_teams_errors(cfg, ref)
             warnings += config_warnings(cfg)
@@ -5371,7 +5514,8 @@ def run(args):
         print(tr("cli.closed", items=", ".join(closed) or tr("word.nothing")))
         for x in skipped:
             print(tr("cli.left", item=x))
-        ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR))
+        ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR),
+                           policy=borrow_policy(args))
         enrich(ref)
     if getattr(args, "observations", False):
         task = getattr(args, "task", None)
@@ -5382,7 +5526,7 @@ def run(args):
         print_okrs(ref)
     if args.validate_only:
         return 0
-    stale = write_or_check(ref, args.dir, args.check)
+    stale = write_or_check(for_views(ref), args.dir, args.check)
     if stale:
         print(tr("cli.stale", files=", ".join(stale)))
         return 1

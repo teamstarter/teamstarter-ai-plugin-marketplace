@@ -126,12 +126,12 @@ gap is not an error.
 | `name` | yes | Verb + object: "Write the reminder to an inactive admin". |
 | `role` | yes | Id of the role that holds it. |
 | `state` | yes | `active`, or `proposed` for a desired task that does not exist yet, or `retired`, in an update, for a task that is no longer done. |
-| `status` | yes | A, S, M or J: what happens **today**. |
+| `status` | yes | A, S, C, M or J: what happens **today** (S skilled: the AI runs a skill; C conversational: the AI only talks, in a chat or a bot). |
 | `input` | | What it takes. |
 | `output` | | What it produces (checkable). |
 | `job` | | What the task is for: `{when, so_that}`, read as « When <when>, I want to <name>, so that <so_that>. » `when`: the situation or the trigger that starts it; `so_that`: the result for someone, never the deliverable. Each part without its leading words. |
 | `tools` | | Ids of the tools used. |
-| `data` | | Ids of the data sources the task reads or writes (§6): `[data:pipe-prospects, data:emails]`. Expected for an M or S task; absent for a task that touches no business data. |
+| `data` | | Ids of the data sources the task reads or writes (§6): `[data:pipe-prospects, data:emails]`. Expected for an M, C or S task; absent for a task that touches no business data. |
 | `okrs` | | At most two ids of key results of `catalogues/okrs.yaml` that the deliverable of the task moves directly: `[O1.3.KR1]` (`SKILL.md`, step 3, point 7). Absent for a task without a direct link, that is most of them. With `basis: {okrs: inferred}` or `declared`. |
 | `method` | | Where the method of the task is written: the URL of a procedure (Notion page, Drive document) the person can open, or the id of the skill or of the written rule that carries it (`skill:compte-rendu-rdv`). Only a link found in a source or given by the person, never guessed. |
 | `by` | | Who does it today: first and last name or role, "Claude", or a tool, by its name as declared ("HubSpot") or its id (`saas:hubspot`). Expected for M and J. |
@@ -141,9 +141,9 @@ gap is not an error.
 | `blocker_type` | | The type of what is missing (§7), with `blocker`. Same rule as `blocker`: in a map, the `type` of an entry of `blockers`. |
 | `build` | | The work to reach `target`: `{size: S, kind: skill}` (§7). When you know how to estimate it; otherwise the merge estimates it. |
 | `frequency` | | "every Monday", "10 per week", "for each new client". |
-| `measure` | | For an M or S task: `{minutes: 20, runs: 8, basis: observed}`, the duration of one execution in minutes, the number of executions per month for one person, and their origin (`observed`: counted in a source; `declared`: given by the person). Numbers without quotes. The gain of the task is computed with them rather than with the ratings. |
+| `measure` | | For an M, C or S task: `{minutes: 20, runs: 8, basis: observed}`, the duration of one execution in minutes, the number of executions per month for one person, and their origin (`observed`: counted in a source; `declared`: given by the person). Numbers without quotes. The gain of the task is computed with them rather than with the ratings. |
 | `queue` | | The stock waiting at the input of the task on a date, when a source shows it (a board column, a status, an inbox): `{count: 198, unit: tickets, at: '2026-10-17', basis: observed, source: 'JIRA, statut « Merged in prod »'}`. `count` a number ≥ 0, `at` the date of the count, quoted. A count, not a rate: the explorer divides it by the runs a month of the task to give the days it waits. |
-| `stakes` | | For an M or S task: what happens when it is done late or badly, `{level: 2, text: "the client waits for their proposal"}` (§7). The sentence describes the consequence, without a client name or an amount. |
+| `stakes` | | For an M, C or S task: what happens when it is done late or badly, `{level: 2, text: "the client waits for their proposal"}` (§7). The sentence describes the consequence, without a client name or an amount. |
 | `relevance` | | The relevance: `{reach: 2, frequency: 3, effort: 1, describability: 3, payback: 2}`, each axis rated 1, 2, 3 or `null` (scales in `SKILL.md`, "The model"). Expected for each task, with its five axes; `null` for an axis neither you nor the person can estimate. `relevance.frequency` rates what the text field `frequency` describes. |
 | `departments` | | Only if they differ from the role's. |
 | `basis`, `notes`, `sources` | | As for a role: `{status: observed, data: inferred, relevance.effort: inferred, frequency: declared}`. |
@@ -204,8 +204,8 @@ data_sources:
 
 | Field | Values |
 |---|---|
-| `status`, `target` | `A`, `S`, `M`, `J` |
-| `routing.status` | `A`, `S`, `M`, `J`, `-` (the case goes to another role) |
+| `status`, `target` | `A`, `S`, `C`, `M`, `J` |
+| `routing.status` | `A`, `S`, `C`, `M`, `J`, `-` (the case goes to another role) |
 | `trigger.type`, `entries.trigger` | `event` (something arrives from outside: form filled, e-mail received, status changed); `auto` (a tool launches the work by itself, without an outside event: a rule that detects, an agent that watches); `schedule` (a date, a recurrence); `manual` (a person launches, including at a date they must remember) |
 | `state` | `active`, `proposed`; `retired` for an element of a starting map that is no longer done (update) |
 | `automation` | `end-to-end` (runs alone, trigger included); `once-launched` (automated once launched by hand); `one-change-away` (a single change would be enough: a trigger, a written rule); `assisted` (some steps need a human by nature); `manual` (a human does most of it); `routing` (the next step depends on the case: it is a routing, not a process). The choice follows the rule written under this table. |
@@ -238,7 +238,7 @@ what follows, not real work: §8, rule 4) counts in none of them.
 2. All steps are A, and the trigger is `manual`, with or without a launch task →
    `once-launched`.
 3. A single step prevents one of the two, and its `blocker` is written → `one-change-away`.
-4. The M steps outnumber the A steps, and are at least as many as the S and J steps
+4. The M steps outnumber the A steps, and are at least as many as the S, C and J steps
    together → `manual`.
 5. In all other cases → `assisted`.
 
@@ -314,7 +314,7 @@ are quoted here in English, the same message in every language. An error line st
 | `` `data` points to data:x, which is not in the referential `` | The data source is declared neither in `data_sources` nor in `catalogues/data-sources.yaml` (or `references/data-sources.yaml`). | Declare it in `data_sources` (§6), or take the id of the catalogue. |
 | `` `tools.connector (saas:x)` = …, expected […] `` | An AI access outside the list. | A value of §7, `null` if you do not know. |
 | `` tool `x` cited twice `` | The same tool appears twice in a data source. | One line per tool; join the two `where`. |
-| `` warning … M or S task(s) without `data` `` | A manual or assisted task does not say which data it reads or writes. | Write its data sources (`SKILL.md`, step 3, point 6). |
+| `` warning … M, C or S task(s) without `data` `` | A manual, conversational or skilled task does not say which data it reads or writes. | Write its data sources (`SKILL.md`, step 3, point 6). |
 | `` unknown KR `O…KRn` (okrs.yaml) `` | `okrs` cites a key result absent from `catalogues/okrs.yaml`. | Take the id of a KR of the file, or remove the link. |
 | `` `okrs` = …, expected a KR id (`O1.2.KR1`) `` | `okrs` cites an objective (`O1.3`) or a text. | The id of a KR: `O1.3.KR1`. |
 | `` warning … N KRs in `okrs`: is the link direct? `` | A task names more than two KRs. | Keep the two whose measure moves directly with the deliverable (`SKILL.md`, step 3, point 7). |
@@ -328,7 +328,7 @@ are quoted here in English, the same message in every language. An error line st
 | `` warning … task(s) without a complete `relevance` `` | The relevance is not written, or one of the five axes is missing (a map rated before `payback` was added on 2026-09-29, or before `describability` replaced `simplicity` on 2026-09-30). | Rate the axes that can be estimated, ask the person for the others; `null` only if they do not know. |
 | `` `measure.minutes` = 0, expected a number above 0 `` | A measure that is zero, negative or between quotes (`"20"`). | The number, without quotes; remove `measure` if nobody knows it. |
 | `` warning … `measure.minutes` = 10 gives an effort of 1, `relevance.effort` is 3: correct the effort rating `` | The measured duration and the effort rating do not say the same thing. | The measure decides: correct the effort rating (up to 30 min: 1; up to 2 h: 2; beyond: 3). |
-| `` warning … M or S task(s) without `measure` `` or `` without `stakes` `` | The minutes, the number of times per month or the stakes of a manual or assisted task are not written. | Ask the person for them in a single table (`SKILL.md`, step 4). |
+| `` warning … M, C or S task(s) without `measure` `` or `` without `stakes` `` | The minutes, the number of times per month or the stakes of a manual or assisted task are not written. | Ask the person for them in a single table (`SKILL.md`, step 4). |
 | `` `sensitivity` = …, expected a list among […], or [] for internal data `` | The sensitivity of a source is not a list, or a category is outside the list. | `[personal, client]`, categories of §7; `[]` for internal data only. |
 | `` warning … sensitivity not stated `` | A source declared in the file does not say what it contains. | Write `sensitivity` from the type of data, never by reading its content, and have it confirmed at step 4. |
 | `` `basis` cites `x`, which is not a field to source `` | A key of `basis` is not a field of the element (or `relevance.<axis>`, `measure.<field>`…). | The name of the field: `status`, `data`, `frequency`, `relevance.effort`… |

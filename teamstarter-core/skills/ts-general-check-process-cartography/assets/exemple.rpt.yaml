@@ -98,7 +98,7 @@ roles:
         trigger: event
         volume: environ 40 par poste
     routing:
-      - {case: Nouveau poste à pourvoir, to: RH-P1, status: S}
+      - {case: Nouveau poste à pourvoir, to: RH-P1, status: C}
       - {case: Candidature à un poste ouvert, to: RH-P2, status: S}
       - {case: Candidature spontanée, to: RH-T1.6, status: M}
       - {case: Profil atypique ou senior, to: le manager du poste, status: J}
@@ -198,7 +198,7 @@ tasks:
     data: ['data:documents']
     method: https://www.notion.so/exemple/modele-de-fiche-de-poste
     by: [Claude, Alex Martin]
-    status: S
+    status: C
     frequency: 2 à 3 par trimestre
     measure: {minutes: 45, runs: 1, basis: declared}
     stakes: {level: 2, text: le recrutement prend du retard et le manager attend}

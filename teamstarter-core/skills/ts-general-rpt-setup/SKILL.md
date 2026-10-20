@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.8 (2026-10-19)"
+  version: "1.9 (2026-10-20)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -13,7 +13,7 @@ Speak and write to the person in their language, and ask the interview questions
 language; this file is in English.
 
 The RPT referential describes the **roles**, the **processes** and the **tasks** of an
-organization, with, for each task, what is automated, assisted by an AI, done by hand or decided
+organization, with, for each task, what is automated, run by the AI with a skill, helped by a chat, done by hand or decided
 by a person. Three skills keep it up to date: the mapping (`ts-general-check-process-cartography`),
 the observation (`ts-general-rpt-observe`) and the storing of deliverables (`ts-general-rpt-file`).
 

@@ -78,7 +78,7 @@ the others are pending.
 | `okrs` | the complete list of key results served (`O1.3.KR1`, at most two) | The session's deliverable directly moves the measure of a KR of `okrs.yaml` (README_operations.md §1.13); a link that is only indirect is not written |
 | `output_files` | the complete list of locations (below) | Where the deliverable was stored |
 | `templates` | the complete list of templates (below) | The template the deliverable started from |
-| `status`, `target` | `A`, `S`, `M` or `J` | See "The status" |
+| `status`, `target` | `A`, `S`, `C`, `M` or `J` | See "The status" |
 | `input`, `output` | a text | The actual input or deliverable differs from the entry |
 | `by` | the complete list of people or agents | Another person does the task |
 | `stakes` | `{level: 1, 2 or 3, text: …}` | What the person says about the cost of a delay or an error |
@@ -261,8 +261,11 @@ tasks, as usual. An agent is never deleted: one that stopped is `paused` or `ret
 
 ## The status
 
-- **M → S**: the task was done with Claude, and the person says they will do it that way from
-  now on. A single assisted execution is not enough without this answer.
+- **M → C**: the task was done by talking with Claude (a chat, no skill), and the person says
+  they will do it that way from now on. A single execution is not enough without this answer.
+- **M → S** or **C → S**: a skill or an agent now runs the method of the task, and a person
+  validates the result; the skill is in `tools`. Same condition: the person says they will do it
+  that way from now on.
 - **S → A**: a skill, an agent or a tool does it end to end without a person redoing it; the
   tool is in `tools`.
 - A judgment task (J) never becomes A.
