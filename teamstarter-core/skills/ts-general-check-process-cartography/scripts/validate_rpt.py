@@ -12,11 +12,14 @@
 
 Calls build_rpt.py (the tool of the RPT referential, copied into this folder) with the
 departments, tools and data sources of the organization's catalogues (--catalogues), completed
-by the generic ones of ../references/ (departments, common data types), then adds seven checks specific to
-a map about to be sent: one code per map (one map per hat), the declared automation of each
-process against the statuses of its steps, the relevance of each task, the data sources of
-manual, conversational or skilled tasks, their measures and their stakes, the blockers (where an inferred one
-was seen, a task that still writes its own `blocker`), and possible personal or confidential
+by the generic ones of ../references/ (departments, common data types), then adds nine checks
+specific to a map about to be sent: the skill and version that produced it (`meta.detector`),
+one code per map (one map per hat), the declared automation
+of each process against the statuses of its steps, the relevance of each task, the data sources
+of manual, conversational or skilled tasks, the measures (runs per month of every active task,
+minutes of the M, C, S and J tasks) and the stakes, the order of the processes (`next`, or
+`next: []` at the end of a chain), the blockers (where an inferred one was seen, a task that
+still writes its own `blocker`), and possible personal or confidential
 data (preview_rpt.py), blocker texts and evidence included. build_rpt.py checks the form of the
 `blockers` list (fields, values, dates, tasks of the map), as for the referential's register.
 The figures end with the blockers still open and the connectors to activate first. With
@@ -74,17 +77,36 @@ MESSAGES = {
         "fr": "{count} tâche(s) M, C ou S sans `data` ({ids}) : écrire les sources de données "
               "qu'elles lisent ou écrivent, identifiants de catalogues/data-sources.yaml ou "
               "sources déclarées dans `data_sources` (SKILL.md, « The model »)"},
-    "validate.measure": {
-        "en": "{count} M, C or S task(s) without `{field}` ({ids}): ask {what} (SKILL.md, \"The "
-              "model\")",
-        "fr": "{count} tâche(s) M, C ou S sans `{field}` ({ids}) : demander {what} (SKILL.md, "
-              "« The model »)"},
-    "validate.measure_what": {
-        "en": "the minutes per run and the number of times per month",
-        "fr": "les minutes par exécution et le nombre de fois par mois"},
-    "validate.stakes_what": {
-        "en": "what happens when it is done late or badly",
-        "fr": "ce qui se passe quand elle est faite en retard ou mal"},
+    "validate.runs": {
+        "en": "{count} active task(s) without `measure.runs` ({ids}): ask how many times a month "
+              "it runs, A and J tasks included; an A task gives the runs alone, without minutes "
+              "(SKILL.md, \"The model\")",
+        "fr": "{count} tâche(s) active(s) sans `measure.runs` ({ids}) : demander combien de fois "
+              "par mois elle est faite, tâches A et J comprises ; une tâche A donne le nombre de "
+              "fois seul, sans minutes (SKILL.md, « The model »)"},
+    "validate.minutes": {
+        "en": "{count} M, C, S or J task(s) without `measure.minutes` ({ids}): ask the minutes "
+              "a person spends on one run (SKILL.md, \"The model\")",
+        "fr": "{count} tâche(s) M, C, S ou J sans `measure.minutes` ({ids}) : demander les "
+              "minutes qu'une personne passe sur une exécution (SKILL.md, « The model »)"},
+    "validate.stakes": {
+        "en": "{count} M, C or S task(s) without `stakes` ({ids}): ask what happens when it is "
+              "done late or badly (SKILL.md, \"The model\")",
+        "fr": "{count} tâche(s) M, C ou S sans `stakes` ({ids}) : demander ce qui se passe "
+              "quand elle est faite en retard ou mal (SKILL.md, « The model »)"},
+    "validate.next": {
+        "en": "{count} active process(es) without `next` ({ids}): ask which processes start "
+              "when it ends; write `next: []` when it ends the chain (SKILL.md, step 4)",
+        "fr": "{count} processus actif(s) sans `next` ({ids}) : demander quels processus "
+              "démarrent quand il se termine ; écrire `next: []` quand il termine la chaîne "
+              "(SKILL.md, step 4)"},
+    "validate.detector": {
+        "en": "`meta.detector` is {value}, expected \"{expected}\": the skill and the version "
+              "that produced the map, so the merge knows what each version proposes (SKILL.md, "
+              "step 5)",
+        "fr": "`meta.detector` vaut {value}, attendu « {expected} » : le skill et la version qui "
+              "ont produit la carte, pour que la fusion sache ce que propose chaque version "
+              "(SKILL.md, step 5)"},
     "validate.lost": {
         "en": "{count} element(s) of the starting map missing from this one ({ids}): keep "
               "them, with `state: retired` if they no longer exist (SKILL.md, \"Updating a map "
@@ -233,9 +255,9 @@ def check(path, reformat, starts=()):
         errors, warnings = build_rpt.validate(ref)
         with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-        warnings += code_warnings(data) + automation_warnings(ref)
+        warnings += detector_warnings(data) + code_warnings(data) + automation_warnings(ref)
         warnings += relevance_warnings(ref, build_rpt.RELEVANCE_AXES) + data_warnings(ref)
-        warnings += measure_warnings(ref) + blocker_warnings(ref)
+        warnings += measure_warnings(ref) + chain_warnings(ref) + blocker_warnings(ref)
         warnings += [tr("validate.data_alert", where=where, label=label, excerpt=excerpt)
                      for where, label, excerpt in preview_rpt.alerts(data)]
         if starts:
@@ -251,6 +273,31 @@ def check(path, reformat, starts=()):
     for line in figures(ref, build_rpt) + ([changes] if starts else []):
         print(line)
     return 0
+
+
+def skill_detector():
+    """`<name>@<version>` of the skill this script belongs to, read in its SKILL.md (one folder
+    up, in the repository as in the package); None when it cannot be read."""
+    import re
+    try:
+        with open(os.path.join(HERE, "..", "SKILL.md"), encoding="utf-8") as f:
+            head = f.read(4000)
+    except OSError:
+        return None
+    name = re.search(r"(?m)^name:\s*(\S+)", head)
+    version = re.search(r"(?m)^\s+version:\s*\"?(\d+(?:\.\d+)*)", head)
+    return f"{name.group(1)}@{version.group(1)}" if name and version else None
+
+
+def detector_warnings(data, expected=None):
+    """`meta.detector` names the skill and the version that produced the map: absent or another
+    version than the one running this check, it is flagged."""
+    expected = expected or skill_detector()
+    value = (data.get("meta") or {}).get("detector")
+    if not expected or value == expected:
+        return []
+    return [tr("validate.detector", value=repr(value) if value else tr("validate.none"),
+               expected=expected)]
 
 
 def code_warnings(data):
@@ -287,18 +334,38 @@ def data_warnings(ref):
 
 
 def measure_warnings(ref):
-    """The active manual, conversational or skilled tasks without a measure or without stakes:
-    without them, their gain stays an estimate drawn from the ratings, and the action plan cannot tell which
-    ones to take first. A proposed task does not exist yet: it has nothing to measure."""
-    live = [t for t in ref["tasks"]
-            if t.get("state") == "active" and t.get("status") in OPEN_STATUSES]
+    """The active tasks without a measure or without stakes: without them, their gain stays an
+    estimate drawn from the ratings, the volume of a chain is unknown, and the action plan cannot
+    tell which ones to take first. Every task gives its runs per month, A included (the volume
+    that passes through it); a person spends minutes on an M, C, S or J task, none on an A task;
+    the stakes are asked where a person still does the work that could change (M, C, S). A
+    proposed task does not exist yet: it has nothing to measure."""
+    live = [t for t in ref["tasks"] if t.get("state") == "active"]
+
+    def measured(t, key):
+        m = t.get("measure")
+        return isinstance(m, dict) and m.get(key) is not None
+
+    checks = (("validate.runs", live, lambda t: measured(t, "runs")),
+              ("validate.minutes", [t for t in live if t.get("status") in OPEN_STATUSES + ("J",)],
+               lambda t: measured(t, "minutes")),
+              ("validate.stakes", [t for t in live if t.get("status") in OPEN_STATUSES],
+               lambda t: bool(t.get("stakes"))))
     warnings = []
-    for field, what in (("measure", "validate.measure_what"), ("stakes", "validate.stakes_what")):
-        missing = [t["id"] for t in live if not t.get(field)]
+    for key, tasks, ok in checks:
+        missing = [t["id"] for t in tasks if not ok(t)]
         if missing:
-            warnings.append(tr("validate.measure", count=len(missing), field=field,
-                               ids=", ".join(missing), what=tr(what)))
+            warnings.append(tr(key, count=len(missing), ids=", ".join(missing)))
     return warnings
+
+
+def chain_warnings(ref):
+    """The active processes that do not say what follows them: `next` lists the processes that
+    start when this one ends, `next: []` says it ends the chain. Without it, the chains of
+    production stop at the first process and the volume entering a chain reaches nothing."""
+    missing = [p["id"] for p in ref["processes"]
+               if p.get("state") == "active" and "next" not in p]
+    return [tr("validate.next", count=len(missing), ids=", ".join(missing))] if missing else []
 
 
 # Where a blocker is seen outside the interview: these sources need a trace (`evidence`).
