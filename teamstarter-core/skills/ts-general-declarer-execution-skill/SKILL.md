@@ -10,7 +10,7 @@ description: >-
   l'exécution d'un tel skill, ou quand un skill demande de déclarer son exécution à Teamstarter.
   Ne rien déclarer pour un skill sans cette métadonnée, pour une exécution qui n'a pas eu lieu,
   ni sans connecteur en écriture. Une exécution bloquée par un problème qui empêche d'utiliser
-  le skill : proposer de déclarer un point de blocage avec ts-general-creer-skill.
+  le skill : proposer de déclarer un blocage avec ts-general-declarer-blocage.
 ---
 
 # Déclarer l'exécution d'un skill à Teamstarter
@@ -105,7 +105,9 @@ report-skill-execution {
 
 Si l'exécution a échoué sur un problème que l'utilisateur ne peut pas lever seul (accès refusé,
 outil indisponible, donnée manquante, règle de sécurité) : proposer de le déclarer comme point de
-blocage du projet avec `ts-general-creer-skill` (étape B). Ne pas le déclarer sans accord.
+blocage du projet avec `ts-general-declarer-blocage`, dans la même réponse que la ligne de
+déclaration. Ne pas le déclarer sans accord. Une erreur que l'on corrige dans la conversation, ou
+qu'un nouvel essai règle, n'est pas un blocage.
 
 ## Garde-fous
 
@@ -140,8 +142,8 @@ Ligne finale : « Exécution déclarée à Teamstarter (projet 41207, tokens est
 
 ## Ressources
 
-- Skill voisin : `ts-general-creer-skill` (créer le skill, déposer ses versions, déclarer un
-  blocage).
+- Skills voisins : `ts-general-declarer-blocage` (déclarer un blocage du projet),
+  `ts-general-creer-skill` (créer le skill et suivre son projet).
 
 ## Convention de nommage
 

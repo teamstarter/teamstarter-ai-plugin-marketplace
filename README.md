@@ -22,8 +22,10 @@ dans ChatGPT et dans l'app.
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type, de l'idée jusqu'à sa proposition ; reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Monte un projet pour notre séminaire de juin », « Reprends mon brouillon », « Génère la fiche de mon projet », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun, et choisir lequel reprendre | « Où en sont mes projets ? », « Mes brouillons », « Qu'est-ce qu'il me reste à faire sur Teamstarter ? » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, écriture du skill, dépôt de chaque version, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Reprends mon skill », « Dépose la nouvelle version de mon skill », « Mon skill est bloqué » |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, prompt de création récupéré automatiquement, écriture du skill, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Crée le skill de mon projet », « Reprends mon skill », « Modifie mon skill », « Mon skill est bloqué » |
+| `ts-general-deposer-skill` | Déposer sur son projet Teamstarter chaque version d'un skill rattaché à un projet | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
+| `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), rédigé, validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Déclare un blocage », « Le blocage est levé », « Quels sont les blocages de mon projet ? » ; proposé seul quand un skill de projet échoue |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation déposées dans la boîte à idées et les ateliers : celles à prendre, celles déjà lancées en projet ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill », « Qu'est-ce que les collègues veulent automatiser ? » |
 
 Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartographier-ses-rôles-processus-et-tâches-rpt)) :
@@ -88,11 +90,16 @@ l'organisation naît d'un projet Teamstarter.
 2. **Validation.** Si votre organisation relit les projets, le projet attend la validation des
    animateurs : revenez quand il est validé, l'IA reprend là. Sans relecture, le projet passe
    directement en réalisation.
-3. **Écriture.** Le projet en réalisation, l'IA récupère le prompt de création du skill généré par
-   Teamstarter et confie l'écriture à `skill-creator`. Le skill porte l'id du projet dans ses
-   métadonnées (`teamstarter-project-id`). → **Validation** du skill, puis livraison en zip prêt
-   à installer.
-4. **Dépôt.** Le skill est déposé sur le projet, puis chaque nouvelle version que vous validez.
+3. **Écriture.** Dès que le projet est en réalisation, l'IA récupère d'elle-même le prompt de
+   création du skill généré par Teamstarter, sans vous le demander, et confie l'écriture à
+   `skill-creator`. Le skill porte l'id du projet dans ses métadonnées
+   (`teamstarter-project-id`). Vous relisez le skill, demandez des corrections, puis le recevez en
+   zip prêt à installer.
+4. **Dépôt automatique.** Chaque version du skill est déposée sur le projet dès qu'elle est
+   écrite, sans validation : la première, puis chaque correction, y compris celles faites plus
+   tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`). L'IA l'annonce en une
+   ligne. Un fichier inchangé n'est pas redéposé : chaque dépôt crée pour les admins une tâche
+   « partager ce fichier ».
 5. **Étapes de réalisation.** L'IA coche avec votre accord « Créer mon agent IA », puis « Tester
    l'agent en conditions réelles » une fois le test concluant.
 6. **Utilisation.** Chaque exécution du skill est déclarée à Teamstarter par
@@ -101,12 +108,43 @@ l'organisation naît d'un projet Teamstarter.
    skill » de la page `/manage` du projet, réservée aux porteurs et aux admins, et l'IA les lit
    sur demande (« combien de fois mon skill a été utilisé ? »).
 7. **Blocage.** Un problème qui empêche de créer ou d'utiliser le skill devient, avec votre accord,
-   un point de blocage sur le projet.
+   un point de blocage sur le projet (`ts-general-declarer-blocage`, ci-dessous).
 
 Le prompt de création, le dépôt du skill, la validation des étapes et la déclaration des
 utilisations demandent des outils du connecteur que votre accès n'a peut-être pas encore. Sans
 eux, l'IA vous dit quoi faire dans l'app : copier le prompt, déposer le fichier, cocher l'étape.
 Sans eux, les utilisations ne sont pas comptées.
+
+Pour que ces appels se fassent sans clic, autorisez une fois pour toutes les outils
+`get-skill-creation-instructions` et `upload-project-skill` du connecteur : « Toujours autoriser »
+quand l'outil IA le demande (claude.ai, Cowork), ou une règle d'autorisation dans `/permissions`
+(Claude Code).
+
+### Remonter les blocages d'un projet
+
+Une fois un projet validé et en réalisation (`CASHEDOUT`) ou mis en place (`DELIVERED`), ses
+problèmes se déclarent comme **blocages** du projet, quel que soit son type :
+`ts-general-declarer-blocage`.
+
+1. **Proposition.** Dès qu'un problème que vous ne pouvez pas lever seul empêche d'avancer
+   (accès refusé, outil indisponible, donnée manquante, règle de sécurité, budget, prestataire,
+   décision ou participation qui manque), l'IA propose de le déclarer, une fois par problème.
+   Elle le fait d'elle-même quand l'exécution d'un skill de projet échoue sur un tel problème.
+   Une erreur corrigée dans la conversation, ou qu'un nouvel essai règle, n'est pas un blocage.
+2. **Pas de doublon.** L'IA lit les blocages du projet : si le même problème est déjà ouvert,
+   elle propose d'y ajouter un commentaire ; s'il a été résolu et revient, de le rouvrir.
+3. **Rédaction.** Un titre (120 caractères au plus), une catégorie (outil, accès, sécurité,
+   budget, organisation, participation des collègues, prestataire, autre) et une description :
+   ce qui bloque, ce qui a été essayé, le contournement en attendant, qui peut débloquer. Rien de
+   confidentiel. → **Validation**, puis déclaration.
+4. **Suite.** Personne n'est prévenu tout de suite : le blocage apparaît dans la section
+   « Blocages » de la page `/manage` du projet et dans la page « Blocages » des admins, et devient
+   une tâche des admins de l'organisation. L'IA liste ensuite les blocages d'un projet, lit
+   l'échange avec les admins, commente, marque un blocage résolu ou le rouvre, chaque fois avec
+   votre accord.
+
+Seuls les porteurs du projet et les admins de l'organisation lisent et déclarent ses blocages.
+`ts-general-lister-projets` affiche le nombre de blocages ouverts des projets en réalisation.
 
 ### Lister les idées d'automatisation
 
@@ -166,8 +204,9 @@ l'organisation.
 ### Garde-fous
 
 - **Rien n'est écrit sans votre accord** : chaque écriture suit une validation, et la proposition
-  du projet demande une confirmation explicite. Seule exception : la déclaration d'utilisation
-  d'un skill de projet, faite à la fin de chaque exécution et annoncée dans la réponse.
+  du projet demande une confirmation explicite. Deux exceptions, annoncées dans la réponse : le
+  dépôt de chaque version d'un skill de projet sur son projet, et la déclaration de chacune de
+  ses utilisations.
 - **Rien n'est inventé** : date, lieu, montant, prestataire, co-porteur. L'IA vous les demande,
   ou écrit « à préciser » en vous le disant.
 - Une réponse ou une section n'est jamais réécrite sans vous le dire, et seulement celle que vous
@@ -247,8 +286,10 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │   └── skills/
 │       ├── ts-general-creer-projet/    # créer un projet jusqu'à sa proposition ; reprendre un brouillon
 │       ├── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
-│       ├── ts-general-creer-skill/     # créer un skill par un projet : écrire, déposer, tester, blocages
+│       ├── ts-general-creer-skill/     # créer un skill par un projet : prompt, écriture, test, blocages
+│       ├── ts-general-deposer-skill/   # déposer chaque version d'un skill de projet, automatiquement
 │       ├── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
+│       ├── ts-general-declarer-blocage/  # blocages d'un projet en réalisation : déclarer, suivre, résoudre
 │       ├── ts-general-lister-idees-automatisation/  # idées d'automatisation : à prendre, lancées
 │       ├── ts-general-rpt-setup/                    # RPT : écrire le rpt-config.yaml de l'organisation
 │       ├── ts-general-check-process-cartography/   # RPT : carte des rôles, processus et tâches
