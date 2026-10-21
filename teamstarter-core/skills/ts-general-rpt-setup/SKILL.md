@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.9 (2026-10-20)"
+  version: "1.10 (2026-10-21)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -118,6 +118,12 @@ common ones, which it keeps, renames or completes. Give the team names in the pe
 The `scope` is written in the organization's language. A code is written in lower case, digits
 and hyphens, short (2 to 8 characters), one per team. A person with several jobs will make one map
 per team: there is no "everything" team.
+
+Then ask, in a single question, **how many people each team counts** (`headcount`): the explorer
+compares it with the people who sent a map, team by team, and says who to remind. Show the teams
+kept, each with an empty number to fill; "I don't know" leaves the team without `headcount` (the
+script then warns, and the coverage is computed on the people the referential knows). A person
+counts in the team where they spend most of their time, once.
 
 ## Step 4 — Confidentiality and owners
 

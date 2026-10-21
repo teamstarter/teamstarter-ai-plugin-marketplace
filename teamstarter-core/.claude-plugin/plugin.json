@@ -1,6 +1,6 @@
 {
   "name": "teamstarter-core",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Pour tous les collaborateurs Teamstarter : créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, reprendre un brouillon, lister ses projets par statut, créer un skill par un projet d'automatisation avec l'IA (écriture, dépôt, test, utilisation), remonter les blocages d'un projet en réalisation, depuis l'outil IA, par le connecteur MCP Teamstarter ; et les skills RPT pour cartographier les rôles, processus, tâches et données de l'organisation, mettre à jour la fiche d'une tâche et ranger son livrable.",
   "author": {
     "name": "Teamstarter",

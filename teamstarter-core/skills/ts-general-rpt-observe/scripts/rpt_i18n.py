@@ -844,8 +844,19 @@ MESSAGES = {
         "fr": "{total} personnes. L'IA de {works} d'entre elles atteint l'OS (couverture "
               "{coverage} %) ; {unchecked} pas vérifiées, {not_found} dont le dossier est "
               "introuvable, {none} sans accès, {unknown} pas relevées."},
-    "md.people_header": {"en": "| Person | Teams | Access | How |",
-                         "fr": "| Personne | Équipes | Accès | Comment |"},
+    "md.people_header": {"en": "| Person | Teams | Last map | Access | How |",
+                         "fr": "| Personne | Équipes | Dernière carte | Accès | Comment |"},
+    "md.people_maps": {
+        "en": "{mapped} of them sent a map ({base}); maps of {fresh} of them are 30 days old "
+              "or less, {never} never sent one (README_operations.md §1.16).",
+        "fr": "{mapped} d'entre elles ont envoyé une carte ({base}) ; la dernière carte de "
+              "{fresh} d'entre elles a 30 jours ou moins, {never} n'en ont jamais envoyé "
+              "(README_operations.md §1.16)."},
+    "md.people_base_headcount": {"en": "out of a headcount of {n}",
+                                 "fr": "sur un effectif de {n}"},
+    "md.people_base_known": {"en": "no headcount in rpt-config.yaml",
+                             "fr": "pas d'effectif dans rpt-config.yaml"},
+    "md.never": {"en": "never", "fr": "jamais"},
     "md.agents_title": {"en": "## Recurring agents", "fr": "## Agents récurrents"},
     "md.agents_intro": {
         "en": "{live} running, {construction} being built, {paused} paused, {retired} retired. "
@@ -1055,6 +1066,23 @@ MESSAGES = {
               "instructions)",
         "fr": "{where} : `global_context` fait {size} caractères, au plus {max} (instructions "
               "de l'organisation)"},
+    "check.maps_shape": {
+        "en": "{where}: `maps` = {value}: a list of `{{hat, date}}`, the team code of each map "
+              "merged and its date ('YYYY-MM-DD') (README_operations.md §1.16)",
+        "fr": "{where} : `maps` = {value} : une liste de `{{hat, date}}`, le code d'équipe de "
+              "chaque carte fusionnée et sa date ('AAAA-MM-JJ') (README_operations.md §1.16)"},
+    "config.headcount": {
+        "en": "{where}: team `{code}`: `headcount` = {value}, expected a whole number of people "
+              "(0 or more)",
+        "fr": "{where} : équipe `{code}` : `headcount` = {value}, attendu un nombre entier de "
+              "personnes (0 ou plus)"},
+    "config.no_headcount": {
+        "en": "{where}: teams without `headcount` ({codes}): write how many people each team "
+              "has, so the explorer shows how much of the organization the maps cover "
+              "(README_operations.md §3.3)",
+        "fr": "{where} : équipes sans `headcount` ({codes}) : écrire combien de personnes compte "
+              "chaque équipe, pour que l'explorateur montre quelle part de l'organisation les "
+              "cartes couvrent (README_operations.md §3.3)"},
     "config.language": {
         "en": "{where}: `organization.language` = {value}, expected one of {languages}; "
               "messages are shown in English",
