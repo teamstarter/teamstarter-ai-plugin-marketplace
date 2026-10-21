@@ -11,6 +11,7 @@ organization:
   name: <Organization name>
   language: en   # a code of tools/rpt_i18n.py LANGUAGES (en, fr today)
   description: <one sentence on what the organization does>
+  headcount: <number of people in the organization, each counted once>
 
 # The referential: role files, catalogues, task index. At least drive_folder or
 # repository_path. While it does not exist yet, keep the planned paths.
@@ -42,8 +43,9 @@ owners:
   ai_policy: {role: null, first_name: null, what: ai-policy.yaml (the person in charge of data)}
 
 # The teams: the code (lowercase) prefixes the identifiers (ops → OPS-R1, OPS-T1.2). headcount:
-# how many people the team counts, each person counted once, in the team where they spend most of
-# their time; the explorer compares it with the people who sent a map (README_operations.md §1.16).
+# how many people work in the team, even part of their time (a person who works for two teams
+# counts in both); the explorer compares it with the people who sent a map for the team
+# (README_operations.md §1.16).
 teams:
   - {code: <code>, name: <team name>, scope: <the business areas it covers>, headcount: <number of people>}
 
