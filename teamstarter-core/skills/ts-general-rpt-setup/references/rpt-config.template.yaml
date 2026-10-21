@@ -41,9 +41,11 @@ owners:
   referential: {role: null, first_name: <first and last name>, what: structure of the referential, merge of the maps}
   ai_policy: {role: null, first_name: null, what: ai-policy.yaml (the person in charge of data)}
 
-# The teams: the code (lowercase) prefixes the identifiers (ops → OPS-R1, OPS-T1.2).
+# The teams: the code (lowercase) prefixes the identifiers (ops → OPS-R1, OPS-T1.2). headcount:
+# how many people the team counts, each person counted once, in the team where they spend most of
+# their time; the explorer compares it with the people who sent a map (README_operations.md §1.16).
 teams:
-  - {code: <code>, name: <team name>, scope: <the business areas it covers>}
+  - {code: <code>, name: <team name>, scope: <the business areas it covers>, headcount: <number of people>}
 
 # The catalogues of the referential, relative to referential. Absent = not used; a map then
 # borrows the generic catalogues shipped with the skills.

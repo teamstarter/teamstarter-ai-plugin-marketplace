@@ -139,7 +139,7 @@ KEYS = {
                 "notes", "sources"],
     # A person of the organization, first and last name, and the ways their AI reaches the OS
     # (people.yaml, README_operations.md §1.16).
-    "person": ["id", "name", "aliases", "os_access", "ai_plan", "notes", "sources"],
+    "person": ["id", "name", "aliases", "os_access", "ai_plan", "maps", "notes", "sources"],
     # An agent that runs recurring tasks without being launched by hand: a managed agent, a
     # Routine, a scheduled task of a person's Claude, a worker (agents.yaml, §1.16).
     "agent": ["id", "name", "kind", "platform", "state", "stage", "schedule", "owner", "people",
@@ -1347,6 +1347,7 @@ def check_person(x, idx=None):
     """A person and the ways their AI reaches the OS (README_operations.md §1.16)."""
     where = f"{x['_file']} {x.get('id')}"
     errors = check_keys("person", x, where) + check_plan(x.get("ai_plan"), where, idx)
+    errors += check_maps(x.get("maps"), where)
     access = x.get("os_access") or []
     if not isinstance(access, list):
         return errors + [tr("check.access_shape", where=where)]
@@ -1369,6 +1370,63 @@ def check_person(x, idx=None):
             errors.append(tr("obs.evidence_long", where=at, size=len(a["evidence"]),
                              max=EVIDENCE_MAX))
     return errors
+
+
+def check_maps(maps, where):
+    """`maps`: the maps of the person merged into the referential, one entry per map, `{hat,
+    date}`: the code of the team of the map (`meta.team`) and its date (README_operations.md
+    §1.16). The merge adds the entry."""
+    if maps is None:
+        return []
+    if not isinstance(maps, list):
+        return [tr("check.maps_shape", where=where, value=repr(maps))]
+    return [tr("check.maps_shape", where=f"{where} maps[{n}]", value=repr(m))
+            for n, m in enumerate(maps, 1)
+            if not (isinstance(m, dict) and set(m) <= {"hat", "date"}
+                    and TEAM_RE.match(str(m.get("hat") or ""))
+                    and DATE_RE.match(str(m.get("date") or "")))]
+
+
+def map_coverage(ref, cfg=None, today=None):
+    """How much of the organization the referential describes, and how recent it is
+    (README_operations.md §1.16): per person, the date of their last map, its age on `today`
+    (the update date of the referential) and its level on the scale of the zones of the OS
+    (FRESHNESS); per team of the configuration, its headcount (`teams[].headcount`), the people
+    who sent a map for it, and the people the referential knows in it who did not; and the
+    people to remind: never mapped first, then the oldest last maps from « aging » on."""
+    today = today or last_updated(ref)[:10]
+    if not today:
+        return None
+    day = datetime.date.fromisoformat(today)
+    people = []
+    for x in ref["people"]:
+        maps = [m for m in x.get("maps") or [] if isinstance(m, dict) and m.get("date")]
+        last = max((str(m["date"]) for m in maps), default=None)
+        days = (day - datetime.date.fromisoformat(last)).days if last else None
+        people.append({"id": x.get("id"), "name": x.get("name"), "teams": x.get("_teams") or [],
+                       "maps": len(maps), "hats": sorted({str(m.get("hat")) for m in maps}),
+                       "last": last, "days": days,
+                       "level": freshness_level(days) if days is not None else None})
+    teams = []
+    for t in (cfg or {}).get("teams") or []:
+        if not isinstance(t, dict) or not t.get("code"):
+            continue
+        code = str(t["code"])
+        mapped = [p for p in people if code in p["hats"]]
+        known = [p for p in people if code in p["teams"] and code not in p["hats"]]
+        if not (mapped or known or t.get("headcount")):
+            continue
+        teams.append({"code": code, "name": t.get("name"), "headcount": t.get("headcount"),
+                      "mapped": len(mapped), "missing": [p["id"] for p in known]})
+    counts = [t.get("headcount") for t in (cfg or {}).get("teams") or [] if isinstance(t, dict)]
+    headcount = sum(c for c in counts if isinstance(c, int)) or None
+    never = sorted((p for p in people if not p["last"]), key=lambda p: str(p["name"]))
+    old = sorted((p for p in people if p["level"] in ("aging", "old", "stale")),
+                 key=lambda p: -p["days"])
+    return {"today": today, "people": people, "teams": teams, "headcount": headcount,
+            "headcount_complete": bool(counts) and all(isinstance(c, int) for c in counts),
+            "mapped": sum(1 for p in people if p["last"]), "known": len(people),
+            "remind": [p["id"] for p in never + old]}
 
 
 def check_agent(a, idx, criteria=True):
@@ -3422,6 +3480,10 @@ def check_config_lists(cfg, where):
                if c and not TEAM_RE.match(str(c))]
     errors += [tr("config.team_twice", where=where, code=c) for c in sorted(set(codes))
                if c and codes.count(c) > 1]
+    errors += [tr("config.headcount", where=where, code=t.get("code"), value=repr(t["headcount"]))
+               for t in teams if isinstance(t, dict) and t.get("headcount") is not None
+               and not (isinstance(t["headcount"], int) and not isinstance(t["headcount"], bool)
+                        and t["headcount"] >= 0)]
     errors += [tr("config.catalogue", where=where, key=k, value=repr(v))
                for k, v in (cfg.get("catalogues") or {}).items()
                if not str(v).endswith(".yaml")]
@@ -3445,10 +3507,14 @@ def config_warnings(cfg, where="rpt-config.yaml"):
     then speak English; the content of the referential stays in that language)."""
     org = (cfg.get("organization") if isinstance(cfg, dict) else None) or {}
     value = org.get("language") if isinstance(org, dict) else None
+    teams = [t for t in (cfg.get("teams") if isinstance(cfg, dict) else None) or []
+             if isinstance(t, dict) and t.get("code")]
+    without = [str(t["code"]) for t in teams if t.get("headcount") is None]
+    out = [tr("config.no_headcount", where=where, codes=", ".join(without))] if without else []
     if not value or str(value).strip().lower() in rpt_i18n.LANGUAGES:
-        return []
-    return [tr("config.language", where=where, value=repr(value),
-               languages=", ".join(rpt_i18n.LANGUAGES))]
+        return out
+    return out + [tr("config.language", where=where, value=repr(value),
+                     languages=", ".join(rpt_i18n.LANGUAGES))]
 
 
 def config_teams_errors(cfg, ref):
@@ -3470,7 +3536,8 @@ def public_config(cfg):
         return None
     intake = cfg.get("intake") or {}
     return {"organization": (cfg.get("organization") or {}).get("name"),
-            "teams": [{"code": t.get("code"), "name": t.get("name")}
+            "teams": [{"code": t.get("code"), "name": t.get("name"),
+                       "headcount": t.get("headcount")}
                       for t in cfg.get("teams") or [] if isinstance(t, dict)],
             "intake": {"drive_folder": intake.get("drive_folder"), "email": intake.get("email"),
                        "merged_by": intake.get("merged_by")}}
@@ -3513,6 +3580,7 @@ def explorer_data(ref):
     return {"format": FORMAT, "updated": last_updated(ref), "stats": stats(ref),
             "prompt": mapping_prompt(), "context": claude_context(),
             "config": public_config(load_config()),
+            "coverage": map_coverage(ref, load_config()),
             "relevance_max": RELEVANCE_MAX,
             "history": history_data(ref), "library": library(ref),
             "ai_profile": ai_profile(ref),
@@ -5065,9 +5133,17 @@ def md_people(ref, lang=None):
         return []
     st = people_stats(ref)
     names = {t["id"]: t.get("name") for t in ref["tools"]}
+    cov = map_coverage(ref, load_config()) or {"people": []}
+    last = {p["id"]: p for p in cov["people"]}
+    maps = [tr("md.people_maps", lang, mapped=cov["mapped"],
+               base=tr("md.people_base_headcount", lang, n=cov["headcount"])
+               if cov.get("headcount") else tr("md.people_base_known", lang),
+               fresh=sum(1 for p in cov["people"] if p["days"] is not None and p["days"] <= 30),
+               never=sum(1 for p in cov["people"] if not p["last"]))] if cov["people"] else []
     lines = ["", tr("md.people_title", lang), "",
              tr("md.people_intro", lang, total=st["people"], coverage=st["coverage"],
-                **st["access"]), "", tr("md.people_header", lang), "|---|---|---|---|"]
+                **st["access"]), *([""] + maps if maps else []), "",
+             tr("md.people_header", lang), "|---|---|---|---|---|"]
     for x in sorted(ref["people"], key=lambda x: (ACCESS_RANK.get(x.get("_access"), 9),
                                                   str(x.get("name")))):
         ways = "<br>".join(
@@ -5078,8 +5154,9 @@ def md_people(ref, lang=None):
                if a.get("state") else "")
             for a in x.get("os_access") or [] if isinstance(a, dict))
         state = label("access_state", x.get("_access"), lang, x.get("_access"))
-        lines.append(f"| {x.get('name')} | {', '.join(x.get('_teams') or [])} | {state} | "
-                     f"{ways} |")
+        seen = (last.get(x.get("id")) or {}).get("last") or tr("md.never", lang)
+        lines.append(f"| {x.get('name')} | {', '.join(x.get('_teams') or [])} | {seen} | "
+                     f"{state} | {ways} |")
     return lines
 
 
