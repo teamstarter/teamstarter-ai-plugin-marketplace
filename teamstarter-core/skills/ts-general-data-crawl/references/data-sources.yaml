@@ -129,7 +129,7 @@ data_sources:
     description:
       en: Boards of the opportunity kick-offs, of the offer workshops and of the continuous improvement workshops.
       fr: Boards des kick-off d'opportunité, des ateliers d'offres et d'amélioration continue.
-    sensitivity: []
+    sensitivity: [client]
 
   - id: data:savoir-interne
     name: {en: Internal knowledge, fr: Savoir interne}
