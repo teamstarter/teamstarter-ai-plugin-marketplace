@@ -139,7 +139,8 @@ KEYS = {
                 "notes", "sources"],
     # A person of the organization, first and last name, and the ways their AI reaches the OS
     # (people.yaml, README_operations.md §1.16).
-    "person": ["id", "name", "aliases", "os_access", "ai_plan", "maps", "notes", "sources"],
+    "person": ["id", "name", "aliases", "state", "os_access", "ai_plan", "maps", "notes",
+               "sources"],
     # An agent that runs recurring tasks without being launched by hand: a managed agent, a
     # Routine, a scheduled task of a person's Claude, a worker (agents.yaml, §1.16).
     "agent": ["id", "name", "kind", "platform", "state", "stage", "schedule", "owner", "people",
@@ -366,6 +367,8 @@ ENUMS = {
     "access_mode": {"connector", "local", "repository", "none"},
     "licence_tier": {"free", "standard", "premium"},
     "access_state": {"works", "not_found", "unchecked"},
+    # A person still in the company and in the scope of the mapping, or not (§1.16).
+    "person_state": {"active", "left", "excluded"},
     "agent_kind": {"managed-agent", "routine", "scheduled-task", "worker"},
     "agent_state": {"construction", "live", "paused", "retired"},
     "agent_stage": set(AGENT_STAGES),
@@ -858,7 +861,7 @@ def validate(ref):
     errors, warnings = errors + e, warnings + w
     for x in ref["people"]:
         errors += check_person(x, idx)
-    warnings += check_shared_names(ref)
+    warnings += check_shared_names(ref) + check_people_gone(ref)
     for a in ref["agents"]:
         e, w = check_agent(a, idx)
         errors, warnings = errors + e, warnings + w
@@ -1348,6 +1351,7 @@ def check_person(x, idx=None):
     where = f"{x['_file']} {x.get('id')}"
     errors = check_keys("person", x, where) + check_plan(x.get("ai_plan"), where, idx)
     errors += check_maps(x.get("maps"), where)
+    errors += check_enum(where, "state", x.get("state"), "person_state")
     access = x.get("os_access") or []
     if not isinstance(access, list):
         return errors + [tr("check.access_shape", where=where)]
@@ -1370,6 +1374,30 @@ def check_person(x, idx=None):
             errors.append(tr("obs.evidence_long", where=at, size=len(a["evidence"]),
                              max=EVIDENCE_MAX))
     return errors
+
+
+def check_people_gone(ref):
+    """A person who left the company or is out of the mapping's scope (`state`, §1.16) still
+    named in the `holders` of a role or the `by` of an active task: hand the work over."""
+    gone = {}
+    for x in ref["people"]:
+        if x.get("state") in ("left", "excluded"):
+            for n in [x.get("name")] + list(x.get("aliases") or []):
+                gone[str(n)] = x
+    out = []
+    for r in ref["roles"]:
+        for h in r.get("holders") or []:
+            x = gone.get(human_name(h))
+            if x and r.get("state") != "retired":
+                out.append(tr("warn.person_gone", where=f"{r['_file']} {r['id']} holders",
+                              name=x.get("name"), state=x.get("state")))
+    for t in ref["tasks"]:
+        for b in t.get("by") or []:
+            x = gone.get(human_name(b))
+            if x and t.get("state") == "active":
+                out.append(tr("warn.person_gone", where=f"{t['_file']} {t['id']} by",
+                              name=x.get("name"), state=x.get("state")))
+    return out
 
 
 def check_maps(maps, where):
@@ -2211,7 +2239,12 @@ def resolve(idx, value):
 
 
 def enrich(ref):
-    """Add computed fields: effective departments, processes of each task, step statuses."""
+    """Add computed fields: effective departments, processes of each task, step statuses. The
+    people who left the company or are out of the scope of the mapping (`state: left`,
+    `excluded`, §1.16) leave every computation and view: they stay in people.yaml only."""
+    ref["people_out"] = ref.get("people_out", []) + [
+        x for x in ref["people"] if x.get("state") in ("left", "excluded")]
+    ref["people"] = [x for x in ref["people"] if x.get("state") not in ("left", "excluded")]
     idx = index(ref)
     roles = {r["id"]: r for r in ref["roles"]}
     member = {}

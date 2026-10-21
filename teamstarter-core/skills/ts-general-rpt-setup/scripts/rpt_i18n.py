@@ -188,6 +188,10 @@ LABELS = {
         "unchecked": {"en": "not checked", "fr": "pas vérifié"},
         "none": {"en": "no access", "fr": "aucun accès"},
         "unknown": {"en": "not surveyed", "fr": "pas relevé"}},
+    "person_state": {
+        "active": {"en": "active", "fr": "active"},
+        "left": {"en": "left the company", "fr": "a quitté l'entreprise"},
+        "excluded": {"en": "out of the mapping's scope", "fr": "hors du périmètre de la carto"}},
     "agent_kind": {
         "managed-agent": {"en": "managed agent", "fr": "agent managé"},
         "routine": {"en": "Routine", "fr": "Routine"},
@@ -1066,6 +1070,11 @@ MESSAGES = {
               "instructions)",
         "fr": "{where} : `global_context` fait {size} caractères, au plus {max} (instructions "
               "de l'organisation)"},
+    "warn.person_gone": {
+        "en": "{where}: {name} is `{state}` in people.yaml: give the work to the person who does "
+              "it now (README_operations.md §1.16)",
+        "fr": "{where} : {name} est `{state}` dans people.yaml : donner le travail à la personne "
+              "qui le fait aujourd'hui (README_operations.md §1.16)"},
     "check.maps_shape": {
         "en": "{where}: `maps` = {value}: a list of `{{hat, date}}`, the team code of each map "
               "merged and its date ('YYYY-MM-DD') (README_operations.md §1.16)",
