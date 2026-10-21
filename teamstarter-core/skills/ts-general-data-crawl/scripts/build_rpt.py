@@ -1447,12 +1447,17 @@ def map_coverage(ref, cfg=None, today=None):
         teams.append({"code": code, "name": t.get("name"), "headcount": t.get("headcount"),
                       "mapped": len(mapped), "missing": [p["id"] for p in known]})
     counts = [t.get("headcount") for t in (cfg or {}).get("teams") or [] if isinstance(t, dict)]
-    headcount = sum(c for c in counts if isinstance(c, int)) or None
+    total = ((cfg or {}).get("organization") or {}).get("headcount")
+    # The company's headcount counts each person once; the teams' may overlap (a person who works
+    # for two teams counts in both), so their sum is only a fallback.
+    headcount = total if isinstance(total, int) and total > 0 else \
+        sum(c for c in counts if isinstance(c, int)) or None
     never = sorted((p for p in people if not p["last"]), key=lambda p: str(p["name"]))
     old = sorted((p for p in people if p["level"] in ("aging", "old", "stale")),
                  key=lambda p: -p["days"])
     return {"today": today, "people": people, "teams": teams, "headcount": headcount,
-            "headcount_complete": bool(counts) and all(isinstance(c, int) for c in counts),
+            "headcount_complete": (isinstance(total, int) and total > 0) or
+            (bool(counts) and all(isinstance(c, int) for c in counts)),
             "mapped": sum(1 for p in people if p["last"]), "known": len(people),
             "remind": [p["id"] for p in never + old]}
 
@@ -3488,6 +3493,11 @@ def check_config(cfg, where="rpt-config.yaml"):
     intake = cfg.get("intake") or {}
     errors += [tr("config.missing", where=where, key=f"organization.{k}")
                for k in ("name", "language") if not org.get(k)]
+    total = org.get("headcount")
+    if total is not None and not (isinstance(total, int) and not isinstance(total, bool)
+                                  and total >= 0):
+        errors.append(tr("config.headcount", where=where, code="organization",
+                         value=repr(total)))
     if not (ref.get("drive_folder") or ref.get("repository_path")):
         errors.append(tr("config.referential_where", where=where))
     if not ref.get("index"):

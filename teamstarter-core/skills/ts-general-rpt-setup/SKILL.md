@@ -119,11 +119,12 @@ The `scope` is written in the organization's language. A code is written in lowe
 and hyphens, short (2 to 8 characters), one per team. A person with several jobs will make one map
 per team: there is no "everything" team.
 
-Then ask, in a single question, **how many people each team counts** (`headcount`): the explorer
-compares it with the people who sent a map, team by team, and says who to remind. Show the teams
-kept, each with an empty number to fill; "I don't know" leaves the team without `headcount` (the
-script then warns, and the coverage is computed on the people the referential knows). A person
-counts in the team where they spend most of their time, once.
+Then ask, in a single question, **how many people the organization counts**
+(`organization.headcount`, each person once) **and how many work in each team** (`teams[].headcount`,
+a person who works for two teams counts in both): the explorer compares them with the people who
+sent a map, for the company and team by team, and says who to remind. Show the teams kept, each
+with an empty number to fill; "I don't know" leaves the number out (the script then warns, and the
+coverage is computed on the people the referential knows).
 
 ## Step 4 — Confidentiality and owners
 
