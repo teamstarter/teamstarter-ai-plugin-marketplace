@@ -1,8 +1,8 @@
 ---
 name: ts-general-data-crawl
-description: "Describe where an organization's data is kept and how it is laid out, tool by tool (Google Drive, Notion, HubSpot, Slack, Gmail, Jira), from the connectors of the person who runs it: the folders, files, sheets, databases, CRM objects and pipelines, channels, labels and projects, nested as in the tool, with their size, the date of their last change and their column names. Never reads or sends a value of the data: no document content, no message, no record, no client name, no amount. Shows a preview of what will be sent, then, after the person's approval, drops the data map (rpt/v1 file with containers) in the organization's intake folder, where it is merged into the data tree of the RPT referential. Use when someone wants to know or map where the company's data is, which tool holds what, or whether it is up to date. Triggers: 'map our data', 'where is our data', 'crawl my Drive structure', « cartographie nos données », « où est notre donnée », « fais la carte des données »."
+description: "Describe where an organization's data is kept and how it is laid out, tool by tool (Google Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), from the connectors of the person who runs it: the folders, files, sheets, databases, CRM objects and pipelines, channels, labels and projects, nested as in the tool, with their size, the date of their last change and their column names. Never reads or sends a value of the data: no document content, no message, no record, no client name, no amount. Shows a preview of what will be sent, then, after the person's approval, drops the data map (rpt/v1 file with containers) in the organization's intake folder, where it is merged into the data tree of the RPT referential. Use when someone wants to know or map where the company's data is, which tool holds what, or whether it is up to date. Triggers: 'map our data', 'where is our data', 'crawl my Drive structure', « cartographie nos données », « où est notre donnée », « fais la carte des données »."
 metadata:
-  version: "1.1 (2026-10-19)"
+  version: "1.2 (2026-10-23)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-data-crawl; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -16,10 +16,10 @@ the enum values stay as in the format (`references/format-datamap-v1.md`).
 The organization keeps a referential of its roles, processes and tasks (RPT), and, next to it, a
 **data map**: for each type of data (client accounts, offers and quotes, tickets…), the tools
 where it is, and in each tool the places that hold it (a Drive folder, a sheet, a Notion
-database, a HubSpot object, a Slack channel, a Gmail label, a Jira project). The data map answers
-questions such as "Where are the client quotes, and who creates and updates them?": the place
-comes from this skill; who keeps it comes from the referential (the roles of the tasks that
-write it), at the merge.
+database, a HubSpot object, a Slack channel, a Gmail label, a Linear team, a Jira project). The
+data map answers questions such as "Where are the client quotes, and who creates and updates
+them?": the place comes from this skill; who keeps it comes from the referential (the roles of
+the tasks that write it), at the merge.
 
 This skill describes the places of the tools the person reaches with their connectors. It reads
 **metadata only**: names of folders and files, kinds, counts, dates of last change, column or
@@ -106,8 +106,8 @@ end the message with the question alone on its last line, in bold.
 
 ## Step 1 — Frame
 
-Look at the connectors available in your tools among Google Drive, Notion, HubSpot, Slack, Gmail
-and Jira (Atlassian). Then, in a single call:
+Look at the connectors available in your tools among Google Drive, Notion, HubSpot, Slack, Gmail,
+Linear and Jira (Atlassian). Then, in a single call:
 
 1. "Which tools shall I describe?" (several answers): the connected tools, each named. A tool
    without a connector is not offered; say in the message which ones are missing.
@@ -180,6 +180,16 @@ business data.
 **Jira.** For each project: its key, its issue types (`fields`), its statuses (in `notes`), its
 number of issues (the total of a JQL search with one result) and the date of the last update
 (a search sorted by `updated`, one result, keeping only its date). Kinds: `project`, `board`.
+
+**Linear.** For each team: its key (in `path`), its statuses with their type (`triage`,
+`backlog`, `unstarted`, `started`, `completed`, `canceled`) in `notes`, its label groups and
+labels as `fields` (names only), whether it runs cycles (in `notes`), its number of issues (the
+issues listed with the largest page the tool allows; `approx: true` when there is a next page)
+and the date of the last update (a list sorted by update, one result, keeping only its date).
+Kind: `project`, as a Jira project: a Linear team holds the issues, their key and their
+statuses. For each project of the team that is not canceled or completed: its name, its status,
+its number of issues and the date of its last update; kind `project`, `parent` = the team.
+A saved view is a `view`. Never write the title or the description of an issue.
 
 When a tool refuses (rights, timeout), write the containers you could describe, and say in the
 summary which ones are missing and why.

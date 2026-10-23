@@ -71,8 +71,8 @@ data_sources:
   - id: data:tickets
     name: {en: Development tickets, fr: Tickets de développement}
     description:
-      en: Bugs, stories and epics, with their status, their sprint and their comments.
-      fr: Bugs, stories et epics, avec leur statut, leur sprint et leurs commentaires.
+      en: Bugs, features and technical tasks, grouped in projects, with their status, their relations and their comments.
+      fr: Bugs, features et tâches techniques, rangés par projet, avec leur statut, leurs relations et leurs commentaires.
     sensitivity: []
 
   - id: data:code

@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.10 (2026-10-21)"
+  version: "1.11 (2026-10-23)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -233,8 +233,8 @@ Tell the person, in this order:
 4. To know where the organization's data is (which tool, which folder, how fresh, who keeps
    it), have the people who reach the shared tools run the skill `ts-general-data-crawl` ("map
    where our data is", « cartographie nos données »): it describes the places of their Drive,
-   Notion, HubSpot, Slack, Gmail and Jira without reading any content, and drops the data map in
-   the same intake folder.
+   Notion, HubSpot, Slack, Gmail, Linear and Jira without reading any content, and drops the
+   data map in the same intake folder.
 
 A change of folder, address or team is made in `rpt-config.yaml`; run this skill again with the
 existing file, or edit it and check it with the script. The skills read the file at each use: no
