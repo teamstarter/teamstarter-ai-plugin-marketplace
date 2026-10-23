@@ -34,7 +34,7 @@ Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartograp
 |---|---|---|
 | `ts-general-rpt-setup` | Mettre en place RPT dans l'organisation : écrire son fichier `rpt-config.yaml` et le texte à coller dans les instructions de Claude. Une fois par organisation | « Configure RPT pour ma boîte », « Mets en place RPT » |
 | `ts-general-check-process-cartography` | Cartographier ses rôles, processus et tâches, ou ceux de son équipe, avec le niveau d'automatisation de chaque tâche, puis déposer la carte dans le dossier de réception de l'organisation | « Fais la carte de mes rôles », « Cartographie mon équipe », « Qu'est-ce que je pourrais automatiser ? » |
-| `ts-general-data-crawl` | Décrire où sont les données de l'organisation, outil par outil (Drive, Notion, HubSpot, Slack, Gmail, Jira), sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
+| `ts-general-data-crawl` | Décrire où sont les données de l'organisation, outil par outil (Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
 | `ts-general-rpt-observe` | À la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche (durée, outils, méthode, blocage) | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | Ranger le livrable d'une tâche là où sa fiche le dit, sous le bon nom | « Où je range ça ? », « Range ce fichier au bon endroit » |
 

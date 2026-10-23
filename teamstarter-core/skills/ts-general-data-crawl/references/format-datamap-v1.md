@@ -35,7 +35,7 @@ asked "where is it?".
 | `kind` | yes | One of the kinds of §2. |
 | `data` | yes | Id of the type of data: `catalogues/data-sources.yaml`, else `references/data-sources.yaml`, else declared in `data_sources`. |
 | `parent` | no | Id of the container it sits in, in the same tool (a sheet in a folder, a pipeline under an object). |
-| `path` | no | Where it is in the tool, with placeholders: `Commercial/Propositions/[Client]/`, `CRM › Devis`, `#client-[client]`, the key of a Jira project. |
+| `path` | no | Where it is in the tool, with placeholders: `Commercial/Propositions/[Client]/`, `CRM › Devis`, `#client-[client]`, the key of a Jira project or of a Linear team. |
 | `url` | no | `https://` link of the container (never of an item inside it). |
 | `holds` | no | One sentence: what it holds, described as a type ("one folder per client, with its proposals"). |
 | `items` | no | `{count, unit, approx}`: how many items (`count` a whole number), of what (`unit`: "fichiers", "devis", "pages"), `approx: true` for an estimate. |
@@ -59,7 +59,7 @@ The freshness of a container is computed from the age of its last change: 7 days
 
 `folder`, `file`, `document`, `spreadsheet`, `presentation` (Drive); `database`, `page`, `view`
 (Notion); `object`, `pipeline`, `list` (HubSpot); `channel` (Slack); `label` (Gmail); `project`,
-`board` (Jira); `other`.
+`board` (Jira); `project`, `view` (Linear: a team or a project, a saved view); `other`.
 
 ## 3. Placeholders
 
