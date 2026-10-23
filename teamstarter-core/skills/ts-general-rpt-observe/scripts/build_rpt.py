@@ -13,6 +13,9 @@ The referential is every `*.yaml` file of a folder whose `format` is `rpt/v1`
     python3 teamstarter-os/tools/build_rpt.py --dir <folder|file> --validate-only   # any rpt/v1 referential
     python3 teamstarter-os/tools/build_rpt.py --lang en  # messages in English (default: RPT_LANG, else
                                                          # organization.language of rpt-config.yaml)
+    python3 teamstarter-os/tools/build_rpt.py --empty --company "Acme" [--drive URL] [--lang en]
+                                                         # a blank explorer for a new organization:
+                                                         # each page empty, a Setup page first
 
 A folder or file other than OS/Operations borrows the departments, task types, tools and data
 sources it does not declare from OS/Operations, or from the folder given by --catalogues (the skill
@@ -47,8 +50,10 @@ import json
 import math
 import os
 import re
+import shutil
 import statistics
 import sys
+import tempfile
 
 import yaml
 
@@ -3590,7 +3595,8 @@ def skill_downloads():
 def claude_context():
     """The text to paste in Claude's global context: `global_context` of rpt-config.yaml."""
     cfg = load_config()
-    return str(cfg.get("global_context") or "").strip() + "\n" if cfg else ""
+    text = str((cfg or {}).get("global_context") or "").strip()
+    return text + "\n" if text else ""
 
 
 def public_config(cfg):
@@ -5324,17 +5330,65 @@ def role_number(role_id):
 # ---------------------------------------------------------------------------- HTML view
 
 def render_html(ref):
-    template = read_text(TEMPLATE)
-    payload = json.dumps(explorer_data(ref), ensure_ascii=False, separators=(",", ":"))
-    payload = payload.replace("</", "<\\/")  # keep </script> out of the inline JSON
     org = ((load_config() or {}).get("organization") or {}).get("name") or \
         tr("html.organization", view_language())
-    title = tr("html.title", view_language(), org=org)
+    return fill_template(explorer_data(ref), org, view_language())
+
+
+def fill_template(data, org, lang):
+    """The explorer page: the template with `data` inline and the organization's name."""
+    template = read_text(TEMPLATE)
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    payload = payload.replace("</", "<\\/")  # keep </script> out of the inline JSON
+    title = tr("html.title", lang, org=org)
     template = template.replace("__TITLE__", html.escape(title))
-    template = template.replace("__DESCRIPTION__",
-                                html.escape(tr("html.description", view_language())))
+    template = template.replace("__DESCRIPTION__", html.escape(tr("html.description", lang)))
     template = template.replace("__ORG__", html.escape(str(org)))
     return template.replace("/*__RPT_DATA__*/null", payload)
+
+
+def blank_data(company, lang, drive=None):
+    """What a blank explorer shows: an organization with no map yet. The catalogues are not
+    borrowed (published keeps none of them, nothing cites them), nor Teamstarter's AI policy
+    or configuration; `blank` tells the page to draw each section empty and to open on Setup."""
+    global ACTIVE_CONFIG
+    before, folder = ACTIVE_CONFIG, tempfile.mkdtemp()
+    ref = {name: [] for name in LISTS}
+    ref.update(files={}, ai_policy=None, ai_investment=None, dir=folder)
+    cfg = {"format": CONFIG_FORMAT, "organization": {"name": company, "language": lang},
+           "referential": {"config_url": drive}}
+    ACTIVE_CONFIG = os.path.join(folder, "rpt-config.yaml")
+    try:
+        write_text(ACTIVE_CONFIG, yaml.safe_dump(cfg, allow_unicode=True))
+        enrich(ref)
+        data = explorer_data(ref)
+        data["blank"] = {"organization": company, "drive": drive or ""}
+        return data
+    finally:
+        ACTIVE_CONFIG = before
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def render_blank(company, lang, drive=None):
+    """The explorer of an organization that has mapped nothing yet (--empty)."""
+    return fill_template(blank_data(company, lang, drive), company, lang)
+
+
+def build_blank(args):
+    """--empty --company NAME: write the blank explorer of a new organization."""
+    company = (args.company or "").strip()
+    if not company:
+        print(tr("cli.blank_company"))
+        return 1
+    drive = (args.drive or "").strip()
+    if drive and not drive.startswith("https://"):
+        print(tr("cli.blank_drive", url=drive))
+        return 1
+    lang = rpt_i18n.resolve(args.lang, None)
+    out = args.out or "rpt-explorer-" + (slug(company) or "organization") + ".html"
+    write_text(out, render_blank(company, lang, drive or None))
+    print(tr("cli.blank_written", file=out, org=company))
+    return 0
 
 
 # ---------------------------------------------------------------------------- formatter
@@ -5537,6 +5591,16 @@ def main(argv=None):
                              "two parents, else none (never Teamstarter's for another folder)")
     parser.add_argument("--config-check", metavar="FILE", nargs="?", const=CONFIG,
                         help="check an organization's rpt-config.yaml (default: the OS's)")
+    parser.add_argument("--empty", action="store_true",
+                        help="write a blank explorer for a new organization (--company): every "
+                             "page shows what it will hold, and a Setup page says how to fill it")
+    parser.add_argument("--company", metavar="NAME", help="with --empty: the organization's name")
+    parser.add_argument("--drive", metavar="URL",
+                        help="with --empty: the link of the organization's Drive folder <Org>/OS/, "
+                             "written in the global context of the Setup page")
+    parser.add_argument("--out", metavar="FILE",
+                        help="with --empty: the file to write (default: rpt-explorer-<company>.html "
+                             "in the current folder)")
     parser.add_argument("--lang", metavar="CODE",
                         help="language of the messages (en, fr); default: the environment "
                              "variable RPT_LANG, else organization.language of rpt-config.yaml, "
@@ -5556,6 +5620,8 @@ def dispatch(args):
     setup_language(args.lang)
     if args.config_check:
         return check_config_file(args.config_check)
+    if getattr(args, "empty", False):
+        return build_blank(args)
     if args.observation:
         return check_one_observation(args)
     if args.datamap_plan:

@@ -1528,6 +1528,15 @@ MESSAGES = {
     "cli.scope_form": {
         "en": "the form only (no referential here)",
         "fr": "forme seulement (pas de référentiel ici)"},
+    "cli.blank_company": {
+        "en": "--empty needs the organization's name: --company \"Acme\"",
+        "fr": "--empty demande le nom de l'organisation : --company \"Acme\""},
+    "cli.blank_drive": {
+        "en": "--drive {url}: expected the link of a Drive folder (https://…)",
+        "fr": "--drive {url} : un lien de dossier Drive est attendu (https://…)"},
+    "cli.blank_written": {
+        "en": "{file}: blank explorer of {org} written",
+        "fr": "{file} : explorateur vierge de {org} écrit"},
     "cli.copy_first": {
         "en": "{file}: copy it first into {folder}/ of the referential, where it is checked and "
               "kept (README_operations.md §4.1)",
