@@ -39,6 +39,7 @@ examples, aliases of departments, task types and data sources) are maps by langu
 Exit code 1 when the referential has errors (or, with --check, a stale view).
 """
 import argparse
+import base64
 import datetime
 import glob
 import html
@@ -58,6 +59,11 @@ from rpt_i18n import t as tr  # noqa: E402 (here `t` names a task)
 DEFAULT_DIR = os.path.normpath(os.path.join(HERE, "..", "OS", "Operations"))
 TEMPLATE = os.path.join(HERE, "rpt_explorer.template.html")
 PROMPT = os.path.normpath(os.path.join(HERE, "..", "skills", "ts-general-rpt-map", "PROMPT.md"))
+SKILLS_DIR = os.path.normpath(os.path.join(HERE, "..", "skills"))
+# The skills a client installs by hand when it does not use the teamstarter-core plugin, in the
+# order the Cartographier tab shows them; each one is its packaged `<name>.skill` file.
+CLIENT_SKILLS = ("ts-general-check-process-cartography", "ts-general-data-crawl",
+                 "ts-general-rpt-observe", "ts-general-rpt-file", "ts-general-rpt-setup")
 FORMAT = "rpt/v1"
 LISTS = ("departments", "task_types", "tools", "data_sources", "okrs", "roles", "processes",
          "tasks", "blockers", "os_zones", "insights", "people", "agents", "products",
@@ -3567,6 +3573,20 @@ def config_teams_errors(cfg, ref):
     return [tr("config.team_unused", team=x) for x in used if x] if cfg else []
 
 
+def skill_downloads():
+    """The packaged skills of CLIENT_SKILLS, embedded in base64 so the explorer offers them for
+    download without the plugin; a skill whose file is missing is left out."""
+    out = []
+    for name in CLIENT_SKILLS:
+        path = os.path.join(SKILLS_DIR, name + ".skill")
+        if os.path.isfile(path):
+            with open(path, "rb") as f:
+                data = f.read()
+            out.append({"name": name, "size": len(data),
+                        "b64": base64.b64encode(data).decode("ascii")})
+    return out
+
+
 def claude_context():
     """The text to paste in Claude's global context: `global_context` of rpt-config.yaml."""
     cfg = load_config()
@@ -3622,6 +3642,7 @@ def explorer_data(ref):
     labels, cited = explorer_labels(lang), cited_ids(ref)
     return {"format": FORMAT, "updated": last_updated(ref), "stats": stats(ref),
             "prompt": mapping_prompt(), "context": claude_context(),
+            "skill_files": skill_downloads(),
             "config": public_config(load_config()),
             "coverage": map_coverage(ref, load_config()),
             "relevance_max": RELEVANCE_MAX,
