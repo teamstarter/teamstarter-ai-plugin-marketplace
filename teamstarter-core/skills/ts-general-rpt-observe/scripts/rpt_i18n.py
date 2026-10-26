@@ -197,6 +197,12 @@ LABELS = {
         "routine": {"en": "Routine", "fr": "Routine"},
         "scheduled-task": {"en": "scheduled task", "fr": "tâche planifiée"},
         "worker": {"en": "worker", "fr": "worker"}},
+    "source_scope": {
+        "role": {"en": "specific to a role", "fr": "propre à un rôle"},
+        "team": {"en": "specific to a team", "fr": "propre à une équipe"},
+        "shared": {"en": "shared, kept by a role", "fr": "partagée, tenue par un rôle"},
+        "transverse": {"en": "transverse", "fr": "transverse"},
+        "unused": {"en": "no active task", "fr": "aucune tâche active"}},
     "os_status": {
         "included": {"en": "included", "fr": "incluse"},
         "to_add": {"en": "to add to the OS", "fr": "à ajouter à l'OS"},
@@ -629,6 +635,11 @@ MESSAGES = {
     "warn.no_config": {
         "en": "{folder}: no rpt-config.yaml (here, in its two parent folders, --config or RPT_CONFIG): the views are built without a global context or an intake address",
         "fr": "{folder} : aucune rpt-config.yaml (ici, dans ses deux dossiers parents, --config ou RPT_CONFIG) : les vues sont construites sans contexte global ni adresse de dépôt"},
+    "warn.source_owner_no_task": {
+        "en": "{where}: owner {owner} has no active task that cites this source (who keeps it "
+              "up to date?, README_operations.md §1.7)",
+        "fr": "{where}: le responsable {owner} n'a aucune tâche active qui cite cette source "
+              "(qui la tient à jour ?, README_operations.md §1.7)"},
     "warn.source_without_tool": {
         "en": "{where}: data source without a tool (where is it?)",
         "fr": "{where}: source de données sans outil (où se trouve-t-elle ?)"},
@@ -1370,10 +1381,20 @@ MESSAGES = {
         "fr": "Dans l'OS : {included} sources incluses (un flux les fait entrer), {to_add} à "
               "ajouter (un flux est possible), {excluded} exclues volontairement, {undecided} "
               "non décidées (aucun flux, aucun choix écrit)."},
+    "md.sources_scope": {
+        "en": "Scope (§1.7, from the active tasks that cite each source): {role} specific to a "
+              "role, {team} specific to a team, {shared} shared between teams and kept by a role "
+              "(`owner`), {transverse} transverse (shared, no owner), {unused} cited by no active "
+              "task.",
+        "fr": "Portée (§1.7, d'après les tâches actives qui citent chaque source) : {role} "
+              "propres à un rôle, {team} propres à une équipe, {shared} partagées entre équipes "
+              "et tenues par un rôle (`owner`), {transverse} transverses (partagées, sans "
+              "responsable), {unused} citées par aucune tâche active."},
+    "md.scope_cell": {"en": "{scope}: {who}", "fr": "{scope} : {who}"},
     "md.sources_header": {
-        "en": "| Source | In the OS | Sensitivity (AI rule) | Tools (AI access) | Active tasks "
-              "| A | S | C | M | J |",
-        "fr": "| Source | Dans l'OS | Sensibilité (règle IA) | Outils (accès de l'IA) "
+        "en": "| Source | Scope | In the OS | Sensitivity (AI rule) | Tools (AI access) "
+              "| Active tasks | A | S | C | M | J |",
+        "fr": "| Source | Portée | Dans l'OS | Sensibilité (règle IA) | Outils (accès de l'IA) "
               "| Tâches actives | A | S | C | M | J |"},
     "md.pair": {"en": "{name}: {value}", "fr": "{name} : {value}"},
     "md.separator": {"en": "; ", "fr": " ; "},

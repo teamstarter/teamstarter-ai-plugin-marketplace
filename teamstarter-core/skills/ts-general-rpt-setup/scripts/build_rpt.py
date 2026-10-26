@@ -108,8 +108,10 @@ KEYS = {
     # state of each (README_operations.md §1.7); `rights_checked`: when they were last read.
     "tool": ["id", "name", "type", "where", "status", "description", "rights", "rights_checked",
              "shared", "aliases"],
-    "data_source": ["id", "name", "description", "sensitivity", "tools", "basis", "notes",
-                    "aliases", "sources", "os"],
+    # `owner`: the role that keeps the source up to date; a source several teams use without
+    # an owner is transverse (README_operations.md §1.7, scope of a source).
+    "data_source": ["id", "name", "description", "owner", "sensitivity", "tools", "basis",
+                    "notes", "aliases", "sources", "os"],
     # An objective of the company and its key results (okrs.yaml, README_operations.md §1.13).
     # A task contributes to key results (`okrs`), not to an objective as a whole.
     "okr": ["id", "name", "level", "parent", "teams", "owner", "period", "state", "key_results",
@@ -851,8 +853,9 @@ def validate(ref):
     for t in ref["tools"]:
         errors += check_tool(t)
     for d in ref["data_sources"]:
-        e, w = check_data_source(d, tool_ids)
+        e, w = check_data_source(d, tool_ids, idx)
         errors, warnings = errors + e, warnings + w
+    warnings += check_source_owners(ref, idx)
     # Borrowed objectives were checked in their own folder: their teams and owners are not in a map.
     teams = {r.get("team") for r in ref["roles"]}
     for o in [o for o in ref["okrs"] if not o.get("_borrowed")]:
@@ -1014,10 +1017,13 @@ def check_rights(t, where):
     return errors
 
 
-def check_data_source(d, tool_ids):
-    """The tools of a data source exist, each once, with a known connector (or null)."""
+def check_data_source(d, tool_ids, idx=None):
+    """The tools of a data source exist, each once, with a known connector (or null); its
+    owner is a role."""
     where = f"{d['_file']} {d.get('id')}"
     errors = check_keys("data_source", d, where)
+    if d.get("owner") is not None and not d.get("_borrowed"):
+        errors += check_ref(where, "owner", d.get("owner"), idx, expected=["role"])
     entries = d.get("tools") or []
     if not isinstance(entries, list):
         return errors + [tr("check.source_tools_not_list", where=where, value=repr(entries))], []
@@ -1049,6 +1055,20 @@ def check_data_source(d, tool_ids):
     if d.get("sensitivity") is None and not d.get("_borrowed"):
         warnings.append(tr("warn.sensitivity_unsaid", where=where))
     return errors, warnings
+
+
+def check_source_owners(ref, idx):
+    """The owner of a data source keeps it up to date: at least one of its active tasks cites
+    the source (README_operations.md §1.7)."""
+    cited = {}
+    for t in active(ref["tasks"]):
+        for x in t.get("data") or []:
+            cited.setdefault(resolve(idx, x), set()).add(t.get("role"))
+    return [tr("warn.source_owner_no_task", where=f"{d['_file']} {d.get('id')}",
+               owner=resolve(idx, d["owner"]))
+            for d in ref["data_sources"] if d.get("owner") and not d.get("_borrowed")
+            and resolve(idx, d["owner"]) in idx
+            and resolve(idx, d["owner"]) not in cited.get(d.get("id"), set())]
 
 
 def check_role(r, idx, dept_ids):
@@ -2278,6 +2298,8 @@ def enrich(ref):
         t["_gain"] = task_gain(t)
         t["_data_links"] = data_links(t, sources, idx)
         t["_ai"] = ai_view(t, sources, ref.get("ai_policy"), idx)
+    for d in ref["data_sources"]:
+        d["_scope"] = source_scope(d, ref["tasks"], roles, idx)
     ref["_chains"] = link_chains(ref, idx)
     link_containers(ref, idx)
     link_blockers(ref, idx)
@@ -2285,6 +2307,34 @@ def enrich(ref):
     link_people(ref)
     link_decisions(ref)
     return ref
+
+
+SOURCE_SCOPES = ("role", "team", "shared", "transverse", "unused")
+
+
+def source_scope(d, tasks, roles, idx):
+    """Whether a data source is specific to a role (README_operations.md §1.7), from the active
+    tasks that cite it: `role` (one role), `team` (several roles of one team), `shared` (several
+    teams, with an owner that keeps it), `transverse` (several teams, no owner), `unused` (no
+    active task). With the roles and the teams, the most frequent first."""
+    per_role = {}
+    for t in active(tasks):
+        if d["id"] in {resolve(idx, x) for x in t.get("data") or []}:
+            per_role[t["role"]] = per_role.get(t["role"], 0) + 1
+    ranked = sorted(per_role, key=lambda r: (-per_role[r], r))
+    teams = []
+    for r in ranked:
+        team = roles.get(r, {}).get("team")
+        if team and team not in teams:
+            teams.append(team)
+    owner = resolve(idx, d["owner"]) if d.get("owner") else None
+    scope = "unused" if not ranked else "role" if len(ranked) == 1 else \
+        "team" if len(teams) == 1 else "shared" if owner else "transverse"
+    out = {"scope": scope, "roles": ranked, "teams": teams}
+    if owner:
+        out["owner"] = owner
+        out["owner_team"] = roles.get(owner, {}).get("team")
+    return out
 
 
 def process_links(ref, idx):
@@ -3437,7 +3487,7 @@ def public(item):
                 "_blockers", "_blocker_derived", "_active_tasks", "_hours", "_children",
                 "_documents", "_feeds", "_insights", "_upstream", "_data", "_reach", "_roles",
                 "_teams", "_agents", "_access", "_cost", "_progress", "_maturity", "_used_by",
-                "_shared_by", "_decides", "_decisions", "_artifacts", "_freshness", "_os",
+                "_shared_by", "_decides", "_decisions", "_artifacts", "_freshness", "_os", "_scope",
                 "_writers", "_readers", "_owners", "_holders", "_candidates", "_age", "_fresh",
                 "_containers"):
         if key in item:
@@ -4854,9 +4904,11 @@ def md_sources(ref, lang=None):
     policy = ref.get("ai_policy") or {}
     per = {k: sum(1 for d in ref["data_sources"] if (d.get("_os") or {}).get("status") == k)
            for k in OS_STATUS}
+    scopes = {k: sum(1 for d in ref["data_sources"]
+                     if (d.get("_scope") or {}).get("scope") == k) for k in SOURCE_SCOPES}
     lines += ["", tr("md.sources_list", lang), "", md_policy(policy, lang), "",
-              tr("md.sources_os", lang, **per), "",
-              tr("md.sources_header", lang), "|---|---|---|---|---|---|---|---|---|"]
+              tr("md.sources_os", lang, **per), "", tr("md.sources_scope", lang, **scopes), "",
+              tr("md.sources_header", lang), "|---|---|---|---|---|---|---|---|---|---|---|"]
     idx = index(ref)
     for d in ref["data_sources"]:
         c = counts(active([t for t in ref["tasks"]
@@ -4865,12 +4917,26 @@ def md_sources(ref, lang=None):
             tr("md.pair", lang, name=names.get(e.get("tool"), e.get("tool")),
                value=label("connector", e.get("connector"), lang))
             for e in d.get("tools") or [] if isinstance(e, dict))
-        lines.append(f"| {cell(entry_name(d, lang))} (`{d['id']}`) | "
+        lines.append(f"| {cell(entry_name(d, lang))} (`{d['id']}`) | {scope_cell(d, lang)} | "
                      f"{label('os_status', (d.get('_os') or {}).get('status'), lang, '—')} | "
                      f"{sensitivity_cell(d, policy, lang)} | "
                      f"{cell(tools) or '—'} | {c['total']} | {c['A']} | {c['S']} | {c['C']} | {c['M']} | "
                      f"{c['J']} |")
     return lines + [""]
+
+
+def scope_cell(d, lang=None):
+    """The scope of a source (§1.7) and who it belongs to: the role, the team, the owner, or the
+    teams of a transverse source."""
+    sc = d.get("_scope") or {}
+    if not sc or sc["scope"] == "unused":
+        return label("source_scope", "unused", lang) if sc else "—"
+    who = {"role": lambda: sc["roles"][0], "team": lambda: sc["teams"][0],
+           "shared": lambda: sc["owner"],
+           "transverse": lambda: ", ".join(sc["teams"])}[sc["scope"]]()
+    if sc["scope"] == "team" and sc.get("owner"):
+        who = f"{who} ({sc['owner']})"
+    return tr("md.scope_cell", lang, scope=label("source_scope", sc["scope"], lang), who=who)
 
 
 def md_rights(ref, names, lang=None):
