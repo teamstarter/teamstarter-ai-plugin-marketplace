@@ -2,7 +2,7 @@
 name: ts-general-data-crawl
 description: "Describe where an organization's data is kept and how it is laid out, tool by tool (Google Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), from the connectors of the person who runs it: the folders, files, sheets, databases, CRM objects and pipelines, channels, labels and projects, nested as in the tool, with their size, the date of their last change and their column names. Never reads or sends a value of the data: no document content, no message, no record, no client name, no amount. Shows a preview of what will be sent, then, after the person's approval, drops the data map (rpt/v1 file with containers) in the organization's intake folder, where it is merged into the data tree of the RPT referential. Use when someone wants to know or map where the company's data is, which tool holds what, or whether it is up to date. Triggers: 'map our data', 'where is our data', 'crawl my Drive structure', « cartographie nos données », « où est notre donnée », « fais la carte des données »."
 metadata:
-  version: "1.2 (2026-10-23)"
+  version: "1.3 (2026-10-26)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-data-crawl; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -190,6 +190,8 @@ Kind: `project`, as a Jira project: a Linear team holds the issues, their key an
 statuses. For each project of the team that is not canceled or completed: its name, its status,
 its number of issues and the date of its last update; kind `project`, `parent` = the team.
 A saved view is a `view`. Never write the title or the description of an issue.
+An organization may run Jira and Linear side by side, or keep Jira as a read-only history after
+moving to Linear: describe both, and say in `notes` which one is the history.
 
 When a tool refuses (rights, timeout), write the containers you could describe, and say in the
 summary which ones are missing and why.
