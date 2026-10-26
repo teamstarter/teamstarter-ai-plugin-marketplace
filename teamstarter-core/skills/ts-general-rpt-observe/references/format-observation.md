@@ -54,7 +54,7 @@ Between two merges, the entry does not change. Before writing, read the task's p
 observations, and those of each blocker that names the task: the files whose name ends with the
 target, in the intake folder
 (`intake.drive_folder`) and in the referential's `observations/` folder (in the repository:
-`build_rpt.py --observations --task <id>`, which also takes a blocker id: `--task BLK-12`). A change that has a `result` is already processed;
+`build_rpt.py --observations --validate-only --task <id>`, which also takes a blocker id: `--task BLK-12`). A change that has a `result` is already processed;
 the others are pending.
 
 - Same field, same value already pending: do not write it.

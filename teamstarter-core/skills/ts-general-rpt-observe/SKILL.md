@@ -2,7 +2,7 @@
 name: ts-general-rpt-observe
 description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed (the agent's own entry included), when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
 metadata:
-  version: "1.10 (2026-10-20)"
+  version: "1.11 (2026-10-26)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-observe; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -110,13 +110,13 @@ hyphens (`CSM-T6.19` → `…-csm-t6-19.yaml`):
 
 | Where you work | How to read what is pending for the task |
 |---|---|
-| Claude Code, in the organization's repository | `python3 <referential.tools_path>build_rpt.py --observations --task <id>`; with the Google Drive connector, also the intake folder (next row) |
+| Claude Code, in the organization's repository | `python3 <referential.tools_path>build_rpt.py --observations --validate-only --task <id>` (without `--validate-only`, the script also rewrites the referential's views and today's survey, which would end up in the session's PR); with the Google Drive connector, also the intake folder (next row) |
 | claude.ai, with the Google Drive connector | List the files of the intake folder (query `parentId = '<intake.drive_folder_id>'`) and those of the referential's `observations` folder, next to `index-taches.json`; keep those whose name ends with `-<task>.yaml` and read them. Compare the end of the names yourself: Drive's title search only matches the start of words |
 | claude.ai, without the Drive connector | Nothing to read: the merge will group duplicates |
 
 A change on a known blocker is in a file of its own, whose name ends with the blocker's id
 (`BLK-12` → `…-blk-12.yaml`): for each blocker of the task, read those too
-(`--observations --task BLK-12` in the repository). A new blocker is in the file of the first task
+(`--observations --validate-only --task BLK-12` in the repository). A new blocker is in the file of the first task
 it holds back, so it shows up with the task's own changes.
 
 In these files, ignore changes that have a `result`: they are already processed. The others are
@@ -260,7 +260,7 @@ Tell the person what was done (file path, Drive link, e-mail or upload left to d
 
 ## What happens next
 
-`python3 <referential.tools_path>build_rpt.py --observations` lists the pending changes, with
+`python3 <referential.tools_path>build_rpt.py --observations --validate-only` lists the pending changes, with
 identical proposals together. `intake.merged_by` merges them in batches with
 `ts-general-rpt-merge` (section on merging observations): plan, GO, then
 `build_rpt.py --apply-observation` writes the accepted changes into the entries, marks each
