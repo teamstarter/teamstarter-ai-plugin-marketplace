@@ -3401,7 +3401,11 @@ def axis_delegation(m):
     assisted process); 2 the person launches, the AI chains alone (a process once launched or
     routed by the AI); 3 the person frames, the AI decides within the rules (a process end to
     end and 10 % of the roles framed: 3 of their 5 delegation criteria met); 4 the person
-    delegates (a role run with its agents, level 03, and 25 % of the roles framed)."""
+    delegates (a role run with its agents, level 03, and 25 % of the roles framed). An automated
+    team (every active task A, README §1.2) is at 4: nobody decides inside it, the reviews of
+    its work are tasks of other teams."""
+    if m["tasks"] and m["automated"] == m["tasks"]:
+        return 4, 4.0, None
     r = m["framed_roles"] / m["roles"] if m["roles"] else 0
     framed10, framed25 = (_missing(x, m["roles"], m["framed_roles"]) for x in (0.10, 0.25))
     if m["proc_end_to_end"] and not framed10:
@@ -3649,8 +3653,10 @@ def ai_profile(ref):
                              investment_measures(ref.get("ai_investment"), folk))
     teams = {}
     for code in sorted({team.get(t.get("role")) for t in tasks} - {None}):
-        teams[code] = entry(lambda tm, code=code: tm == code,
-                            [x for x in ref["people"] if code in (x.get("_teams") or [])])
+        # A team nobody works in (an automated team) serves the company's people: the axes that
+        # read people (sharing, investment) read theirs (README §1.18).
+        folk = [x for x in ref["people"] if code in (x.get("_teams") or [])] or ref["people"]
+        teams[code] = entry(lambda tm, code=code: tm == code, folk)
     company = company_entry(entry(lambda tm: True, ref["people"]), teams)
     weigh = [t["execution"]["level"] for t in teams.values()
              if t["measures"]["tasks"] >= PROFILE_TEAM_MIN * len(tasks)]
