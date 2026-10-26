@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.19 (2026-10-20)"
+  version: "2.20 (2026-10-23)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -498,7 +498,7 @@ months, wide and shallow):
 |---|---|---|
 | Messaging (Slack, Teams) | « je n'ai pas accès », « bloqué », « en attente de », « ça ne marche pas », « toujours pas »; "no access", "blocked", "waiting for", "doesn't work", "still not" | the problem, the channel and the date |
 | E-mails | access requests, follow-ups left without an answer, refusals | the problem and the date |
-| Tickets (Jira…) | a ticket in a blocked status, an "is blocked by" link, « en attente » | the problem and the key of the ticket |
+| Tickets (Jira, Linear…) | a ticket in a blocked status, an "is blocked by" link, « en attente » | the problem and the key of the ticket |
 | Meeting notes and transcripts | « on n'a pas pu », « il faut une décision de »; "we could not", "we need a decision from" | the problem and the date of the meeting |
 
 Example: on Slack, "Je n'ai pas accès aux données pour faire mes slides" gives a blocker of type
@@ -678,7 +678,7 @@ message: it will be used in `evidence`.
 | Calendar | Recurring meetings (often processes or judgments), typical appointments, and their frequency. Not personal appointments. |
 | Mailbox: sent e-mails (Gmail: `in:sent newer_than:3m`; Outlook: sent items) | What the person delivers. Each kind of e-mail that comes back (minutes, proposal, report, reminder, invitation, standard answer) is the deliverable of a task; their number over three months, divided by three, gives `measure.runs` (`basis: observed`). Note the typical subject, the type of recipient (client, prospect, internal, partner) and of attachment (presentation, quote, spreadsheet). A sending done by a tool (sequence, automatic reply) is an A or S task. Never the text, nor the name or address of a recipient. |
 | Mailbox: received e-mails; messaging (Slack, Teams) | What is asked of the person: types of requests (the entries of a role), where they come from by type, their volume; reminders. The signals of a blocker (section "Blockers"): access requests, follow-ups without an answer, refusals, « je n'ai pas accès », « en attente de », "still not". Never the content. |
-| Ticketing tool, CRM, tracking spreadsheet (Jira, HubSpot, Notion…) | The statuses of a ticket or a deal (they are the steps of a process), who moves what, the volumes. The blocked tickets and the "is blocked by" links: blockers. |
+| Ticketing tool, CRM, tracking spreadsheet (Jira, Linear, HubSpot, Notion…) | The statuses of a ticket or a deal (they are the steps of a process), who moves what, the volumes. The blocked tickets and the "is blocked by" links: blockers. |
 | Meeting notes and transcripts | Recurring meetings and what they decide; the signals of a blocker: « on n'a pas pu », « il faut une décision de ». Never what a person said. |
 | Existing automations (Zapier, Make, scripts, agents, saved prompts) | What they do: they are the A or S tasks. |
 | Scheduled tasks and Routines of their Claude, the OS folder | The recurring agents and the access to the OS (section "Access to the OS and recurring agents"): the title and the schedule of each scheduled task, never its prompt; whether the OS folder is found. |
@@ -740,7 +740,7 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    example). For each tool of a declared source, write where the data is (`where`: "client
    records", "Drive folder of proposals") and how the AI reaches it (`connector`), from the
    tools you have in this conversation: a connector of Claude's directory present in your list
-   of tools (Gmail, Google Drive, Slack, Notion, HubSpot, Jira…) gives `native`; a connector the
+   of tools (Gmail, Google Drive, Slack, Notion, HubSpot, Jira, Linear…) gives `native`; a connector the
    company added (an internal MCP server) gives `mcp`. A tool without a connector in your list:
    `export` if the person copies or exports their data for you, `none` if they do not give this
    data to the AI; otherwise the question goes to step 4. When what you observe differs from
@@ -811,7 +811,7 @@ the map is never sent.
 1. Read `references/format-rpt-v1.md` (the fields, the allowed values, the YAML pitfalls) and
    start from the structure of `assets/exemple.rpt.yaml`.
 2. For the software and skills already known to the referential (Claude, Slack, Google Drive,
-   Notion, Jira, HubSpot, the organization's skills…), reuse their id as it appears in
+   Notion, Jira, Linear, HubSpot, the organization's skills…), reuse their id as it appears in
    `catalogues/tools.yaml`. Declare in the `tools` list of the file any other tool cited: a tool
    the catalogue lists (Gmail, when it is there) is not declared again; a Zap, a personal skill
    or a saved prompt is. Without `catalogues/tools.yaml` (an organization without an OS, a first
