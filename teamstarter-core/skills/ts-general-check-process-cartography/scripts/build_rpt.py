@@ -165,8 +165,11 @@ KEYS = {
     "decision": ["id", "name", "kind", "zone", "path", "state", "date", "decided_by",
                  "depends_on", "decided_through", "activates", "basis", "notes", "sources"],
     # The output of a process, made to understand, share or help decide (§1.17).
+    # Who answers for it, how often and by whom it is regenerated, the version of the skill
+    # that made the published version, who is told when it changes (§1.17).
     "artifact": ["id", "name", "url", "path", "zone", "produced_by", "depends_on", "purpose",
-                 "state", "updated", "basis", "notes", "sources"],
+                 "state", "updated", "owner", "refresh", "generated_with", "notify", "basis",
+                 "notes", "sources"],
 }
 REQUIRED = {"department": {"id", "name"}, "task_type": {"id", "name", "department"},
             "tool": {"id", "name", "type", "status"},
@@ -240,8 +243,13 @@ SUB_KEYS = {"entries": ["what", "from", "trigger", "volume"],
             # The stage an agent reached (README_operations.md §1.16): functional, efficient,
             # refined; what proves the criteria no file can show.
             "stage": ["level", "checked", "basis", "evidence"],
-            # Who an agent tells, how and when (README_operations.md §1.16).
+            # Who an agent tells, how and when (README_operations.md §1.16); who is told that
+            # an artifact changed (§1.17).
             "notify": ["channel", "to", "when", "notes"],
+            # When an artifact is regenerated and by which agent; the skill and its version that
+            # made its published version (README_operations.md §1.17).
+            "refresh": ["cycle", "by", "notes"],
+            "generated_with": ["tool", "version", "date"],
             # The tools of a data source: where the data is, how the AI reaches it. The `tools`
             # of a task or a process are ids (texts): only the mappings are checked.
             "tools": ["tool", "where", "connector", "notes"],
@@ -393,6 +401,13 @@ ENUMS = {
                       "method"},
     "artifact_goal": {"understand", "share", "decide"},
     "artifact_state": {"live", "stale", "retired"},
+    # How often an artifact is regenerated (§1.17): when what it depends on changes, on a
+    # period, by hand when someone asks, or never (made once, for one decision).
+    "artifact_refresh": {"on-change", "daily", "weekly", "monthly", "quarterly", "manual",
+                         "once"},
+    # When the people of an artifact are told (§1.17): at each new published version, or
+    # when its regeneration fails.
+    "artifact_notify_when": {"update", "failure"},
     # A container of the data map (README_operations.md §1.20): what it is in its tool, and
     # whether it is still in use.
     "container_kind": {"folder", "file", "document", "spreadsheet", "presentation", "database",
@@ -1618,8 +1633,176 @@ def check_artifact(a, idx):
     if a.get("updated") is not None and not DATE_RE.match(str(a["updated"])):
         errors.append(tr("check.blocker_date", where=where, field="updated",
                          value=repr(a["updated"])))
+    if a.get("owner") is not None:
+        errors += check_ref(where, "owner", a["owner"], idx, expected=["person"])
+    # Every artifact in use says who answers for it and when it is made again, in its entry, so
+    # that the build checks it without reading anything else (Vincent, 2026-10-26, TODO-137).
+    if a.get("state") != "retired":
+        errors += [tr("check.artifact_declared", where=where, key=k)
+                   for k in ("owner", "refresh") if not a.get(k)]
+    errors += check_artifact_refresh(a, idx, where)
     warnings = [tr("warn.artifact_no_source", where=where)] if not a.get("depends_on") else []
+    missing = refresh_missing(a)
+    if missing:
+        warnings.append(tr("warn.artifact_refresh_incomplete", where=where,
+                           missing=", ".join(missing)))
     return errors, warnings
+
+
+# The cycles at which an artifact is regenerated without anyone asking (§1.17), and the days
+# after which a periodic one is due again.
+REFRESH_AUTO = ("on-change", "daily", "weekly", "monthly", "quarterly")
+REFRESH_DAYS = {"daily": 1, "weekly": 7, "monthly": 30, "quarterly": 91}
+
+
+def check_artifact_refresh(a, idx, where):
+    """The regeneration of an artifact (README_operations.md §1.17): `refresh` (cycle, the agent
+    that regenerates it), `generated_with` (the skill and the version that made the published
+    version) and `notify` (a Slack message to a person, sent as a direct message, or to the
+    existing channel, `#name`, where its people already work)."""
+    errors = []
+    r = a.get("refresh")
+    if r is not None:
+        if not isinstance(r, dict) or not r.get("cycle"):
+            errors.append(tr("check.refresh_shape", where=where))
+        else:
+            errors += check_enum(where, "refresh.cycle", r.get("cycle"), "artifact_refresh")
+            if r.get("by") is not None:
+                errors += check_ref(where, "refresh.by", r["by"], idx, expected=["agent"])
+    g = a.get("generated_with")
+    if g is not None:
+        if not isinstance(g, dict) or not g.get("tool"):
+            errors.append(tr("check.generated_with_shape", where=where))
+        else:
+            errors += check_ref(where, "generated_with.tool", g["tool"], idx,
+                                expected=["tool"])
+            if g.get("date") is not None and not DATE_RE.match(str(g["date"])):
+                errors.append(tr("check.blocker_date", where=where,
+                                 field="generated_with.date", value=repr(g["date"])))
+    notify = a.get("notify")
+    if notify is not None and not isinstance(notify, list):
+        return errors + [tr("check.agent_notify_shape", where=where)]
+    for n in notify or []:
+        if not isinstance(n, dict) or not n.get("channel") or not n.get("to"):
+            errors.append(tr("check.agent_notify_shape", where=where))
+            continue
+        errors += check_enum(where, "notify.channel", n.get("channel"), "notify_channel")
+        errors += check_enum(where, "notify.when", n.get("when"), "artifact_notify_when")
+        to = str(n["to"])
+        if n.get("channel") == "slack":
+            if to.startswith("person:"):
+                errors += check_ref(where, "notify.to", to, idx, expected=["person"])
+            elif not re.match(r"^#[a-z0-9][a-z0-9._-]*$", to):
+                errors.append(tr("check.artifact_slack_to", where=where, value=repr(to)))
+    return errors
+
+
+def refresh_missing(a):
+    """What an artifact regenerated without anyone asking lacks to be regenerated and announced
+    (§1.17): how it is made, the agent that regenerates it, the skill and version that made it,
+    who is told."""
+    r = a.get("refresh") if isinstance(a.get("refresh"), dict) else {}
+    if r.get("cycle") not in REFRESH_AUTO or a.get("state") == "retired":
+        return []
+    return [k for k, ok in (("produced_by", a.get("produced_by")), ("refresh.by", r.get("by")),
+                            ("generated_with", a.get("generated_with")),
+                            ("notify", a.get("notify")))
+            if not ok]
+
+
+def skill_version(repo, tool):
+    """The version a skill declares in the frontmatter of its SKILL.md (`metadata.version` or
+    `version`), read at the path its entry of tools.yaml gives (`where`, from the root of the
+    repository); None when the file or the version is missing."""
+    where = str((tool or {}).get("where") or "")
+    path = os.path.join(repo, where) if repo and where.endswith(".md") else None
+    if not path or not os.path.isfile(path):
+        return None
+    text = read_text(path)
+    head = text.split("\n---", 1)[0] if text.startswith("---") else ""
+    m = re.search(r"^\s*version:\s*[\"']?([^\"'\n]+?)[\"']?\s*$", head, re.M)
+    return m.group(1) if m else None
+
+
+def artifact_due(ref, a, today, repo=None):
+    """Why an artifact is to be regenerated on `today` (README_operations.md §1.17), [] when it
+    is not: `never` (no published date), `cycle` (its period has passed since `updated`),
+    `inputs` (a zone, an insight or a decision it depends on changed after `updated`, for the
+    cycle on-change), `skill` (the skill that made it has a new version). A cycle by hand or once,
+    or a retired artifact, is never due."""
+    r = a.get("refresh") if isinstance(a.get("refresh"), dict) else {}
+    cycle = r.get("cycle")
+    if cycle not in REFRESH_AUTO or a.get("state") == "retired":
+        return []
+    updated = str(a.get("updated") or "")[:10]
+    if not DATE_RE.match(updated):
+        return [{"reason": "never"}]
+    reasons = []
+    if cycle in REFRESH_DAYS:
+        days = (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(updated)).days
+        if days >= REFRESH_DAYS[cycle]:
+            reasons.append({"reason": "cycle", "cycle": cycle, "days": days})
+    else:
+        changed = [(x, d) for x, d in input_dates(ref, a, today) if d > updated]
+        if changed:
+            reasons.append({"reason": "inputs", "changed": changed})
+    g = a.get("generated_with") if isinstance(a.get("generated_with"), dict) else {}
+    tools = {t.get("id"): t for t in ref["tools"]}
+    now = skill_version(repo, tools.get(g.get("tool"))) if g.get("tool") else None
+    if now and str(g.get("version") or "") != now:
+        reasons.append({"reason": "skill", "tool": g["tool"], "before": g.get("version"),
+                        "after": now})
+    return reasons
+
+
+def input_dates(ref, a, today):
+    """[(id, date)]: the last change of each zone, insight and decision an artifact depends on,
+    on `today` (a zone: its most recent dated document; an insight: `last_seen` or its file; a
+    decision: `date`). Data sources have no date in the referential: left out."""
+    root = os_root(ref)
+    zones = {z.get("id"): z for z in ref["os_zones"]}
+    insights = {i.get("id"): i for i in ref["insights"]}
+    decisions = {d.get("id"): d for d in ref["decisions"]}
+    out = []
+    for x in a.get("depends_on") or []:
+        if x in zones and root:
+            f = zone_freshness(root, zones[x], ref["os_zones"], today) or {}
+        elif x in insights:
+            f = item_freshness(root, insights[x], today)
+        elif x in decisions:
+            f = dated_freshness([decisions[x].get("date")], today)
+        else:
+            continue
+        if f.get("latest"):
+            out.append((x, f["latest"]))
+    return out
+
+
+def print_due(ref, today=None):
+    """--due: the artifacts to regenerate on `today` (default: the date of the day), with why,
+    the skill to run, the agent that runs it and who to tell (README_operations.md §1.17)."""
+    today = today or datetime.date.today().isoformat()
+    root = os_root(ref)
+    repo = os.path.dirname(root) if root else None
+    due = [(a, artifact_due(ref, a, today, repo)) for a in ref["artifacts"]]
+    due = [(a, why) for a, why in due if why]
+    print(tr("cli.due_header", count=len(due), today=today))
+    for a, why in due:
+        r = a.get("refresh") or {}
+        g = a.get("generated_with") or {}
+        print(tr("cli.due_line", id=a["id"], name=a.get("name"), cycle=r.get("cycle"),
+                 by=r.get("by") or "-", skill=g.get("tool") or ", ".join(
+                     a.get("produced_by") or []) or "-", url=a.get("url") or "-"))
+        for w in why:
+            args = {k: v for k, v in w.items() if k != "reason"}
+            if "changed" in args:
+                args["changed"] = ", ".join(f"{x} ({d})" for x, d in args["changed"])
+            print("    " + tr(f"cli.due_{w['reason']}", **args))
+        for n in a.get("notify") or []:
+            if isinstance(n, dict):
+                print("    " + tr("cli.due_notify", channel=n.get("channel"), to=n.get("to"),
+                                  when=n.get("when") or "update"))
+    return 0
 
 
 # ---------------------------------------------------------------------- the data map
@@ -3012,10 +3195,12 @@ def stats(ref):
     for team in sorted({r["team"] for r in ref["roles"]}):
         tasks = active([t for t in ref["tasks"] if roles[t["role"]]["team"] == team])
         procs = [p for p in ref["processes"] if roles[p["role"]]["team"] == team]
+        c = counts(tasks)
+        # An automated team: every active task is A, no judgement left in it (README §1.2).
         teams[team] = {"roles": sum(r["team"] == team for r in ref["roles"]),
                        "processes": sum(p["state"] == "active" for p in procs),
                        "proposed": sum(p["state"] == "proposed" for p in procs),
-                       "tasks": counts(tasks)}
+                       "tasks": c, "automated": bool(c["total"]) and c["A"] == c["total"]}
     for d in ref["departments"]:
         tasks = active([t for t in ref["tasks"] if d["id"] in t["_depts"]])
         depts[d["id"]] = counts(tasks)
@@ -4831,7 +5016,8 @@ def md_figures(ref, st, lang=None):
     lines = [tr("md.figures", lang), "", tr("md.teams_header", lang),
              "|---|---|---|---|---|---|---|---|---|---|"]
     for team, s in st["teams"].items():
-        lines.append(f"| {team} | {s['roles']} | {s['processes']} | {s['proposed']} | "
+        name = f"{team} ({tr('md.team_automated', lang)})" if s["automated"] else team
+        lines.append(f"| {name} | {s['roles']} | {s['processes']} | {s['proposed']} | "
                      f"{fmt_counts(s['tasks'], lang)} |")
     lines += ["", tr("md.departments_header", lang), "|---|---|---|---|---|---|---|"]
     for d in ref["departments"]:
@@ -5600,7 +5786,8 @@ def print_stats(ref):
         c = s["tasks"]
         print(tr("stats.team", team=team, roles=s["roles"], processes=s["processes"],
                  proposed=s["proposed"], total=c["total"], A=c["A"], S=c["S"], C=c["C"], M=c["M"],
-                 J=c["J"], coverage=fmt_percent(c["coverage"])))
+                 J=c["J"], coverage=fmt_percent(c["coverage"]))
+              + (tr("stats.team_automated") if s["automated"] else ""))
     for dept, c in st["departments"].items():
         if c["total"]:
             print(tr("stats.department", department=dept, total=c["total"],
@@ -5629,6 +5816,11 @@ def main(argv=None):
                         help="folder whose catalogues (departments, task types, tools, data "
                              "sources, AI policy) are borrowed")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--due", action="store_true",
+                        help="list the artifacts to regenerate today (README_operations.md "
+                             "§1.17), with why, the skill, the agent and who to tell")
+    parser.add_argument("--today", metavar="YYYY-MM-DD",
+                        help="with --due: the day to compute for (default: today)")
     parser.add_argument("--format", action="store_true")
     parser.add_argument("--stats", action="store_true")
     parser.add_argument("--okrs", action="store_true",
@@ -5853,6 +6045,8 @@ def run(args):
     if getattr(args, "observations", False):
         task = getattr(args, "task", None)
         print_observations(ref, target_of(ref, task) if task else None)
+    if getattr(args, "due", False):
+        return print_due(ref, getattr(args, "today", None))
     if args.stats:
         print_stats(ref)
     if getattr(args, "okrs", False):

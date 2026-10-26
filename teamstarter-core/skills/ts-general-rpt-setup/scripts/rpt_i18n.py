@@ -826,6 +826,31 @@ MESSAGES = {
     "warn.artifact_no_source": {
         "en": "{where}: an artifact names what it depends on (`depends_on`)",
         "fr": "{where}: un artefact nomme ce dont il dépend (`depends_on`)"},
+    "warn.artifact_refresh_incomplete": {
+        "en": "{where}: an artifact regenerated without anyone asking (`refresh.cycle`) names "
+              "what it is still missing: {missing}",
+        "fr": "{where} : un artefact régénéré sans que personne le demande (`refresh.cycle`) "
+              "nomme ce qui lui manque encore : {missing}"},
+    "check.artifact_declared": {
+        "en": "{where}: an artifact in use declares `{key}` (README_operations.md §1.17: who "
+              "answers for it, when it is made again)",
+        "fr": "{where} : un artefact en usage déclare `{key}` (README_operations.md §1.17 : qui "
+              "en répond, quand il est refait)"},
+    "check.refresh_shape": {
+        "en": "{where}: `refresh` is a mapping with `cycle` (on-change, daily, weekly, monthly, "
+              "quarterly, manual, once), `by` (the agent that regenerates it) and `notes`",
+        "fr": "{where} : `refresh` est un dictionnaire avec `cycle` (on-change, daily, weekly, "
+              "monthly, quarterly, manual, once), `by` (l'agent qui le régénère) et `notes`"},
+    "check.generated_with_shape": {
+        "en": "{where}: `generated_with` is a mapping with `tool` (the skill of tools.yaml), "
+              "`version` (its version that made the published version) and `date`",
+        "fr": "{where} : `generated_with` est un dictionnaire avec `tool` (le skill de "
+              "tools.yaml), `version` (sa version qui a fait la version publiée) et `date`"},
+    "check.artifact_slack_to": {
+        "en": "{where}: a Slack notification goes to a person (`person:` id, sent as a direct "
+              "message) or to a channel (`#name`), not {value}",
+        "fr": "{where} : une notification Slack va à une personne (id `person:`, envoyée en "
+              "message privé) ou à un canal (`#nom`), pas {value}"},
     "check.purpose_shape": {
         "en": "{where}: `purpose` is a mapping with `goal` (understand, share, decide), "
               "`audience` and, to decide, `question`",
@@ -1323,6 +1348,7 @@ MESSAGES = {
               "Coverage |",
         "fr": "| Équipe | Rôles | Processus actifs | Processus proposés | Tâches | A | S | C | M | J "
               "| Couverture |"},
+    "md.team_automated": {"en": "automated team", "fr": "équipe automatisée"},
     "md.departments_header": {
         "en": "| Department | Tasks | A | S | C | M | J | Coverage |",
         "fr": "| Département | Tâches | A | S | C | M | J | Couverture |"},
@@ -1520,6 +1546,7 @@ MESSAGES = {
               "{total} active tasks A {A} S {S} C {C} M {M} J {J}, coverage {coverage}",
         "fr": "{team}: {roles} rôles, {processes} processus actifs (+{proposed} proposés), "
               "{total} tâches actives A {A} S {S} C {C} M {M} J {J}, couverture {coverage}"},
+    "stats.team_automated": {"en": " — automated team", "fr": " — équipe automatisée"},
     "stats.department": {
         "en": "  {department}: {total} tasks, coverage {coverage}",
         "fr": "  {department}: {total} tâches, couverture {coverage}"},
@@ -1563,6 +1590,27 @@ MESSAGES = {
               "kept (README_operations.md §4.1)",
         "fr": "{file} : à copier d'abord dans {folder}/ du référentiel, où il est vérifié et "
               "gardé (README_operations.md §4.1)"},
+    "cli.due_header": {
+        "en": "{count} artifact(s) to regenerate on {today}",
+        "fr": "{count} artefact(s) à régénérer le {today}"},
+    "cli.due_line": {
+        "en": "{id} {name} — cycle {cycle}, by {by}, skill {skill}, {url}",
+        "fr": "{id} {name} — cycle {cycle}, par {by}, skill {skill}, {url}"},
+    "cli.due_never": {
+        "en": "never published (`updated` is missing)",
+        "fr": "jamais publié (`updated` manque)"},
+    "cli.due_cycle": {
+        "en": "cycle {cycle}: last published {days} days ago",
+        "fr": "cycle {cycle} : dernière publication il y a {days} jours"},
+    "cli.due_inputs": {
+        "en": "inputs changed since the last publication: {changed}",
+        "fr": "entrées changées depuis la dernière publication : {changed}"},
+    "cli.due_skill": {
+        "en": "{tool} has a new version: {before} → {after}",
+        "fr": "{tool} a une nouvelle version : {before} → {after}"},
+    "cli.due_notify": {
+        "en": "tell: {channel} {to} ({when})",
+        "fr": "prévenir : {channel} {to} ({when})"},
     "cli.summary": {
         "en": "{errors} error(s), {warnings} warning(s)",
         "fr": "{errors} erreur(s), {warnings} avertissement(s)"},
