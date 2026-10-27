@@ -137,7 +137,7 @@ gap is not an error.
 | `by` | | Who does it today: first and last name or role, "Claude", or a tool, by its name as declared ("HubSpot") or its id (`saas:hubspot`). Expected for M and J. |
 | `target` | | The status aimed at, when an automation is conceivable. |
 | `blocker` | | What is missing to reach `target`, as one text. Still read in an older map; a map writes its blockers in the `blockers` list (§11), and the script warns when a task still writes `blocker`. |
-| `output_files`, `templates` | | Where the deliverable goes (a fixed file updated each time, or the folder and the name pattern of the file of each execution) and the template it starts from. Only when a source shows them; do not ask for them: the skill `ts-general-rpt-file` notes them at the end of a task. Form: `README_operations.md` §1.12 of the referential. |
+| `output_files`, `input_files`, `templates` | | Where the deliverable goes (a fixed file updated each time, or the folder and the name pattern of the file of each execution), where the files the task reads are (same form) and the template it starts from. Only when a source shows them; do not ask for them: the skill `ts-general-rpt-file` notes them at the end of a task, and the referential proposes a folder of the data tree to the team. Never `container`: the merge links them to the data tree. Form: `README_operations.md` §1.12 of the referential. |
 | `blocker_type` | | The type of what is missing (§7), with `blocker`. Same rule as `blocker`: in a map, the `type` of an entry of `blockers`. |
 | `build` | | The work to reach `target`: `{size: S, kind: skill}` (§7). When you know how to estimate it; otherwise the merge estimates it. |
 | `frequency` | | "every Monday", "10 per week", "for each new client". |

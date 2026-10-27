@@ -77,6 +77,7 @@ the others are pending.
 | `method` | a URL, or a tool id (`skill:…`) | The written method followed, or written during the session |
 | `okrs` | the complete list of key results served (`O1.3.KR1`, at most two) | The session's deliverable directly moves the measure of a KR of `okrs.yaml` (README_operations.md §1.13); a link that is only indirect is not written |
 | `output_files` | the complete list of locations (below) | Where the deliverable was stored |
+| `input_files` | the complete list of locations (same form) | Where the files the task read were |
 | `templates` | the complete list of templates (below) | The template the deliverable started from |
 | `status`, `target` | `A`, `S`, `C`, `M` or `J` | See "The status" |
 | `input`, `output` | a text | The actual input or deliverable differs from the entry |
@@ -109,6 +110,15 @@ The pattern (`pattern`) starts from the folder of `url`; what changes from one e
 next is written in square brackets: `[Client]`, `[YYYY-MM-DD]`, `[First name]` (or the same
 placeholders in the organization's language: `[AAAA-MM-JJ]`, `[Prénom]`). Never a real client
 name.
+
+When the location is a container of the organization's data tree (`containers` of the index, or
+the page « Where the data is » of the explorer), add its id: `container: DC-37`. The merge then
+also writes the task into that container of `data-map.yaml` (`written_by` for `output_files`,
+`read_by` for `input_files`), so that the task and the folder say the same thing. A person who
+says the task keeps no file on this side: `after: [{kind: none}]`, alone in the list.
+
+`input_files` takes the same entries: a fixed file the task reads (`kind: file`), or the folder
+where it finds the files it reads (`kind: folder`, with `pattern` when their names follow one).
 
 **The templates** (`templates`): `- {url: https://…, what: meeting deck template}`; `url` can
 also be a tool id (`skill:…`) when the template lives in a skill.

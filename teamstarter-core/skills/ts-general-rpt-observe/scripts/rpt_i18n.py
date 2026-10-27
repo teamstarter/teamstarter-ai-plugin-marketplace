@@ -132,6 +132,27 @@ LABELS = {
         "briefs": {"en": "distilled documents", "fr": "documents distillés"}},
     # The data map (README_operations.md §1.20): how recently a container changed, what it is,
     # whether it is still used.
+    # Files to place (README_operations.md §1.20): the side of a task, the status of its files,
+    # what a team answered to a proposal.
+    "file_side": {
+        "out": {"en": "deliverable", "fr": "livrable"},
+        "in": {"en": "input", "fr": "entrée"}},
+    "place_status": {
+        "placed": {"en": "placed", "fr": "rangé"},
+        "none": {"en": "no file", "fr": "pas de fichier"},
+        "tree": {"en": "named by the data map only",
+                 "fr": "nommé par la carte des données seulement"},
+        "proposed": {"en": "proposed", "fr": "proposé"},
+        "to_choose": {"en": "to choose", "fr": "à choisir"},
+        "missing": {"en": "no folder in the tree", "fr": "aucun dossier dans l'arbre"}},
+    # A branch of the tree no task writes or reads: tasks probably use it, or a task is missing.
+    "untasked_status": {
+        "to_link": {"en": "tasks to link", "fr": "tâches à relier"},
+        "to_deduce": {"en": "task to deduce", "fr": "tâche à déduire"}},
+    "place_decision": {
+        "validated": {"en": "validated", "fr": "validé"},
+        "elsewhere": {"en": "given elsewhere", "fr": "indiqué ailleurs"},
+        "no_file": {"en": "no file", "fr": "pas de fichier"}},
     "freshness": {
         "fresh": {"en": "7 days or less", "fr": "7 jours ou moins"},
         "recent": {"en": "8 to 30 days", "fr": "8 à 30 jours"},
@@ -590,11 +611,16 @@ MESSAGES = {
         "fr": "{where}: `method` = {value}, attendu une URL (https://…) ou l'identifiant d'un "
               "outil du catalogue (skill:…, reference:…)"},
     "check.files_not_mapping": {
-        "en": "{where}: expected {{kind, url, pattern, tool, what}}",
-        "fr": "{where}: attendu {{kind, url, pattern, tool, what}}"},
+        "en": "{where}: expected {{kind, url, pattern, tool, what, container}}",
+        "fr": "{where}: attendu {{kind, url, pattern, tool, what, container}}"},
     "check.files_kind_missing": {
-        "en": "{where}: `kind` missing (file or folder)",
-        "fr": "{where}: `kind` absent (file ou folder)"},
+        "en": "{where}: `kind` missing (file, folder or none)",
+        "fr": "{where}: `kind` absent (file, folder ou none)"},
+    "check.files_none_alone": {
+        "en": "{where}: `kind: none` (the task keeps no file on this side) is the only entry of "
+              "its list",
+        "fr": "{where}: `kind: none` (la tâche ne garde pas de fichier de ce côté) est la seule "
+              "entrée de sa liste"},
     "check.url": {
         "en": "{where}: `url` = {value}, expected a URL (https://…)",
         "fr": "{where}: `url` = {value}, attendu une URL (https://…)"},
@@ -775,6 +801,11 @@ MESSAGES = {
               "accounts or people (`accounts`)",
         "fr": "{where}: un constat donne le nombre de faits qui le fondent (`count`) et de "
               "comptes ou de personnes distincts (`accounts`)"},
+    "warn.files_one_side": {
+        "en": "{where}: `{field}` names {container}, which does not name the task in `{link}` "
+              "(data-map.yaml): write the link on both sides",
+        "fr": "{where}: `{field}` nomme {container}, qui ne nomme pas la tâche dans `{link}` "
+              "(data-map.yaml) : écrire le lien des deux côtés"},
     "warn.container_no_writer": {
         "en": "{where}: nobody is named for this active container: no task writes it "
               "(`written_by`) and no role owns it (`owner`)",
@@ -939,6 +970,68 @@ MESSAGES = {
         "fr": "| Contenant | Donnée | Outil · emplacement | Taille | Fraîcheur | "
               "Responsable (titulaires) |"},
     "md.datamap_nobody": {"en": "nobody named", "fr": "personne de nommé"},
+    "md.files_title": {"en": "## Files to place", "fr": "## Fichiers à ranger"},
+    "md.files_intro": {
+        "en": "{tasks} active tasks keep files (their deliverable or their input is a file, their "
+              "data is in a tool that stores files) without anything saying where: {proposed} "
+              "sides with a folder of the data map proposed, {to_choose} where no folder "
+              "stands out, {missing} with no folder in the tree for their data. {placed} "
+              "sides of tasks already have their place. A person of the team validates each "
+              "proposal on the page « Files to place » of the explorer; the observation that "
+              "records the answer writes the place into the task and the task into the folder "
+              "(README_operations.md §1.20).",
+        "fr": "{tasks} tâches actives gardent des fichiers (leur livrable ou leur entrée est un "
+              "fichier, leur donnée est dans un outil qui stocke des fichiers) sans que rien ne "
+              "dise où : {proposed} côtés avec un dossier de la carte des données proposé, "
+              "{to_choose} où aucun dossier ne se détache, {missing} sans dossier dans "
+              "l'arbre pour leur donnée. {placed} côtés de tâches ont déjà leur emplacement. Une "
+              "personne de l'équipe valide chaque proposition dans la page « Fichiers à ranger » "
+              "de l'explorateur ; l'observation qui garde la réponse écrit l'emplacement dans la "
+              "tâche et la tâche dans le dossier (README_operations.md §1.20)."},
+    "md.files_header": {
+        "en": "| Task — deliverable or input | Side | Status | Folder proposed (or data without "
+              "a folder) |",
+        "fr": "| Tâche — livrable ou entrée | Côté | Statut | Dossier proposé (ou donnée sans "
+              "dossier) |"},
+    "md.files_missing_title": {
+        "en": "### Folders missing from the tree", "fr": "### Dossiers manquants dans l'arbre"},
+    "md.files_missing_header": {
+        "en": "| Data | Tool | Tasks that keep files there | Only described there |",
+        "fr": "| Donnée | Outil | Tâches qui y gardent des fichiers | Seulement décrit |"},
+    "md.files_unknown_title": {
+        "en": "### Links of the tasks the data map does not have",
+        "fr": "### Liens des tâches absents de la carte des données"},
+    "md.files_unknown_header": {"en": "| Link | Tasks |", "fr": "| Lien | Tâches |"},
+    "md.files_untasked_title": {
+        "en": "### Folders without a task", "fr": "### Dossiers sans tâche"},
+    "md.files_untasked_intro": {
+        "en": "{n} branches of the tree are written and read by no task, nor are the containers "
+              "under them. A task without a folder lacks an instruction (where its files go); a "
+              "folder without a task shows work the referential does not describe. {to_link} are "
+              "probably used by the tasks listed (same data in the same tool and words in "
+              "common, or proposed above): validate the proposal, or add them to `written_by` or "
+              "`read_by`. {to_deduce} are used by no task of the referential: a task is missing; "
+              "ask the role in charge or the people who work in them, and map it (skill "
+              "ts-general-check-process-cartography). The most recently changed first.",
+        "fr": "{n} branches de l'arbre ne sont écrites ni lues par aucune tâche, pas plus que "
+              "les contenants qu'elles contiennent. Une tâche sans dossier manque d'une "
+              "consigne (où vont ses fichiers) ; un dossier sans tâche montre un travail que le "
+              "référentiel ne décrit pas. {to_link} sont probablement utilisées par les tâches "
+              "listées (même donnée dans le même outil et mots en commun, ou proposées plus "
+              "haut) : valider la proposition, ou les ajouter à `written_by` ou `read_by`. "
+              "{to_deduce} ne sont utilisées par aucune tâche du référentiel : il manque une "
+              "tâche ; demander au rôle responsable ou aux personnes qui y travaillent, et la "
+              "cartographier (skill ts-general-check-process-cartography). Les plus récemment "
+              "modifiées d'abord."},
+    "md.files_untasked_header": {
+        "en": "| Container | Tool · place | Last change | Status | Tasks that probably use it |",
+        "fr": "| Contenant | Outil · emplacement | Dernière modification | Statut | Tâches qui "
+              "l'utilisent probablement |"},
+    "md.files_age": {"en": "{n} d ago", "fr": "il y a {n} j"},
+    "md.files_owner": {"en": "kept by {role}", "fr": "tenu par {role}"},
+    "md.files_loose": {
+        "en": "Files left loose, described as one container ({n}): {ids}.",
+        "fr": "Fichiers laissés en vrac, décrits comme un seul contenant ({n}) : {ids}."},
     "md.datamap_days": {"en": " ({n} d)", "fr": " ({n} j)"},
     "md.os_intro": {
         "en": "{zones} zones, {documents} documents. Flows: {live} in place, {manual} by hand, "
@@ -1620,6 +1713,49 @@ MESSAGES = {
         "en": "closed, already in the referential: {items}",
         "fr": "fermé, déjà dans le référentiel : {items}"},
     "cli.left": {"en": "left: {item}", "fr": "laissé : {item}"},
+    "cli.placements_written": {
+        "en": "observations written: {files}", "fr": "observations écrites : {files}"},
+    "cli.placements_team": {
+        "en": "{team}: {n} task(s) to place", "fr": "{team} : {n} tâche(s) à ranger"},
+    "cli.placements_task": {
+        "en": "  {task} {name} — {side}: « {text} »",
+        "fr": "  {task} {name} — {side} : « {text} »"},
+    "cli.placements_proposed": {
+        "en": "    → proposed: {place} {url}", "fr": "    → proposé : {place} {url}"},
+    "cli.placements_to_choose": {
+        "en": "    → to choose: {place} {url}", "fr": "    → à choisir : {place} {url}"},
+    "cli.placements_missing": {
+        "en": "    → no folder in the tree for {data} in {tool}",
+        "fr": "    → aucun dossier dans l'arbre pour {data} dans {tool}"},
+    "cli.placements_folder": {
+        "en": "Folder missing: {data} in {tool} — {tasks}",
+        "fr": "Dossier manquant : {data} dans {tool} — {tasks}"},
+    "cli.placements_unknown": {
+        "en": "Link the data map does not have: {url} — {tasks}",
+        "fr": "Lien absent de la carte des données : {url} — {tasks}"},
+    "cli.placements_untasked": {
+        "en": "Folder without a task ({status}): {place}{likely}",
+        "fr": "Dossier sans tâche ({status}) : {place}{likely}"},
+    "placements.skip": {"en": "{item} ({reason})", "fr": "{item} ({reason})"},
+    "placements.bad_decision": {
+        "en": "expected a side out or in, and a decision validated, elsewhere or no_file",
+        "fr": "attendu un côté out ou in, et une décision validated, elsewhere ou no_file"},
+    "placements.already": {
+        "en": "the task's `{field}` already says where", "fr": "`{field}` de la tâche dit déjà où"},
+    "placements.no_container": {
+        "en": "{value} is not a container of the data map",
+        "fr": "{value} n'est pas un contenant de la carte des données"},
+    "placements.no_place": {
+        "en": "neither a container nor a link (https://…)",
+        "fr": "ni contenant ni lien (https://…)"},
+    "placements.someone": {"en": "team", "fr": "équipe"},
+    "placements.evidence": {
+        "en": "Place {decision} by {by} on {date}, page « Files to place » of the RPT explorer.",
+        "fr": "Emplacement {decision} par {by} le {date}, page « Fichiers à ranger » de "
+              "l'explorateur RPT."},
+    "placements.source": {
+        "en": "RPT explorer, page « Files to place »",
+        "fr": "explorateur RPT, page « Fichiers à ranger »"},
     "cli.datamap_same": {
         "en": "{id} {name} → updates {match}",
         "fr": "{id} {name} → met à jour {match}"},

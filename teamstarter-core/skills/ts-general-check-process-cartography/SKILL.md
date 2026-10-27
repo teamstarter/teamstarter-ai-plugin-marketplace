@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.20 (2026-10-23)"
+  version: "2.21 (2026-10-27)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---

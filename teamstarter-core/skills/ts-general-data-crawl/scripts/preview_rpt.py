@@ -259,6 +259,7 @@ LABELS = {
     "method": {"en": "written method", "fr": "méthode écrite"},
     "okrs": {"en": "key results", "fr": "résultats clés"},
     "output_files": {"en": "where the deliverable goes", "fr": "où va le livrable"},
+    "input_files": {"en": "where the files it reads are", "fr": "où sont les fichiers lus"},
     "templates": {"en": "templates", "fr": "modèles"},
     "tasks": {"en": "tasks held back", "fr": "tâches bloquées"},
     "opened": {"en": "first seen on", "fr": "vu la première fois le"},
