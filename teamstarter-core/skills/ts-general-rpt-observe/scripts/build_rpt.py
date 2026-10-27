@@ -64,6 +64,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 import yaml
 
@@ -134,7 +135,8 @@ KEYS = {
                 "handoffs", "basis", "notes", "aliases", "sources"],
     "task": ["id", "name", "role", "departments", "type", "state", "replaced_by", "aliases",
              "job", "trigger",
-             "input", "output", "output_files", "templates", "tools", "data", "okrs", "method",
+             "input", "output", "input_files", "output_files", "templates", "tools", "data",
+             "okrs", "method",
              "by",
              "status", "target", "blocker",
              "blocker_type", "build", "frequency", "measure", "queue", "stakes", "relevance",
@@ -264,9 +266,11 @@ SUB_KEYS = {"entries": ["what", "from", "trigger", "volume"],
             # of a task or a process are ids (texts): only the mappings are checked.
             "tools": ["tool", "where", "connector", "notes"],
             # Where the deliverable of a task goes: a fixed file updated at each run, or the
-            # folder where each run's file goes, with its name pattern; the template files it
-            # starts from (README_operations.md §1.12).
-            "output_files": ["kind", "url", "pattern", "tool", "what"],
+            # folder where each run's file goes, with its name pattern; where the files it reads
+            # are; the container of the data map each place is (README_operations.md §1.12,
+            # §1.20); the template files it starts from.
+            "output_files": ["kind", "url", "pattern", "tool", "what", "container"],
+            "input_files": ["kind", "url", "pattern", "tool", "what", "container"],
             "templates": ["url", "tool", "what"],
             # A key result of an objective (okrs.yaml, README_operations.md §1.13): what is
             # measured, in which unit, the threshold (`direction` min: at least, max: at most),
@@ -443,7 +447,8 @@ ENUMS = {
     "ai_rule": {"allowed", "validated", "minimized", "confidential", "authorization",
                 "forbidden"},
     "fact_basis": {"observed", "declared", "inferred"},
-    "output_kind": {"file", "folder"},
+    # `none`: the task keeps no file on this side, said by a person (README_operations.md §1.12).
+    "output_kind": {"file", "folder", "none"},
     # An observation (README_operations.md §4.1): where it was made, how the fact is known, what
     # the merge did with it.
     "surface": {"claude-code", "claude-ai", "other"},
@@ -919,7 +924,7 @@ def validate(ref):
         e, w = check_container(c, idx)
         errors, warnings = errors + e, warnings + w
     errors += check_container_tree(ref)
-    warnings += check_orphans(ref)
+    warnings += check_file_links(ref, idx) + check_orphans(ref)
     return errors, warnings
 
 
@@ -1956,6 +1961,7 @@ def link_containers(ref, idx):
                     holders.append(name)
         known = set(writers) | set(readers)
         c["_writers"], c["_readers"], c["_owners"], c["_holders"] = writers, readers, owners, holders
+        c["_tasks_near"] = [tasks[x] for x in known if x in tasks]
         c["_candidates"] = [x for x in datamap_candidates(ref, c) if x not in known]
         c["_children"] = children.get(c.get("id"), [])
         age = container_age(c)
@@ -1999,6 +2005,377 @@ def datamap_stats(ref):
             "owned": sum(1 for c in live if c.get("_owners")),
             "sources": sum(1 for d in ref["data_sources"] if d.get("_containers")),
             "all_sources": len(ref["data_sources"])}
+
+
+# ------------------------------------------------------------------- the files of the tasks
+# A task says where its deliverable goes (`output_files`) and where the files it reads are
+# (`input_files`), each place linked to a container of the data map (`container`). Crossed with
+# the data map, the tasks that keep files show where the tree has no folder for them
+# (README_operations.md §1.20, « Files to place »): the build proposes a container, a person of
+# the team validates it, and the observation that records the answer names the place in the
+# task and the task in the container (§4.1).
+FILE_SIDES = {"out": "output_files", "in": "input_files"}
+SIDE_TEXT = {"out": "output", "in": "input"}
+SIDE_LINK = {"out": "written_by", "in": "read_by"}
+# The tools that store files, and the tools whose files sit in another one (a Google sheet is a
+# file of a Drive folder). A tool where the data map has a folder or a file stores files too.
+FILE_TOOLS = ("saas:google-drive", "saas:notion", "saas:onedrive", "saas:sharepoint",
+              "saas:dropbox", "saas:box", "saas:confluence")
+STORED_IN = {"saas:google-sheets": "saas:google-drive", "saas:google-slides": "saas:google-drive",
+             "saas:google-docs": "saas:google-drive", "saas:google-forms": "saas:google-drive"}
+FOLDER_KINDS = ("folder", "file", "document", "spreadsheet", "presentation")
+# The containers that can receive the files of a task, and those a run updates (a fixed file,
+# `kind: file` of output_files) rather than adds a file to (`kind: folder`).
+HOME_KINDS = FOLDER_KINDS + ("page", "database")
+FIXED_KINDS = ("file", "document", "spreadsheet", "presentation")
+PLACE_STATUSES = ("proposed", "to_choose", "missing")
+PROPOSALS_MAX = 3
+# The score (place_score) from which a container is proposed: a word of its name, or a word of
+# what it holds and the team of the task.
+PROPOSE_MIN = 2
+# Whether a deliverable or an input is a file: the first of these words that the text names
+# decides (« e-mail de proposition » is a message, « proposition validée » a file). French and
+# English, whatever the language of the referential.
+FILE_WORD_RE = re.compile(
+    r"\b(?:fichiers?|files?|documents?|docs?|decks?|pr[ée]sentations?|slides?|supports?|pdf|"
+    r"md|xlsx|pptx|docx|csv|tableaux?|tableurs?|spreadsheets?|sheets?|fiches?|rapports?|"
+    r"reports?|comptes? rendus?|minutes|synth[èe]ses?|summary|summaries|m[ée]mos?|briefs?|"
+    r"plaquettes?|brochures?|livres? blancs?|white ?papers?|[ée]tudes?|study|studies|"
+    r"benchmarks?|exports?|kits?|guides?|mod[èe]les?|templates?|propositions?|proposals?|"
+    r"devis|quotes?|contrats?|contracts?|factures?|invoices?|cahiers?|comparatifs?|"
+    r"onglets?|bilans?|trames?|questionnaires?|grilles?|playbooks?|r[ée]troplannings?|"
+    r"feuilles?|one-pagers?|carrousels?|carousels?|articles?|newsletters?|livrables?|"
+    r"deliverables?|reportings?|dashboards?|tableaux de bord|catalogues?)\b", re.I)
+MESSAGE_WORD_RE = re.compile(
+    r"\b(?:e-?mails?|mails?|messages?|r[ée]ponses?|replies|reply|relances?|reminders?|"
+    r"appels?|calls?|tickets?|r[ée]unions?|meetings?|rendez-vous|invitations?|posts?|"
+    r"conversations?|notifications?|sms|commentaires?|comments?)\b", re.I)
+
+
+def names_a_file(text):
+    """Whether a deliverable or an input is a file: its text names a file before it names a
+    message."""
+    text = str(text or "")
+    f = FILE_WORD_RE.search(text)
+    if not f:
+        return False
+    m = MESSAGE_WORD_RE.search(text)
+    return not m or f.start() < m.start()
+
+
+def storage_tool(tool):
+    """The tool a file of `tool` is stored in: Google Drive for a sheet, a deck or a doc."""
+    return STORED_IN.get(tool, tool)
+
+
+def file_tools(ref):
+    """The tools that store files: FILE_TOOLS, and those where the data map has a folder or a
+    file."""
+    return set(FILE_TOOLS) | {c.get("tool") for c in ref["containers"]
+                              if c.get("kind") in FOLDER_KINDS}
+
+
+def url_key(url):
+    """One place, however its link is written: the id of a Google Drive file or folder, the id
+    of a Notion page, else the link without its query, its anchor and its last slash."""
+    u = str(url or "").strip()
+    m = re.search(r"(?:/folders/|/d/|[?&]id=)([\w-]{20,})", u)
+    if m and "google.com" in u:
+        return "g:" + m.group(1)
+    m = re.search(r"([0-9a-f]{32})(?:[?#/]|$)", re.sub(r"[?#].*$", "", u).lower()
+                  .replace("-", ""))
+    if m and "notion." in u:
+        return "n:" + m.group(1)
+    return re.sub(r"[?#].*$", "", u).rstrip("/").lower()
+
+
+def container_depth(c, by_id):
+    """How many containers a container sits in."""
+    n, seen = 0, set()
+    while c and c.get("parent") and c["parent"] not in seen:
+        seen.add(c["parent"])
+        c, n = by_id.get(c["parent"]), n + 1
+    return n
+
+
+def is_bin(c):
+    """A container that is no precise place for the files of a task: the root of a tree (no
+    parent, other containers in it), or files left loose and described as one container (a
+    `file` of several items). Needs link_containers()."""
+    items = c.get("items") if isinstance(c.get("items"), dict) else {}
+    loose = c.get("kind") == "file" and isinstance(items.get("count"), int) \
+        and not isinstance(items.get("count"), bool) and items["count"] > 1
+    return loose or (not c.get("parent") and bool(c.get("_children")))
+
+
+def file_entries(t, field):
+    return [f for f in t.get(field) or [] if isinstance(f, dict)]
+
+
+def place_affinity(c, t, roles):
+    """How close a container is to the team of a task: 2 when the role of the task keeps it
+    or a task of that role writes or reads it, 1 when a role of the same team does, else 0."""
+    near = set(c.get("_owners") or []) | {(x or {}).get("role") for x in
+                                          c.get("_tasks_near") or []}
+    if t.get("role") in near:
+        return 2
+    team = (roles.get(t.get("role")) or {}).get("team")
+    return 1 if team and any((roles.get(r) or {}).get("team") == team for r in near) else 0
+
+
+def place_score(c, t, side, roles):
+    """How well a container fits the files of a task on one side, as (words, total): the words
+    of the task found in the container's name, path or naming (2 each) or only in what it
+    holds (1 each), and that plus its closeness to the task's team (place_affinity). The words
+    of the task: its name and its deliverable for `out`; its input for `in`, since the name
+    of a task says what it produces (its name when the input has no word)."""
+    words = place_words(t.get(SIDE_TEXT[side]))
+    if side == "out" or not words:
+        words |= place_words(t.get("name"))
+    named = place_words(c.get("name"), c.get("path"), c.get("naming"))
+    held = place_words(c.get("holds")) - named
+    shared = 2 * len(words & named) + len(words & held)
+    return shared, shared + place_affinity(c, t, roles)
+
+
+def propose_place(ref, t, side, links, by_id):
+    """The containers that could hold the files of a task on one side: those of the data map
+    that hold its data in the tool where its files are stored, but the bins (is_bin), ranked
+    by place_score, then the deepest, then those that give a naming. `proposed`: the best shares
+    a word with the task and scores 2 or more, or is the only one; `to_choose`: none stands
+    out, or the best shares no word with the task (the team alone is not enough); `missing`:
+    none, the tree has no folder for this data in this tool (`missing`: the data, the tool and
+    its bins). Needs link_containers()."""
+    roles = {r["id"]: r for r in ref["roles"]}
+    scores, shared, missing = {}, {}, []
+    for link in links:
+        tool = storage_tool(link["tool"])
+        holds = [c for c in ref["containers"] if c.get("state", "active") == "active"
+                 and c.get("data") == link["data"] and c.get("tool") == tool
+                 and c.get("kind") in HOME_KINDS]
+        homes = [c for c in holds if not is_bin(c)]
+        for c in homes:
+            words, total = place_score(c, t, side, roles)
+            if total > scores.get(c["id"], -1):
+                scores[c["id"]], shared[c["id"]] = total, words
+        if not homes and not any(m["data"] == link["data"] and m["tool"] == tool
+                                 for m in missing):
+            missing.append({"data": link["data"], "tool": tool,
+                            "bins": [c["id"] for c in holds]})
+    ranked = sorted(scores, key=lambda x: (-scores[x], -container_depth(by_id[x], by_id),
+                                           not by_id[x].get("naming"), id_order(x)))
+    if not ranked:
+        return {"status": "missing", "proposals": [], "missing": missing}
+    best = scores[ranked[0]]
+    if shared[ranked[0]] and (best >= PROPOSE_MIN or len(ranked) == 1):
+        return {"status": "proposed", "missing": missing,
+                "proposals": [x for x in ranked if scores[x] == best][:PROPOSALS_MAX]}
+    return {"status": "to_choose", "proposals": ranked[:PROPOSALS_MAX], "missing": missing}
+
+
+def link_files(ref, idx):
+    """The places of the files of each task, on each side (`out`: its deliverable, `in`: the
+    files it reads), in `_files` (README_operations.md §1.12, §1.20): the containers its
+    entries name or link to and those of the data map that name it (`written_by`, `read_by`;
+    `tree_only`: named by the data map only, to write into the task), the links no container
+    has (`urls`), and a status:
+
+    - `placed`: an entry or the data map says where;
+    - `none`: a person said the task keeps no file on this side (`kind: none`);
+    - `proposed`, `to_choose`, `missing` (propose_place): nothing says where, and the task
+      keeps files: its deliverable or input names a file (names_a_file) and its data is in a
+      tool that stores files.
+
+    ref["_placements"]: the active tasks to place, one row per side; ref["_missing_folders"]:
+    each data type and tool the tree has no folder for, with these tasks; ref["_unknown_places"]:
+    the links of the tasks that no container has, to describe in the data map. Needs
+    link_containers()."""
+    conts = ref["containers"]
+    by_id = {c.get("id"): c for c in conts}
+    by_url = {url_key(c["url"]): c for c in conts if c.get("url")}
+    tools = file_tools(ref)
+    teams = {r["id"]: r.get("team") for r in ref["roles"]}
+    named = {"out": {}, "in": {}}
+    for c in conts:
+        for side, key in (("out", "_writers"), ("in", "_readers")):
+            for x in c.get(key) or []:
+                named[side].setdefault(x, []).append(c["id"])
+    placements, unknown, missing = [], {}, {}
+    for t in ref["tasks"]:
+        t["_files"] = {}
+        live = t.get("state") == "active"
+        for side, field in FILE_SIDES.items():
+            entries = file_entries(t, field)
+            linked, urls = [], []
+            for f in entries:
+                if f.get("kind") == "none":
+                    continue
+                c = by_id.get(resolve(idx, f["container"])) if f.get("container") \
+                    else by_url.get(url_key(f["url"])) if f.get("url") else None
+                if c:
+                    linked.append(c["id"])
+                elif f.get("url"):
+                    urls.append(f["url"])
+                    if live:
+                        u = unknown.setdefault(url_key(f["url"]), {
+                            "url": f["url"], "tool": f.get("tool"), "tasks": []})
+                        u["tasks"].append(t["id"])
+            tree = [x for x in named[side].get(t["id"], []) if x not in linked]
+            status = "none" if any(f.get("kind") == "none" for f in entries) else \
+                "placed" if entries or tree else None
+            place = {"status": status, "containers": linked + tree, "tree_only": tree,
+                     "urls": urls}
+            if status is None and live:
+                links = [x for x in t.get("_data_links") or []
+                         if storage_tool(x["tool"]) in tools]
+                if links and names_a_file(t.get(SIDE_TEXT[side])):
+                    place.update(propose_place(ref, t, side, links, by_id))
+            if not place["status"]:
+                continue
+            t["_files"][side] = place
+            if place["status"] in PLACE_STATUSES:
+                placements.append({"task": t["id"], "side": side, "role": t["role"],
+                                   "team": teams.get(t["role"]), "status": place["status"],
+                                   "proposals": place["proposals"],
+                                   "missing": place["missing"]})
+                for m in place["missing"] if place["status"] == "missing" else []:
+                    row = missing.setdefault((m["data"], m["tool"]), dict(m, tasks=[]))
+                    row["tasks"].append(t["id"])
+    ref["_placements"] = placements
+    ref["_missing_folders"] = sorted(missing.values(),
+                                     key=lambda m: (-len(m["tasks"]), m["data"], m["tool"]))
+    ref["_unknown_places"] = sorted(unknown.values(),
+                                    key=lambda u: (-len(u["tasks"]), u["url"]))
+
+
+def id_order(value):
+    """Ids in their natural order: DC-2 before DC-10."""
+    return [int(p) if p.isdigit() else p for p in re.split(r"(\d+)", str(value))]
+
+
+def files_stats(ref):
+    """The figures of « Files to place »: per side, the active tasks by status of their files;
+    the data types and tools without a folder, the links unknown to the data map, the branches
+    of the tree no task writes or reads (untasked_containers) by status, and the containers that
+    hold loose files. Needs link_files() and untasked_containers()."""
+    live = active(ref["tasks"])
+    sides = {side: {k: sum(1 for t in live if (t.get("_files") or {}).get(side, {})
+                           .get("status") == k)
+                    for k in ("placed", "none") + PLACE_STATUSES}
+             for side in FILE_SIDES}
+    tools = file_tools(ref)
+    homes = [c for c in ref["containers"] if c.get("state", "active") == "active"
+             and c.get("tool") in tools and c.get("kind") in HOME_KINDS]
+    untasked = ref.get("_untasked") or []
+    return {"sides": sides,
+            "tasks": len({p["task"] for p in ref.get("_placements") or []}),
+            "missing_folders": len(ref.get("_missing_folders") or []),
+            "unknown_places": len(ref.get("_unknown_places") or []),
+            "untasked": {k: sum(1 for u in untasked if u["status"] == k)
+                         for k in UNTASKED_STATUSES},
+            "loose": sorted((c["id"] for c in homes if is_bin(c) and c.get("parent")),
+                            key=id_order)}
+
+
+# The status of a branch of the tree that no task writes or reads: tasks probably use it (to
+# link), or no task of the referential seems to (a task to deduce).
+UNTASKED_STATUSES = ("to_link", "to_deduce")
+# The share of words a task needs with a container to probably use it (2 per word of its name,
+# path or naming, 1 per word only in what it holds), and how many such tasks are listed.
+LIKELY_MIN = 2
+LIKELY_MAX = 5
+
+
+def subtree_tasks(c, by_id, memo):
+    """The tasks that write or read a container or a container under it."""
+    if c["id"] in memo:
+        return memo[c["id"]]
+    memo[c["id"]] = set()
+    found = set(c.get("_writers") or []) | set(c.get("_readers") or [])
+    for x in c.get("_children") or []:
+        if x in by_id:
+            found |= subtree_tasks(by_id[x], by_id, memo)
+    memo[c["id"]] = found
+    return found
+
+
+def likely_tasks(c, tasks, proposed):
+    """The active tasks that probably write or read a container no task names: those it is
+    proposed to (« Files to place », status `proposed`), then those that reach its data in its tool and share
+    words with it (LIKELY_MIN), the closest first."""
+    named = place_words(c.get("name"), c.get("path"), c.get("naming"))
+    held = place_words(c.get("holds")) - named
+    score = {}
+    for t in tasks:
+        if not any(l["data"] == c.get("data") and c.get("tool") in (l["tool"],
+                                                                     storage_tool(l["tool"]))
+                   for l in t.get("_data_links") or []):
+            continue
+        words = place_words(t.get("name"), t.get("input"), t.get("output"))
+        n = 2 * len(words & named) + len(words & held)
+        if n >= LIKELY_MIN:
+            score[t["id"]] = n
+    near = sorted(score, key=lambda x: (-score[x], id_order(x)))
+    return (sorted(proposed, key=id_order) + [x for x in near if x not in proposed])[:LIKELY_MAX]
+
+
+def untasked_containers(ref):
+    """The branches of the tree no task writes or reads (README_operations.md §1.20): each
+    active container whose tasks, its own and those of the containers under it, are none, and
+    whose parent has some (or that has no parent). The other side of « Files to place »: a task
+    without a folder lacks an instruction, a folder without a task shows a task the referential
+    has not found yet. Each one with the tasks that probably use it (likely_tasks) and a status:
+    `to_link` when there are such tasks, `to_deduce` when there is none. Freshest first: an
+    active folder without a task is the surest sign of a missing task. Needs link_files()."""
+    by_id = {c.get("id"): c for c in ref["containers"]}
+    live = [c for c in ref["containers"] if c.get("state", "active") == "active"]
+    tasks = active(ref["tasks"])
+    proposed = {}
+    for r in ref.get("_placements") or []:
+        for x in r["proposals"] if r["status"] == "proposed" else []:
+            proposed.setdefault(x, set()).add(r["task"])
+    memo, rows = {}, []
+    for c in live:
+        if subtree_tasks(c, by_id, memo):
+            continue
+        parent = by_id.get(c.get("parent"))
+        if parent and parent.get("state", "active") == "active" \
+                and not subtree_tasks(parent, by_id, memo):
+            continue
+        likely = likely_tasks(c, tasks, proposed.get(c["id"], set()))
+        under = sum(1 for x in live if is_under(x, c["id"], by_id))
+        rows.append({"id": c["id"], "tool": c.get("tool"), "data": c.get("data"),
+                     "status": "to_link" if likely else "to_deduce", "likely": likely,
+                     "owner": c.get("owner"), "under": under, "age": c.get("_age")})
+    return sorted(rows, key=lambda u: (UNTASKED_STATUSES.index(u["status"]),
+                                       u["age"] is None, u["age"] or 0, id_order(u["id"])))
+
+
+def is_under(c, parent_id, by_id):
+    """Whether a container sits, at any depth, in the container `parent_id`."""
+    seen = set()
+    while c and c.get("parent") and c["parent"] not in seen:
+        if c["parent"] == parent_id:
+            return True
+        seen.add(c["parent"])
+        c = by_id.get(c["parent"])
+    return False
+
+
+def check_file_links(ref, idx):
+    """The warnings of the places of the tasks: a task that names a container (`container` of
+    output_files or input_files) the container does not name back (`written_by`, `read_by`):
+    the data map and the task say the same thing (README_operations.md §1.20)."""
+    by_id = {c.get("id"): c for c in ref["containers"]}
+    out = []
+    for t in ref["tasks"]:
+        for side, field in FILE_SIDES.items():
+            for f in file_entries(t, field):
+                c = by_id.get(resolve(idx, f["container"])) if f.get("container") else None
+                if c and t["id"] not in {resolve(idx, x) for x in c.get(SIDE_LINK[side]) or []}:
+                    out.append(tr("warn.files_one_side", where=f"{t['_file']} {t['id']}",
+                                  field=field, container=c["id"], link=SIDE_LINK[side]))
+    return out
 
 
 def okr_ids(idx):
@@ -2230,28 +2607,39 @@ URL_RE = re.compile(r"https?://\S+$")
 
 
 def check_files(t, where, idx):
-    """`output_files`: each entry a fixed file (`kind: file`, its `url`) or the folder where the
-    file of each run goes (`kind: folder`, its `url` and/or the `pattern` of the path and name,
-    placeholders in brackets: « Clients/[Client]/kickoff-[AAAA-MM-JJ].pptx »). `templates`: the
-    files the deliverable starts from, a URL or a tool of the catalogue. `tool`: where the file
-    lives, a tool of the catalogue (README_operations.md §1.12)."""
+    """`output_files` (where the deliverable goes) and `input_files` (where the files the task
+    reads are): each entry a fixed file (`kind: file`, its `url`) or a folder (`kind: folder`,
+    its `url` and/or the `pattern` of the path and name, placeholders in brackets:
+    « Clients/[Client]/kickoff-[AAAA-MM-JJ].pptx »), or, alone in its list, `kind: none`: the
+    task keeps no file on this side. `tool`: where the file lives, a tool of the catalogue;
+    `container`: the container of the data map that is this place. `templates`: the files the
+    deliverable starts from, a URL or a tool of the catalogue (README_operations.md §1.12)."""
     errors = []
-    for i, f in enumerate(t.get("output_files") or []):
-        at = f"{where} output_files[{i}]"
-        if not isinstance(f, dict):
-            errors.append(tr("check.files_not_mapping", where=at))
-            continue
-        errors += check_enum(at, "kind", f.get("kind"), "output_kind")
-        if not f.get("kind"):
-            errors.append(tr("check.files_kind_missing", where=at))
-        if f.get("url") is not None and not (isinstance(f["url"], str) and URL_RE.match(f["url"])):
-            errors.append(tr("check.url", where=at, value=repr(f["url"])))
-        if f.get("kind") == "file" and not f.get("url"):
-            errors.append(tr("check.file_needs_url", where=at))
-        if not f.get("url") and not f.get("pattern"):
-            errors.append(tr("check.url_or_pattern", where=at))
-        errors += check_ref(at, "tool", f.get("tool"), idx, expected=["tool"]) \
-            if f.get("tool") else []
+    for field in FILE_SIDES.values():
+        entries = t.get(field) or []
+        for i, f in enumerate(entries):
+            at = f"{where} {field}[{i}]"
+            if not isinstance(f, dict):
+                errors.append(tr("check.files_not_mapping", where=at))
+                continue
+            errors += check_enum(at, "kind", f.get("kind"), "output_kind")
+            if not f.get("kind"):
+                errors.append(tr("check.files_kind_missing", where=at))
+            if f.get("kind") == "none":
+                if len(entries) > 1:
+                    errors.append(tr("check.files_none_alone", where=at))
+                continue
+            if f.get("url") is not None and not (isinstance(f["url"], str)
+                                                 and URL_RE.match(f["url"])):
+                errors.append(tr("check.url", where=at, value=repr(f["url"])))
+            if f.get("kind") == "file" and not f.get("url"):
+                errors.append(tr("check.file_needs_url", where=at))
+            if not f.get("url") and not f.get("pattern"):
+                errors.append(tr("check.url_or_pattern", where=at))
+            errors += check_ref(at, "tool", f.get("tool"), idx, expected=["tool"]) \
+                if f.get("tool") else []
+            errors += check_ref(at, "container", f.get("container"), idx,
+                                expected=["container"]) if f.get("container") else []
     for i, x in enumerate(t.get("templates") or []):
         at = f"{where} templates[{i}]"
         url = x.get("url") if isinstance(x, dict) else None
@@ -2496,6 +2884,8 @@ def enrich(ref):
         d["_scope"] = source_scope(d, ref["tasks"], roles, idx)
     ref["_chains"] = link_chains(ref, idx)
     link_containers(ref, idx)
+    link_files(ref, idx)
+    ref["_untasked"] = untasked_containers(ref)
     link_blockers(ref, idx)
     link_os(ref, idx)
     link_people(ref)
@@ -3276,7 +3666,7 @@ def stats(ref):
     return {"teams": teams, "departments": depts, "all": counts(live), "types": types,
             "library": library_stats(library(ref)), "blockers": blockers, "os": os_stats(ref),
             "people": people_stats(ref), "agents": agent_stats(ref),
-            "data_map": datamap_stats(ref)}
+            "data_map": datamap_stats(ref), "files": files_stats(ref)}
 
 
 def people_stats(ref):
@@ -3740,7 +4130,7 @@ def public(item):
                 "_teams", "_agents", "_access", "_cost", "_progress", "_maturity", "_used_by",
                 "_shared_by", "_decides", "_decisions", "_artifacts", "_freshness", "_os", "_scope",
                 "_writers", "_readers", "_owners", "_holders", "_candidates", "_age", "_fresh",
-                "_containers"):
+                "_containers", "_files"):
         if key in item:
             out[key[1:]] = item[key]
     return out
@@ -3917,13 +4307,16 @@ def claude_context():
 
 
 def public_config(cfg):
-    """What the explorer shows of the configuration: the organization, its teams, the intake."""
+    """What the explorer shows of the configuration: the organization, its teams (with the
+    person or the role who validates the places of their files, `lead`), the intake, the
+    address of the published explorer."""
     if not cfg:
         return None
     intake = cfg.get("intake") or {}
     return {"organization": (cfg.get("organization") or {}).get("name"),
+            "explorer": (cfg.get("referential") or {}).get("explorer"),
             "teams": [{"code": t.get("code"), "name": t.get("name"),
-                       "headcount": t.get("headcount")}
+                       "headcount": t.get("headcount"), "lead": t.get("lead")}
                       for t in cfg.get("teams") or [] if isinstance(t, dict)],
             "intake": {"drive_folder": intake.get("drive_folder"), "email": intake.get("email"),
                        "merged_by": intake.get("merged_by")}}
@@ -3983,6 +4376,10 @@ def explorer_data(ref):
                           "order": list(SENSITIVITY_ORDER), "rules": labels["rules"],
                           "rule_text": labels["rule_text"], "rule_order": list(AI_RULES)},
             "chains": ref.get("_chains") or [],
+            "placements": ref.get("_placements") or [],
+            "missing_folders": ref.get("_missing_folders") or [],
+            "unknown_places": ref.get("_unknown_places") or [],
+            "untasked": ref.get("_untasked") or [],
             **{name: [public(x) for x in published(ref, name, cited)] for name in LISTS}}
 
 
@@ -4365,18 +4762,44 @@ def task_index(ref):
         for tool in dict.fromkeys(resolve(idx, x) for x in t.get("tools") or []):
             if kinds.get(tool) in LIBRARY_KINDS:
                 skills.setdefault(tool, []).append(t["id"])
+    places, cited = index_places(ref)
+    conts = {c["id"]: [c.get("name"), c.get("tool"), c.get("path"), c.get("url")]
+             for c in ref["containers"] if c["id"] in cited}
     return {"format": INDEX_FORMAT, "updated": last_updated(ref), "columns": INDEX_COLUMNS,
-            "roles": roles, "tasks": tasks, "aliases": aliases, "skills": skills}
+            "roles": roles, "tasks": tasks, "aliases": aliases, "skills": skills,
+            "places": places, "containers": dict(sorted(conts.items(),
+                                                        key=lambda kv: id_order(kv[0])))}
+
+
+def index_places(ref):
+    """Per active task whose files have no place in its entry, on each side (out, in): what the
+    data map says, [status, containers]: `tree` (the data map names the task, its entry does
+    not), `proposed`, `to_choose` (the containers proposed), `missing` (none). The skill
+    ts-general-rpt-file reads it to propose a place without reading the data map
+    (README_operations.md §1.12). Needs link_files()."""
+    places, cited = {}, set()
+    for t in active(ref["tasks"]):
+        for side, p in (t.get("_files") or {}).items():
+            if p["status"] in PLACE_STATUSES:
+                row = [p["status"], p["proposals"]]
+            elif p["status"] == "placed" and p["tree_only"] and not file_entries(
+                    t, FILE_SIDES[side]):
+                row = ["tree", p["tree_only"]]
+            else:
+                continue
+            places.setdefault(t["id"], {})[side] = row
+            cited.update(row[1])
+    return dict(sorted(places.items(), key=lambda kv: id_order(kv[0]))), cited
 
 
 def render_index(ref):
-    """The index as JSON, one role, task, former id or skill per line."""
+    """The index as JSON, one role, task, former id, skill, place or container per line."""
     i = task_index(ref)
     return (f'{{\n "format": "{INDEX_FORMAT}",\n "updated": "{i["updated"]}",\n'
             f' "columns": {json.dumps(i["columns"])},\n'
             + "".join(f' "{k}": {{\n{json_lines(i[k])}\n }},\n'
-                      for k in ("roles", "tasks", "aliases"))
-            + f' "skills": {{\n{json_lines(i["skills"])}\n }}\n}}\n')
+                      for k in ("roles", "tasks", "aliases", "skills", "places"))
+            + f' "containers": {{\n{json_lines(i["containers"])}\n }}\n}}\n')
 
 
 # ----------------------------------------------------------------------- observations
@@ -4386,9 +4809,9 @@ def render_index(ref):
 # the merge integrates the observations, after a GO; until then, the views do not change.
 OBSERVATIONS = "observations"
 OBSERVATION_FORMAT = "rpt-observation/v1"
-OBSERVABLE = ("status", "target", "frequency", "measure", "input", "output", "output_files",
-              "templates", "tools", "data", "okrs", "method", "by", "blocker", "blocker_type",
-              "stakes", "job")
+OBSERVABLE = ("status", "target", "frequency", "measure", "input", "output", "input_files",
+              "output_files", "templates", "tools", "data", "okrs", "method", "by", "blocker",
+              "blocker_type", "stakes", "job")
 OBSERVATION_META = ["date", "observer", "surface", "source"]
 CHANGE_KEYS = ["task", "data", "blocker", "agent", "tool", "field", "before", "after", "basis",
                "evidence", "result", "note"]
@@ -4829,7 +5252,7 @@ def apply_observation(ref, path, only=None, today=None):
     obs = normalize(yaml.safe_load(read_text(path)))
     meta, idx, folder = obs.get("meta") or {}, index(ref), ref["dir"]
     source = f"observation {os.path.basename(path)} ({meta.get('observer')}, {meta.get('date')})"
-    files, changed, applied, skipped, closed = {}, set(), [], [], []
+    files, changed, applied, skipped, closed, tree = {}, set(), [], [], [], []
     for c in obs.get("changes") or []:
         if "blocker" in c:
             if not c.get("result"):
@@ -4869,13 +5292,101 @@ def apply_observation(ref, path, only=None, today=None):
         c["result"] = "merged"
         changed.add(path_of)
         applied.append(label)
+        if c.get("field") in FILE_SIDES.values():
+            tree += name_in_containers(ref, item["id"], c, source, today)
     for path_of in changed:
         header = header_of(read_text(path_of)) if os.path.exists(path_of) else []
         write_text(path_of, canonical_text(files[path_of], header))
+    applied += tree
     if applied or closed:
         write_text(path, yaml.dump(obs, Dumper=Dumper, sort_keys=False, allow_unicode=True,
                                    width=10 ** 6))
     return applied, skipped, closed
+
+
+def name_in_containers(ref, task_id, c, source, today):
+    """An observation that gives a task a container (`container` of output_files or
+    input_files) also names the task in that container, in `written_by` or `read_by`, and adds
+    the observation to its `sources`: the task and the data map say the same thing
+    (README_operations.md §1.20). The line of the container is changed in place, the rest of
+    data-map.yaml is left as it is. Returns what was written, as texts."""
+    side = next(s for s, f in FILE_SIDES.items() if f == c.get("field"))
+    idx, done = index(ref), []
+    for f in c.get("after") or []:
+        item = idx.get(f.get("container")) if isinstance(f, dict) and f.get("container") else None
+        if not item or item.get("_borrowed") or item.get("id") not in \
+                {x.get("id") for x in ref["containers"]}:
+            continue
+        path_of = os.path.join(ref["dir"], item["_file"])
+        text = read_text(path_of)
+        new = add_to_entry(text, item["id"], SIDE_LINK[side], task_id)
+        if new == text:
+            continue
+        new = add_to_entry(new, item["id"], "sources", source)
+        new = re.sub(r"^(meta: \{.*\bupdated: )'?[0-9-]+'?", rf"\g<1>'{today}'", new, count=1,
+                     flags=re.M)
+        write_text(path_of, new)
+        done.append(f"{item['id']} {SIDE_LINK[side]} += {task_id}")
+    return done
+
+
+def add_to_entry(text, entry_id, key, value):
+    """The text of a YAML file whose entry `entry_id` (a line `  - id: X`, or a flow line
+    `  - {id: X, …}`) has `value` added to its list `key`, the rest of the file unchanged. The
+    key is created in the order of KEYS["container"] when the entry does not have it."""
+    lines = text.split("\n")
+    key_id = re.escape(entry_id)
+    start = next((i for i, x in enumerate(lines)
+                  if re.match(rf"^  - id: '?{key_id}'?\s*$", x)
+                  or re.match(rf"^  - \{{\s*id: '?{key_id}'?\s*[,}}]", x)), None)
+    if start is None:
+        return text
+    if lines[start].lstrip().startswith("- {"):
+        item = yaml.safe_load(lines[start].strip()[2:])
+        if value in (item.get(key) or []):
+            return text
+        item[key] = list(item.get(key) or []) + [value]
+        item = {k: item[k] for k in KEYS["container"] if k in item} | \
+            {k: v for k, v in item.items() if k not in KEYS["container"]}
+        lines[start] = "  - " + yaml.dump(item, default_flow_style=True, sort_keys=False,
+                                          allow_unicode=True, width=10 ** 6).strip()
+        return "\n".join(lines)
+    end = next((i for i in range(start + 1, len(lines))
+                if not lines[i].startswith("    ") and lines[i].strip()), len(lines))
+    while end > start + 1 and not lines[end - 1].strip():
+        end -= 1
+    at = next((i for i in range(start + 1, end) if lines[i].startswith(f"    {key}:")), None)
+    if at is None:
+        order = KEYS["container"]
+        later = order[order.index(key) + 1:] if key in order else []
+        at = next((i for i in range(start + 1, end)
+                   if re.match(r"^    (\w+):", lines[i])
+                   and re.match(r"^    (\w+):", lines[i]).group(1) in later), end)
+        lines.insert(at, f"    {key}: " + flow_list([value]))
+        return "\n".join(lines)
+    rest = lines[at][len(f"    {key}:"):].strip()
+    if rest:
+        values = yaml.safe_load(rest) or []
+        if value in values:
+            return text
+        lines[at] = f"    {key}: " + flow_list(values + [value])
+        return "\n".join(lines)
+    last, values = at, []
+    while last + 1 < end and lines[last + 1].startswith("      - "):
+        last += 1
+        values.append(yaml.safe_load(lines[last].strip()[2:]))
+    if value in values:
+        return text
+    lines.insert(last + 1, "      - " + yaml.dump(value, default_flow_style=True,
+                                                 allow_unicode=True, width=10 ** 6)
+                 .strip().removesuffix("\n...").strip())
+    return "\n".join(lines)
+
+
+def flow_list(values):
+    """A list of texts written on one line, quoted where YAML needs it."""
+    return yaml.dump(list(values), default_flow_style=True, allow_unicode=True,
+                     width=10 ** 6).strip()
 
 
 def apply_blocker_change(ref, c, meta, source, only, files, changed, out, name, today):
@@ -5359,7 +5870,7 @@ def render_markdown(ref, lang=None):
         lines += md_role(r, ref, idx, lang)
     lines += md_library(ref, lang) + md_okrs(ref, lang) + md_blockers(ref, lang) + \
         md_os(ref, lang) + md_decisions(ref, lang) + md_people(ref, lang) + md_agents(ref, lang) + \
-        md_datamap(ref, lang)
+        md_datamap(ref, lang) + md_placements(ref, lang)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -5528,6 +6039,78 @@ def md_datamap(ref, lang=None):
         lines.append(f"| {c.get('id')} {c.get('name')} | {entry_name(d, lang) or c.get('data')} | "
                      f"{tools.get(c.get('tool'), c.get('tool'))} · `{c.get('path') or ''}` | "
                      f"{size} | {fresh} | {who or tr('md.datamap_nobody', lang)} |")
+    return lines
+
+
+def place_text(c, tools):
+    """A container in a line: its id, name, tool and path."""
+    return f"{c.get('id')} {c.get('name')} ({where_text(c, tools)})"
+
+
+def where_text(c, tools):
+    """The tool and the path of a container."""
+    return f"{tools.get(c.get('tool'), c.get('tool'))} · `{c.get('path') or ''}`"
+
+
+def md_placements(ref, lang=None):
+    """Files to place (README_operations.md §1.20): the active tasks that keep files without a
+    place, with the container proposed; the data types and tools the tree has no folder for;
+    the links of the tasks the data map does not have; the branches of the tree no task writes
+    or reads (untasked_containers)."""
+    rows = ref.get("_placements") or []
+    if not ref["containers"] or not (rows or ref.get("_unknown_places")
+                                     or ref.get("_untasked")):
+        return []
+    st, tools = files_stats(ref), {t["id"]: t.get("name") for t in ref["tools"]}
+    conts, tasks = {c["id"]: c for c in ref["containers"]}, {t["id"]: t for t in ref["tasks"]}
+    sources = {d["id"]: d for d in ref["data_sources"]}
+    count = {k: sum(1 for r in rows if r["status"] == k) for k in PLACE_STATUSES}
+    placed = sum(st["sides"][s]["placed"] for s in FILE_SIDES)
+    lines = ["", tr("md.files_title", lang), "",
+             tr("md.files_intro", lang, tasks=st["tasks"], placed=placed, **count), "",
+             tr("md.files_header", lang), "|---|---|---|---|"]
+    for r in sorted(rows, key=lambda r: (str(r["team"]), id_order(r["task"]), r["side"])):
+        t = tasks[r["task"]]
+        what = f"{r['task']} {t.get('name')} — « {t.get(SIDE_TEXT[r['side']]) or ''} »"
+        found = "<br>".join(place_text(conts[x], tools) for x in r["proposals"]) or \
+            ", ".join(f"{entry_name(sources.get(m['data']) or {}, lang) or m['data']} · "
+                      f"{tools.get(m['tool'], m['tool'])}" for m in r["missing"])
+        lines.append(f"| {cell(what)} | {label('file_side', r['side'], lang, r['side'])} | "
+                     f"{label('place_status', r['status'], lang, r['status'])} | {cell(found)} |")
+    if ref.get("_missing_folders"):
+        lines += ["", tr("md.files_missing_title", lang), "", tr("md.files_missing_header", lang),
+                  "|---|---|---|---|"]
+        for m in ref["_missing_folders"]:
+            bins = ", ".join(f"{x} {conts[x].get('name')}" for x in m["bins"]) or "—"
+            lines.append(f"| {entry_name(sources.get(m['data']) or {}, lang) or m['data']} | "
+                         f"{tools.get(m['tool'], m['tool'])} | {', '.join(m['tasks'])} | "
+                         f"{cell(bins)} |")
+    if ref.get("_unknown_places"):
+        lines += ["", tr("md.files_unknown_title", lang), "", tr("md.files_unknown_header", lang),
+                  "|---|---|"]
+        lines += [f"| {u['url']} | {', '.join(u['tasks'])} |" for u in ref["_unknown_places"]]
+    lines += md_untasked(ref, st, conts, tools, lang)
+    if st["loose"]:
+        lines += ["", tr("md.files_loose", lang, n=len(st["loose"]), ids=", ".join(st["loose"]))]
+    return lines
+
+
+def md_untasked(ref, st, conts, tools, lang=None):
+    """The branches of the tree no task writes or reads, the tasks to deduce first."""
+    untasked = ref.get("_untasked") or []
+    if not untasked:
+        return []
+    lines = ["", tr("md.files_untasked_title", lang), "",
+             tr("md.files_untasked_intro", lang, n=len(untasked), **st["untasked"]), "",
+             tr("md.files_untasked_header", lang), "|---|---|---|---|---|"]
+    for u in untasked:
+        c = conts[u["id"]]
+        age = tr("md.files_age", lang, n=u["age"]) if u["age"] is not None else "—"
+        likely = ", ".join(u["likely"]) or (tr("md.files_owner", lang, role=u["owner"])
+                                            if u["owner"] else "—")
+        lines.append(f"| {u['id']} {cell(c.get('name'))} | {cell(where_text(c, tools))} | {age} | "
+                     f"{label('untasked_status', u['status'], lang, u['status'])} | "
+                     f"{cell(likely)} |")
     return lines
 
 
@@ -5926,6 +6509,15 @@ def main(argv=None):
                              "files; \"all\": every file of observations/, in order")
     parser.add_argument("--only", help="with --apply-observation: TASK or TASK:field, "
                                        "comma-separated")
+    parser.add_argument("--placements", action="store_true",
+                        help="list the tasks that keep files without a place, by team, with the "
+                             "container of the data map proposed, then the folders the tree "
+                             "lacks (README_operations.md §1.20)")
+    parser.add_argument("--team", metavar="CODE", help="with --placements: one team only")
+    parser.add_argument("--apply-placements", metavar="FILE",
+                        help="the places validated by a team (YAML or JSON, the decisions of the "
+                             "explorer's page « Files to place »): one observation per task in "
+                             "observations/, applied at once to the task and to the container")
     parser.add_argument("--datamap-plan", metavar="FILE",
                         help="the containers of a crawl (data-map) matched against those of "
                              "--dir: same container, or new (README_operations.md §1.20)")
@@ -5993,6 +6585,165 @@ def check_config_file(path):
     return 1 if errors else 0
 
 
+def print_placements(ref, team=None):
+    """--placements: the tasks to place, by team, with the containers proposed (or the data
+    and the tool the tree has no folder for); then the folders the tree lacks, the links of the
+    tasks the data map does not have, the branches of the tree no task writes or reads (with
+    the team, those its roles keep or its tasks probably use). Needs enrich()."""
+    tools = {t["id"]: t.get("name") for t in ref["tools"]}
+    roles = {r["id"]: r for r in ref["roles"]}
+    teams = {r["id"]: r.get("team") for r in ref["roles"]}
+    conts, tasks = {c["id"]: c for c in ref["containers"]}, {t["id"]: t for t in ref["tasks"]}
+    rows = [r for r in ref.get("_placements") or [] if not team or r["team"] == team]
+    for code in sorted({str(r["team"]) for r in rows}):
+        mine = [r for r in rows if str(r["team"]) == code]
+        print(tr("cli.placements_team", team=code, n=len({r["task"] for r in mine})))
+        for r in sorted(mine, key=lambda r: (id_order(r["task"]), r["side"])):
+            t = tasks[r["task"]]
+            print(tr("cli.placements_task", task=r["task"], name=t.get("name"),
+                     side=label("file_side", r["side"], None, r["side"]),
+                     text=t.get(SIDE_TEXT[r["side"]]) or ""))
+            key = {"proposed": "cli.placements_proposed",
+                   "to_choose": "cli.placements_to_choose"}.get(r["status"])
+            for x in r["proposals"]:
+                print(tr(key, place=place_text(conts[x], tools), url=conts[x].get("url") or ""))
+            for m in r["missing"] if r["status"] == "missing" else []:
+                print(tr("cli.placements_missing", data=m["data"],
+                         tool=tools.get(m["tool"], m["tool"])))
+    for m in ref.get("_missing_folders") or []:
+        if not team or any((tasks[x].get("role") or "").lower().startswith(team + "-")
+                           for x in m["tasks"]):
+            print(tr("cli.placements_folder", data=m["data"], tool=tools.get(m["tool"], m["tool"]),
+                     tasks=", ".join(m["tasks"])))
+    for u in ref.get("_unknown_places") or []:
+        print(tr("cli.placements_unknown", url=u["url"], tasks=", ".join(u["tasks"])))
+    for u in ref.get("_untasked") or []:
+        owner = (roles.get(u["owner"]) or {}).get("team") if u["owner"] else None
+        if team and owner != team and not any(teams.get((tasks.get(x) or {}).get("role")) == team
+                                               for x in u["likely"]):
+            continue
+        print(tr("cli.placements_untasked",
+                 status=label("untasked_status", u["status"], None, u["status"]),
+                 place=place_text(conts[u["id"]], tools),
+                 likely=" — " + ", ".join(u["likely"]) if u["likely"] else ""))
+
+
+PLACEMENT_DECISIONS = ("validated", "elsewhere", "no_file")
+PLACEMENT_FORMAT = "rpt-placements/v1"
+
+
+def read_decisions(path):
+    """The decisions of a file, YAML or JSON: a list, or `decisions:` of a mapping. Each one
+    `{task, side, decision, container, url, by, date}` (`updated` for `date` in the documents
+    the explorer writes); an item of a listing of the explorer's database
+    (`{id: "TASK~side", data: {…}}`) is read the same way."""
+    data = yaml.safe_load(read_text(path))
+    items = data.get("decisions") if isinstance(data, dict) else data
+    out = []
+    for x in items or []:
+        if not isinstance(x, dict):
+            continue
+        if isinstance(x.get("data"), dict):
+            task, _, side = str(x.get("id") or "").partition("~")
+            x = dict(x["data"], task=x["data"].get("task") or task,
+                     side=x["data"].get("side") or side)
+        out.append(x)
+    return out
+
+
+def tool_of_url(url, idx):
+    """The tool of the catalogue a link is in, when it says so: Google Drive, Notion."""
+    for pattern, tool in ((r"//(drive|docs)\.google\.com/", "saas:google-drive"),
+                          (r"//([\w-]+\.)?notion\.(so|site)/", "saas:notion")):
+        if re.search(pattern, str(url)) and tool in idx:
+            return tool
+    return None
+
+
+def placement_entry(ref, t, side, d, idx):
+    """The entry of output_files or input_files a decision gives: the container, as a fixed
+    file or a folder, with its link (else its path as pattern) and its tool; a link without a
+    container; `kind: none` when the task keeps no file on this side. A reason when it cannot."""
+    if d.get("decision") == "no_file":
+        return {"kind": "none"}, None
+    c = idx.get(d.get("container")) if d.get("container") else None
+    if c is not None and c.get("id") not in {x.get("id") for x in ref["containers"]}:
+        return None, tr("placements.no_container", value=d.get("container"))
+    what = str(t.get(SIDE_TEXT[side]) or "")[:120] or None
+    if c:
+        fixed = c.get("kind") in FIXED_KINDS or (c.get("kind") == "page"
+                                                 and not c.get("_children"))
+        entry = {"kind": "file" if fixed and c.get("url") else "folder", "url": c.get("url"),
+                 "pattern": None if c.get("url") else c.get("path") or c.get("name"),
+                 "tool": c.get("tool"), "what": what, "container": c["id"]}
+    elif d.get("url") and URL_RE.match(str(d["url"])):
+        entry = {"kind": "folder", "url": str(d["url"]), "tool": tool_of_url(d["url"], idx),
+                 "what": what}
+    else:
+        return None, tr("placements.no_place")
+    return {k: v for k, v in entry.items() if v}, None
+
+
+def placement_observations(ref, decisions, today=None):
+    """Write one observation per person and task from the decisions of a team
+    (README_operations.md §1.20, « Files to place »): for each side, the field (output_files or
+    input_files) before and after, `declared`, the person and the date. Returns the paths
+    written and the decisions left aside, as texts. A side that already has a place in the
+    task's entry is left aside: the decision answered a proposal that no longer stands."""
+    today = today or datetime.date.today().isoformat()
+    idx, lang = index(ref), view_language()
+    groups, notes = {}, []
+    for d in decisions:
+        t = idx.get(d.get("task"))
+        side = d.get("side") if d.get("side") in FILE_SIDES else None
+        label_of = f"{d.get('task')} {d.get('side')}"
+        if not t or "role" not in t or t.get("_borrowed"):
+            notes.append(tr("cli.left", item=tr("placements.skip", item=label_of,
+                                                reason=tr("apply.not_found"))))
+            continue
+        if not side or d.get("decision") not in PLACEMENT_DECISIONS:
+            notes.append(tr("cli.left", item=tr("placements.skip", item=label_of,
+                                                reason=tr("placements.bad_decision"))))
+            continue
+        field = FILE_SIDES[side]
+        if file_entries(t, field):
+            notes.append(tr("cli.left", item=tr("placements.skip", item=label_of,
+                                                reason=tr("placements.already", field=field))))
+            continue
+        entry, reason = placement_entry(ref, t, side, d, idx)
+        if reason:
+            notes.append(tr("cli.left", item=tr("placements.skip", item=label_of,
+                                                reason=reason)))
+            continue
+        by = human_name(d.get("by") or "") or tr("placements.someone", lang)
+        date = str(d.get("date") or d.get("updated") or today)[:10]
+        evidence = tr("placements.evidence", lang, decision=label(
+            "place_decision", d["decision"], lang, d["decision"]), by=by, date=date)
+        groups.setdefault((by, t["id"]), []).append({
+            "task": t["id"], "field": field, "before": t.get(field), "after": [entry],
+            "basis": "declared", "evidence": evidence[:EVIDENCE_MAX]})
+    paths = []
+    for (by, task), changes in groups.items():
+        first = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", by.split()[0].lower())
+                       .encode("ascii", "ignore").decode()).strip("-") or "equipe"
+        name = f"{today}-{first}-{task.lower().replace('.', '-')}.yaml"
+        path = os.path.join(ref["dir"], OBSERVATIONS, name)
+        n = 2
+        while os.path.exists(path):
+            path = os.path.join(ref["dir"], OBSERVATIONS,
+                                f"{today}-{first}-{n}-{task.lower().replace('.', '-')}.yaml")
+            n += 1
+        obs = {"format": OBSERVATION_FORMAT,
+               "meta": {"date": today, "observer": by, "surface": "claude-ai",
+                        "source": tr("placements.source", lang)},
+               "changes": changes}
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        write_text(path, yaml.dump(obs, Dumper=Dumper, sort_keys=False, allow_unicode=True,
+                                   width=10 ** 6))
+        paths.append(path)
+    return paths, notes
+
+
 def print_datamap_plan(args):
     """--datamap-plan FILE: the crawl checked, then each of its containers matched against the
     data map of --dir: the container it updates, or a new one, with the active tasks of the
@@ -6040,13 +6791,18 @@ PLACE_STOPWORDS = {"pour", "avec", "dans", "depuis", "chaque", "entre", "from", 
                    "each", "their", "leur", "leurs", "client", "clients", "dossier", "dossiers",
                    "fichier", "fichiers", "document", "documents", "donnée", "données", "data",
                    "page", "pages", "folder", "folders", "file", "files", "équipe", "team"}
+# The stems of the words that say what is done or when, not what a place holds: « envoyée »,
+# « mise à jour », « du mois » are shared by a task and a folder without bringing them closer.
+PLACE_STOPSTEMS = {"envoy", "mettr", "jour", "mise", "prêt", "prête", "sent", "ready", "updat",
+                   "mois", "month", "semai", "week", "nouve", "tout", "tous", "faire", "fait",
+                   "suite", "selon", "après", "avant", "about", "after", "befor"}
 CANDIDATES_ALL = 8
 
 
 def place_words(*texts):
     """The stems (first five letters) of the words of 4 letters or more, common words aside."""
     words = re.findall(r"[^\W\d_]{4,}", " ".join(str(t) for t in texts if t).lower())
-    return {w[:5] for w in words if w not in PLACE_STOPWORDS}
+    return {w[:5] for w in words if w not in PLACE_STOPWORDS} - PLACE_STOPSTEMS
 
 
 def datamap_candidates(ref, c):
@@ -6109,6 +6865,9 @@ def run(args):
     else:
         warnings = []
     target = getattr(args, "apply_observation", None)
+    decisions = getattr(args, "apply_placements", None)
+    if decisions and not os.path.exists(decisions):
+        errors.append(tr("cli.not_found", file=decisions))
     if target and target != "all" and not in_observations(ref, target):
         errors.append(tr("cli.copy_first", file=target, folder=OBSERVATIONS))
     print_problems(errors, warnings if args.warnings else [])
@@ -6128,6 +6887,21 @@ def run(args):
         ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR),
                            policy=borrow_policy(args))
         enrich(ref)
+    if decisions:
+        paths, notes = placement_observations(ref, read_decisions(decisions))
+        for note in notes:
+            print(note)
+        applied, skipped, closed = apply_observations(ref, paths)
+        print(tr("cli.placements_written", files=", ".join(
+            os.path.basename(x) for x in paths) or tr("word.nothing")))
+        print(tr("cli.applied", items=", ".join(applied) or tr("word.nothing")))
+        for x in skipped:
+            print(tr("cli.left", item=x))
+        ref, errors = load(args.dir, catalogue_dir=getattr(args, "catalogues", DEFAULT_DIR),
+                           policy=borrow_policy(args))
+        enrich(ref)
+    if getattr(args, "placements", False):
+        print_placements(ref, getattr(args, "team", None))
     if getattr(args, "observations", False):
         task = getattr(args, "task", None)
         print_observations(ref, target_of(ref, task) if task else None)
