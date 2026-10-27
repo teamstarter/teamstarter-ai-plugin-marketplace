@@ -61,6 +61,7 @@ import os
 import re
 import shutil
 import statistics
+import subprocess
 import sys
 import tempfile
 
@@ -2911,24 +2912,60 @@ DOC_DATE_FIELD = re.compile(r"^(?:date|updated|last_updated|last_update|created)
                             r"['\"]?(20\d\d-\d\d-\d\d)", re.M)
 
 
-def document_date(folder, rel):
+def document_date(folder, rel, root=None):
     """The date of a document: the first date in its path inside the zone (« 2026-10-12-acme.md »,
     « 2026-10/… »), else the `date`, `updated`, `last_updated` or `created` field of its first
-    lines; None without one. A view this script generates (`generated_by: …build_rpt.py`) has
-    no date: it is written from the referential, not fed by a flow, and reading its date would
-    make the build depend on its own previous output."""
+    lines, else the date of the last commit that changed it (git_dates of the OS `root`); None
+    without one. A view this script generates (`generated_by: …build_rpt.py`) has no date: it is
+    written from the referential, not fed by a flow, and reading its date would make the build
+    depend on its own previous output."""
     m = DOC_DATE.search(rel)
     if m:
         return m.group(1)
+    path = os.path.join(folder, rel)
     try:
-        with open(os.path.join(folder, rel), encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             head = f.read(3000)
     except OSError:
         return None
     if GENERATED_MARK in head:
         return None
     m = DOC_DATE_FIELD.search(head)
-    return m.group(1) if m else None
+    if m:
+        return m.group(1)
+    return git_dates(root).get(os.path.realpath(path)) if root else None
+
+
+_GIT_DATES = {}
+
+
+def git_dates(root):
+    """The date (YYYY-MM-DD) of the last commit that changed each file under `root`, by real path.
+    The shared files of the OS carry no `last_updated` (tools/os_format.py): two branches that each
+    wrote the day's date always conflicted, and git holds the date of each change. Empty outside
+    git and in a shallow clone (a cloud session, the CI), whose oldest commit would date every file
+    it holds: the views are written by `yarn os-sync`, from a full clone."""
+    key = os.path.realpath(root)
+    if key not in _GIT_DATES:
+        _GIT_DATES[key] = {}
+        try:
+            shallow = subprocess.run(["git", "-C", key, "rev-parse", "--is-shallow-repository"],
+                                     capture_output=True, text=True)
+            if shallow.returncode == 0 and shallow.stdout.strip() == "false":
+                # core.quotePath=false: git quotes a name with an accent otherwise.
+                log = subprocess.run(["git", "-C", key, "-c", "core.quotePath=false", "log",
+                                      "--format=%x00%cs", "--name-only", "--no-renames",
+                                      "--relative", "--", "."],
+                                     capture_output=True, text=True, check=True).stdout
+                date = None
+                for line in log.splitlines():
+                    if line.startswith("\0"):
+                        date = line[1:]
+                    elif line and date:
+                        _GIT_DATES[key].setdefault(os.path.realpath(os.path.join(key, line)), date)
+        except (OSError, subprocess.CalledProcessError):
+            pass
+    return _GIT_DATES[key]
 
 
 def freshness_level(days):
@@ -2946,7 +2983,7 @@ def zone_freshness(root, z, zones, today):
     if not files:
         return None
     folder = os.path.join(root, str(z["path"]))
-    dates = [d for d in (document_date(folder, rel) for rel in files) if d and d <= today]
+    dates = [d for d in (document_date(folder, rel, root) for rel in files) if d and d <= today]
     if not dates:
         return {"level": "undated", "dated": 0, "documents": len(files)}
     return dict(dated_freshness(dates, today), dated=len(dates), documents=len(files))
@@ -2968,7 +3005,7 @@ def file_date(root, rel):
     an artifact's `path`): as document_date; None outside an OS or without a path."""
     if not root or not isinstance(rel, str) or not rel:
         return None
-    return document_date(root, rel)
+    return document_date(root, rel, root)
 
 
 def item_freshness(root, item, today):
