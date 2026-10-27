@@ -4,9 +4,11 @@
 The referential is every `*.yaml` file of a folder whose `format` is `rpt/v1`
 (default: teamstarter-os/OS/Operations/). Rules: OS/Operations/README_operations.md.
 
-    python3 teamstarter-os/tools/build_rpt.py            # validate, write referentiel.md, rpt-explorer.html,
-                                                         # the snapshot (relevé) of the day, releves/<date>.json,
-                                                         # and the table of changes, releves/changements.json
+    python3 teamstarter-os/tools/build_rpt.py            # validate, write the views: referentiel.md,
+                                                         # rpt-explorer.html, index-taches.json and the
+                                                         # table of changes, releves/changements.json
+    python3 teamstarter-os/tools/build_rpt.py --releve   # the same, and the snapshot (relevé) of the
+                                                         # update date, releves/<date>.json
     python3 teamstarter-os/tools/build_rpt.py --check    # validate, fail if a generated file is stale
     python3 teamstarter-os/tools/build_rpt.py --format   # rewrite the YAML files in canonical style
     python3 teamstarter-os/tools/build_rpt.py --stats    # print coverage per team and department
@@ -38,6 +40,13 @@ the explorer) are written in the organization's language, whatever the language 
 that --check gives the same answer to everyone. The texts of the catalogues (name, description,
 examples, aliases of departments, task types and data sources) are maps by language code
 (`name: {en: Sales, fr: Ventes}`) or plain texts, taken as they are for every language.
+
+Versioning. In Teamstarter's repository, the views (referentiel.md, rpt-explorer.html,
+index-taches.json, releves/changements.json) are in git but written by `yarn os-sync` only
+(teamstarter-os/tools/generated_files.py): two branches that rewrote them always conflicted. A
+session builds them to read them, then leaves them as they are on `develop`. The relevés are in
+git too: a past relevé cannot be computed again. Only the daily pass of the OS writes one, with
+--releve, so that two branches never write the relevé of the same date.
 
 Exit code 1 when the referential has errors (or, with --check, a stale view).
 """
@@ -2854,10 +2863,22 @@ def link_people(ref):
         a["_progress"] = agent_progress(a)
 
 
+def generated_view(path):
+    """Whether a file is a view this script writes (referentiel.md): not a document of its zone.
+    Counting it made a zone's count depend on whether a build already ran in the clone."""
+    if os.path.basename(path) != "referentiel.md":
+        return False
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            return GENERATED_MARK in f.read(3000)
+    except OSError:
+        return False
+
+
 def zone_files(root, z, zones):
-    """The documents of a zone's folder (.md and .yaml files, READMEs and templates aside),
-    without those of the folders of its child zones, as paths relative to the zone's folder;
-    None when the OS is not at hand."""
+    """The documents of a zone's folder (.md and .yaml files, READMEs, templates and generated
+    views aside), without those of the folders of its child zones, as paths relative to the
+    zone's folder; None when the OS is not at hand."""
     if not root or not z.get("path"):
         return None
     folder = os.path.join(root, str(z["path"]))
@@ -2869,7 +2890,8 @@ def zone_files(root, z, zones):
     for here, dirs, files in os.walk(folder):
         dirs[:] = sorted(d for d in dirs if os.path.normpath(os.path.join(here, d)) not in inner)
         found += [os.path.relpath(os.path.join(here, f), folder) for f in sorted(files)
-                  if f.endswith((".md", ".yaml")) and not f.startswith(("README", "_"))]
+                  if f.endswith((".md", ".yaml")) and not f.startswith(("README", "_"))
+                  and not generated_view(os.path.join(here, f))]
     return found
 
 
@@ -3819,15 +3841,31 @@ def config_teams_errors(cfg, ref):
     return [tr("config.team_unused", team=x) for x in used if x] if cfg else []
 
 
+def skill_package(name):
+    """The `.skill` package of a skill of CLIENT_SKILLS, built in memory by package_rpt_skill.py
+    from its folder, so the explorer carries the version of the sources even when the file
+    `<name>.skill` is older; next to a copy of this script that does not ship
+    package_rpt_skill.py (the packaged skills), that file if it exists, else None."""
+    try:
+        import package_rpt_skill
+    except ImportError:
+        path = os.path.join(SKILLS_DIR, name + ".skill")
+        if not os.path.isfile(path):
+            return None
+        with open(path, "rb") as f:
+            return f.read()
+    if not os.path.isdir(package_rpt_skill.source_of(name)):
+        return None
+    return package_rpt_skill.zip_bytes(package_rpt_skill.skill_files(name), name)
+
+
 def skill_downloads():
     """The packaged skills of CLIENT_SKILLS, embedded in base64 so the explorer offers them for
-    download without the plugin; a skill whose file is missing is left out."""
+    download without the plugin; a skill that cannot be packaged is left out."""
     out = []
     for name in CLIENT_SKILLS:
-        path = os.path.join(SKILLS_DIR, name + ".skill")
-        if os.path.isfile(path):
-            with open(path, "rb") as f:
-                data = f.read()
+        data = skill_package(name)
+        if data is not None:
             out.append({"name": name, "size": len(data),
                         "b64": base64.b64encode(data).decode("ascii")})
     return out
@@ -5752,21 +5790,22 @@ def canonical_text(data, header):
 
 # --------------------------------------------------------------------------------- main
 
-def outputs(folder, ref):
-    """The generated files: the two views, the relevé of the referential's update date, the
-    table of changes and the index of the tasks."""
+def outputs(folder, ref, releve=False):
+    """The generated files: the two views, the table of changes, the index of the tasks and,
+    with `releve` (the daily pass of the OS only), the relevé of the referential's update date."""
     files = {os.path.join(folder, "referentiel.md"): render_markdown,
              os.path.join(folder, "rpt-explorer.html"): render_html}
     if last_updated(ref):
-        files[os.path.join(folder, RELEVES, last_updated(ref) + ".json")] = render_releve
+        if releve:
+            files[os.path.join(folder, RELEVES, last_updated(ref) + ".json")] = render_releve
         files[os.path.join(folder, RELEVES, CHANGES)] = render_changes
     files[os.path.join(folder, INDEX)] = render_index
     return files
 
 
-def write_or_check(ref, folder, check):
+def write_or_check(ref, folder, check, releve=False):
     stale = []
-    for path, render in outputs(folder, ref).items():
+    for path, render in outputs(folder, ref, releve).items():
         content = render(ref)
         current = read_text(path) if os.path.exists(path) else None
         if current != content:
@@ -5822,6 +5861,9 @@ def main(argv=None):
                         help="folder whose catalogues (departments, task types, tools, data "
                              "sources, AI policy) are borrowed")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--releve", action="store_true",
+                        help="also write the relevé of the update date, releves/<date>.json "
+                             "(the daily pass of the OS only)")
     parser.add_argument("--due", action="store_true",
                         help="list the artifacts to regenerate today (README_operations.md "
                              "§1.17), with why, the skill, the agent and who to tell")
@@ -6059,7 +6101,8 @@ def run(args):
         print_okrs(ref)
     if args.validate_only:
         return 0
-    stale = write_or_check(for_views(ref), args.dir, args.check)
+    stale = write_or_check(for_views(ref), args.dir, args.check,
+                           getattr(args, "releve", False))
     if stale:
         print(tr("cli.stale", files=", ".join(stale)))
         return 1

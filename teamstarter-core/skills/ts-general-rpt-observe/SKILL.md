@@ -2,7 +2,7 @@
 name: ts-general-rpt-observe
 description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed (the agent's own entry included), when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
 metadata:
-  version: "1.11 (2026-10-26)"
+  version: "1.12 (2026-10-27)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-observe; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -110,7 +110,7 @@ hyphens (`CSM-T6.19` → `…-csm-t6-19.yaml`):
 
 | Where you work | How to read what is pending for the task |
 |---|---|
-| Claude Code, in the organization's repository | `python3 <referential.tools_path>build_rpt.py --observations --validate-only --task <id>` (without `--validate-only`, the script also rewrites the referential's views and today's survey, which would end up in the session's PR); with the Google Drive connector, also the intake folder (next row) |
+| Claude Code, in the organization's repository | `python3 <referential.tools_path>build_rpt.py --observations --validate-only --task <id>` (without `--validate-only`, the script also rewrites the referential's views, which the session's PR must not carry); with the Google Drive connector, also the intake folder (next row) |
 | claude.ai, with the Google Drive connector | List the files of the intake folder (query `parentId = '<intake.drive_folder_id>'`) and those of the referential's `observations` folder, next to `index-taches.json`; keep those whose name ends with `-<task>.yaml` and read them. Compare the end of the names yourself: Drive's title search only matches the start of words |
 | claude.ai, without the Drive connector | Nothing to read: the merge will group duplicates |
 
