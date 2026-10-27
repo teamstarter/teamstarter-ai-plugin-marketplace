@@ -28,6 +28,7 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 | `ts-general-data-crawl` | RPT : décrire où sont les données de l'organisation, outil par outil, sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
 | `ts-general-rpt-observe` | RPT : à la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | RPT : ranger le livrable d'une tâche là où sa fiche le dit | « Où je range ça ? » |
+| `ts-general-os-place` | RPT : donner sa place dans l'OS à un contenu produit avec Claude (document, deck, tableur, page, artefact publié) : son entrée avec les données dont il est fait et son cycle de mise à jour, son dossier du Drive partagé, ce dossier décrit dans la carte des données | « Ça a sa place dans l'OS ? », « Inscris ça dans l'OS » |
 
 **Créer un projet** suit le parcours de l'app : choix du type et de l'objectif, recherche des
 projets et idées proches, création du brouillon, questions de structuration, fiche du projet
@@ -67,7 +68,10 @@ le connecteur Teamstarter et ne contiennent aucune donnée d'une organisation : 
 `ts-general-rpt-setup` écrit ce fichier une fois. La cartographie lit, avec votre accord, ce que
 vos connecteurs montrent de votre travail, vous interroge, vous montre un aperçu de ce qui sera
 envoyé, puis dépose la carte dans le dossier de réception de l'organisation ; la personne qui
-tient le référentiel la fusionne ensuite, hors du plugin.
+tient le référentiel la fusionne ensuite, hors du plugin. À la fin d'une conversation qui a
+produit un contenu à garder, `ts-general-os-place` propose de lui donner sa place dans l'OS ; il
+laisse de côté les contenus privés (paie, RH, santé, finance confidentielle, juridique, capital,
+conseil, identifiants) que liste `privacy.not_filed` du `rpt-config.yaml`.
 
 ## Ce dont vous avez besoin
 
@@ -101,7 +105,8 @@ tient le référentiel la fusionne ensuite, hors du plugin.
   - écriture, après un aperçu de tout ce qui sera envoyé et votre accord : la carte déposée dans
     le dossier de réception de l'organisation (Google Drive) ou envoyée par e-mail à son adresse
     de réception, une observation de fiche de tâche, un livrable rangé ou renommé,
-    `rpt-config.yaml` déposé dans le dossier de l'OS.
+    `rpt-config.yaml` déposé dans le dossier de l'OS, un contenu rangé dans le Drive partagé et
+    la fiche `UPDATE-ARTIFACT-<slug>-<date>.md` de son entrée dans l'OS.
 - **Lecture** dans votre organisation Teamstarter : types de projet, objectifs, projets, idées,
   questions et sections de vos projets, blocages de vos projets et leurs commentaires, et les noms
   des collaborateurs, pour retrouver un co-porteur ou vous identifier.
