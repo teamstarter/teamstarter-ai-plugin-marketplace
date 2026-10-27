@@ -46,20 +46,20 @@ skills:
   - {name: ts-general-rpt-observe, where: claude.ai}
   - {name: ts-general-rpt-file, where: claude.ai}
   - {name: ts-general-data-crawl, where: claude.ai}
+  - {name: ts-general-os-place, where: claude.ai}
 
 privacy:
   excluded: [sujets privés, revues internes, discussions RH, santé de l'entreprise, données personnelles (adresse, sexe, téléphone…), noms de clients]
   allowed_personal_data: le prénom et le nom d'une personne qui tient un rôle ou fait une tâche
+  not_filed: [bulletins de paie et rémunérations, contrats et dossiers RH, santé, finance confidentielle, contentieux et dossiers juridiques confidentiels, capital et actionnariat, conseil d'administration, identifiants et mots de passe]
 
 global_context: |
   Acme — référentiel des tâches (RPT)
 
   Config RPT (rpt-config.yaml) : https://drive.google.com/drive/folders/1AcmeOsFolderExampleId ; tâches : index-taches.json
 
-  S'applique quand je fais une tâche (SALES-T1.2, skill de l'index) ou qu'on change son outillage (skill, tâche planifiée, agent, connecteur). Pas du ponctuel ni du perso.
+  Tâche (SALES-T1.2, skill de l'index) ou outillage changé (skill, tâche planifiée, agent, connecteur) : au début retrouve sans le dire la fiche, pars de son modèle (templates) ; à la fin propose ts-general-rpt-file (output_files) au livrable prêt, puis ts-general-rpt-observe si la fiche ne dit plus vrai.
+  Contenu produit (doc, deck, page) : propose ts-general-os-place (place dans l'OS, données sources, dossier Drive). Jamais paie, RH, capital.
+  Propose ts-general-check-process-cartography si je le demande, arrive ou change de poste.
 
-  Début : retrouve sans le dire la fiche (ou celles du skill) ; pars de son modèle (templates).
-  Fin : propose ts-general-rpt-file (output_files) si un livrable est prêt, puis ts-general-rpt-observe si la fiche ne dit plus vrai (statut, outils, qui, bloqueur). Sans personne : note-le au compte rendu.
-  Propose ts-general-check-process-cartography si je le demande, arrive, change de poste, ou si deux tâches que je refais manquent.
-
-  Une proposition par conversation. Rien ne part sans mon accord sur un aperçu. Ni nom de client ni donnée personnelle.
+  Une proposition par conversation, rien de ponctuel ni de perso. Rien ne part sans mon accord sur un aperçu. Ni client ni donnée personnelle. Sans personne : note-le au compte rendu.

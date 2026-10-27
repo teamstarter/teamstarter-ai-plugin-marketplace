@@ -121,6 +121,11 @@ Linear and Jira (Atlassian). Then, in a single call:
 Say what you will read before reading it: "I will list the folders and files of <tools>, with
 their size and the date of their last change, without opening any of them."
 
+**One place only.** When the skill `ts-general-os-place` sends you to describe the folder where
+a content was just stored, skip the questions: describe that folder alone, and its parent when
+the data map does not have it either (one or two containers, with `parent` set to the id of the
+data map's container when it has one). Count five minutes. Steps 3 to 5 do not change.
+
 ## Step 2 — Describe each tool
 
 For each tool chosen, follow its procedure. Write each container as you go, in the form of

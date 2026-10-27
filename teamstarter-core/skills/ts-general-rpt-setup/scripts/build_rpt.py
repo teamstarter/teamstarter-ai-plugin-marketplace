@@ -3717,7 +3717,7 @@ CONFIG = os.path.normpath(os.path.join(HERE, "..", "rpt-config.yaml"))
 # The repository that holds the OS: the paths of `config` and `log` of an agent are relative to it.
 REPO_ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 CONFIG_FORMAT = "rpt-config/v1"
-CONTEXT_MAX = 900
+CONTEXT_MAX = 2500
 EMAIL_RE = re.compile(r"^[\w.+-]+@[\w-]+(\.[\w-]+)+$")
 TEAM_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 CONFIG_KEYS = ["format", "updated", "organization", "referential", "intake", "owners", "teams",

@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.11 (2026-10-23)"
+  version: "1.13 (2026-10-26)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -14,8 +14,9 @@ language; this file is in English.
 
 The RPT referential describes the **roles**, the **processes** and the **tasks** of an
 organization, with, for each task, what is automated, run by the AI with a skill, helped by a chat, done by hand or decided
-by a person. Three skills keep it up to date: the mapping (`ts-general-check-process-cartography`),
-the observation (`ts-general-rpt-observe`) and the storing of deliverables (`ts-general-rpt-file`).
+by a person. Four skills keep it up to date: the mapping (`ts-general-check-process-cartography`),
+the observation (`ts-general-rpt-observe`), the storing of deliverables (`ts-general-rpt-file`) and
+the placing of any other content in the OS and the Drive (`ts-general-os-place`).
 
 These skills contain nothing specific to an organization. They read a single file,
 `rpt-config.yaml`, placed at the root of the organization's OS folder: its name, its language,
@@ -143,8 +144,10 @@ rules written in them.
 Start from `references/rpt-config.template.yaml` and replace each `<…>`; the example
 `assets/exemple-rpt-config.yaml` shows the form of each field. For `global_context`, keep the
 template's text, in the organization's language, and replace the organization's name, the link
-of the OS folder and the example id (a code of its teams): the text must fit in 900 characters,
-to fit in the organization's instructions. The link of the OS folder (`<Organization>/OS/`, where
+of the OS folder and the example id (a code of its teams). `global_context` is the whole text of
+the organization's instructions, pasted in place of the previous one: if the person wants their
+own lines there (what the organization does, where its information is, one line per good
+practice of its OS), add them above the RPT lines. The text must fit in 2500 characters. The link of the OS folder (`<Organization>/OS/`, where
 the file goes) is `referential.config_url` and goes on the `Config RPT` line: take it with the
 Google Drive connector (the folder's URL), or ask the person to copy it from Drive. It is how the
 skills, the same for every organization, find this file.
@@ -235,6 +238,10 @@ Tell the person, in this order:
    where our data is", « cartographie nos données »): it describes the places of their Drive,
    Notion, HubSpot, Slack, Gmail, Linear and Jira without reading any content, and drops the
    data map in the same intake folder.
+5. So that what people produce with Claude ends up in the OS and in the right Drive folder, install
+   the skill `ts-general-os-place` with the others: the `global_context` text proposes it at the
+   end of a conversation that produced a content, and `privacy.not_filed` lists what it never
+   stores nor describes (payroll, HR files, capital).
 
 A change of folder, address or team is made in `rpt-config.yaml`; run this skill again with the
 existing file, or edit it and check it with the script. The skills read the file at each use: no

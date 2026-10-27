@@ -60,14 +60,19 @@ skills:
   - {name: ts-general-rpt-observe, where: claude.ai}
   - {name: ts-general-rpt-file, where: claude.ai}
   - {name: ts-general-data-crawl, where: claude.ai}
+  - {name: ts-general-os-place, where: claude.ai}
   - {name: ts-general-rpt-merge, where: claude-code}
   - {name: ts-general-data-merge, where: claude-code}
 
 privacy:
   excluded: [private matters, internal reviews, HR discussions, the company's financial health, personal data (address, gender, phone…), client names]
   allowed_personal_data: the first and last name of a person who holds a role or does a task
+  # Never stored in the shared Drive nor described in the OS (skill ts-general-os-place).
+  not_filed: [payslips and pay, HR contracts and files, health, confidential finance, litigation and confidential legal files, capital and shareholders, the board, credentials]
 
-# The text to paste in the organization's instructions; under 900 characters. Write it in the
+# The whole text of the organization's instructions, pasted in place of the previous one; 2500
+# characters at most. The organization may add its own lines above the RPT lines (what it does,
+# where its information is, one line per good practice of its OS). Write it in the
 # organization's language (`organization.language`): the sample below is in English, Teamstarter's
 # French text is in teamstarter-os/rpt-config.yaml. Replace the name, the paths and the example id.
 global_context: |
@@ -75,10 +80,8 @@ global_context: |
 
   RPT config (rpt-config.yaml): <link of the Drive folder <Organization>/OS/>; tasks: index-taches.json
 
-  Applies when I do a task (OPS-T1.2, a skill of the index) or when we change its tooling (skill, scheduled task, agent, connector). Not one-off or personal.
+  Task (OPS-T1.2, a skill of the index) or tooling changed (skill, scheduled task, agent, connector): at the start find its entry without saying so, start from its template (templates); at the end propose ts-general-rpt-file (output_files) when a deliverable is ready, then ts-general-rpt-observe if the entry is no longer true.
+  A content produced (doc, deck, page): propose ts-general-os-place (its place in the OS, its data, its Drive folder). Never payroll, HR, capital.
+  Propose ts-general-check-process-cartography if I ask, join or change position.
 
-  Start: find the entry without saying so (or those that cite the skill); start from its template (templates).
-  End: propose ts-general-rpt-file (output_files) if a deliverable is ready, then ts-general-rpt-observe if the entry is no longer true (status, tools, who, blocker). With nobody to answer: flag it in the recap.
-  Propose ts-general-check-process-cartography if I ask, join, change position, or if two tasks I do often are missing.
-
-  One proposal per conversation. Nothing is sent without my approval, given on a preview. No client name and no personal data.
+  One proposal per conversation, nothing one-off or personal. Nothing is sent without my approval on a preview. No client name, no personal data. With nobody to answer: flag it in the recap.
