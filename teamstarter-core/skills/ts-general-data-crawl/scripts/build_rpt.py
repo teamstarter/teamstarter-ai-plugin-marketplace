@@ -1497,7 +1497,8 @@ def map_coverage(ref, cfg=None, today=None):
         code = str(t["code"])
         mapped = [p for p in people if code in p["hats"]]
         known = [p for p in people if code in p["teams"] and code not in p["hats"]]
-        if not (mapped or known or t.get("headcount")):
+        # A headcount of 0 is kept: it says the team has nobody (an automated team, §1.2).
+        if not (mapped or known or t.get("headcount") is not None):
             continue
         teams.append({"code": code, "name": t.get("name"), "headcount": t.get("headcount"),
                       "mapped": len(mapped), "missing": [p["id"] for p in known]})
