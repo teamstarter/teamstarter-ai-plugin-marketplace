@@ -115,7 +115,10 @@ When the location is a container of the organization's data tree (`containers` o
 the page « Where the data is » of the explorer), add its id: `container: DC-37`. The merge then
 also writes the task into that container of `data-map.yaml` (`written_by` for `output_files`,
 `read_by` for `input_files`), so that the task and the folder say the same thing. A person who
-says the task keeps no file on this side: `after: [{kind: none}]`, alone in the list.
+says the task keeps no file on this side: `after: [{kind: none}]`, alone in the list. A person
+who does not disclose where (the place is confidential, the task is not): `after: [{kind:
+private}]`, alone in the list, with neither `url`, `pattern` nor `container`, and nothing of the
+place in `evidence`.
 
 `input_files` takes the same entries: a fixed file the task reads (`kind: file`), or the folder
 where it finds the files it reads (`kind: folder`, with `pattern` when their names follow one).
