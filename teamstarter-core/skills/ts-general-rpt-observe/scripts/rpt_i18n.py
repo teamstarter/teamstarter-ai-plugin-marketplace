@@ -140,6 +140,7 @@ LABELS = {
     "place_status": {
         "placed": {"en": "placed", "fr": "rangé"},
         "none": {"en": "no file", "fr": "pas de fichier"},
+        "private": {"en": "not disclosed", "fr": "non communiqué"},
         "tree": {"en": "named by the data map only",
                  "fr": "nommé par la carte des données seulement"},
         "proposed": {"en": "proposed", "fr": "proposé"},
@@ -152,7 +153,8 @@ LABELS = {
     "place_decision": {
         "validated": {"en": "validated", "fr": "validé"},
         "elsewhere": {"en": "given elsewhere", "fr": "indiqué ailleurs"},
-        "no_file": {"en": "no file", "fr": "pas de fichier"}},
+        "no_file": {"en": "no file", "fr": "pas de fichier"},
+        "private": {"en": "not disclosed", "fr": "non communiqué"}},
     "freshness": {
         "fresh": {"en": "7 days or less", "fr": "7 jours ou moins"},
         "recent": {"en": "8 to 30 days", "fr": "8 à 30 jours"},
@@ -614,13 +616,18 @@ MESSAGES = {
         "en": "{where}: expected {{kind, url, pattern, tool, what, container}}",
         "fr": "{where}: attendu {{kind, url, pattern, tool, what, container}}"},
     "check.files_kind_missing": {
-        "en": "{where}: `kind` missing (file, folder or none)",
-        "fr": "{where}: `kind` absent (file, folder ou none)"},
+        "en": "{where}: `kind` missing (file, folder, none or private)",
+        "fr": "{where}: `kind` absent (file, folder, none ou private)"},
     "check.files_none_alone": {
-        "en": "{where}: `kind: none` (the task keeps no file on this side) is the only entry of "
-              "its list",
-        "fr": "{where}: `kind: none` (la tâche ne garde pas de fichier de ce côté) est la seule "
-              "entrée de sa liste"},
+        "en": "{where}: `kind: {kind}` (none: the task keeps no file on this side; private: where "
+              "is not disclosed) is the only entry of its list",
+        "fr": "{where}: `kind: {kind}` (none : la tâche ne garde pas de fichier de ce côté ; "
+              "private : l'emplacement n'est pas communiqué) est la seule entrée de sa liste"},
+    "check.files_private_place": {
+        "en": "{where}: `kind: private` says the place is not disclosed: no `url`, `pattern` or "
+              "`container`",
+        "fr": "{where}: `kind: private` dit que l'emplacement n'est pas communiqué : ni `url`, "
+              "ni `pattern`, ni `container`"},
     "check.url": {
         "en": "{where}: `url` = {value}, expected a URL (https://…)",
         "fr": "{where}: `url` = {value}, attendu une URL (https://…)"},
@@ -1738,8 +1745,10 @@ MESSAGES = {
         "fr": "Dossier sans tâche ({status}) : {place}{likely}"},
     "placements.skip": {"en": "{item} ({reason})", "fr": "{item} ({reason})"},
     "placements.bad_decision": {
-        "en": "expected a side out or in, and a decision validated, elsewhere or no_file",
-        "fr": "attendu un côté out ou in, et une décision validated, elsewhere ou no_file"},
+        "en": "expected a side out or in, and a decision validated, elsewhere, no_file or "
+              "private",
+        "fr": "attendu un côté out ou in, et une décision validated, elsewhere, no_file ou "
+              "private"},
     "placements.already": {
         "en": "the task's `{field}` already says where", "fr": "`{field}` de la tâche dit déjà où"},
     "placements.no_container": {

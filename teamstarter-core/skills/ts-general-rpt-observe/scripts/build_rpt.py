@@ -448,7 +448,7 @@ ENUMS = {
                 "forbidden"},
     "fact_basis": {"observed", "declared", "inferred"},
     # `none`: the task keeps no file on this side, said by a person (README_operations.md §1.12).
-    "output_kind": {"file", "folder", "none"},
+    "output_kind": {"file", "folder", "none", "private"},
     # An observation (README_operations.md §4.1): where it was made, how the fact is known, what
     # the merge did with it.
     "surface": {"claude-code", "claude-ai", "other"},
@@ -2028,6 +2028,9 @@ FOLDER_KINDS = ("folder", "file", "document", "spreadsheet", "presentation")
 # `kind: file` of output_files) rather than adds a file to (`kind: folder`).
 HOME_KINDS = FOLDER_KINDS + ("page", "database")
 FIXED_KINDS = ("file", "document", "spreadsheet", "presentation")
+# The kinds of an entry of output_files or input_files that give no place, alone in their list:
+# `none`, the task keeps no file on this side; `private`, it keeps some, where is not disclosed.
+NO_PLACE_KINDS = ("none", "private")
 PLACE_STATUSES = ("proposed", "to_choose", "missing")
 PROPOSALS_MAX = 3
 # The score (place_score) from which a container is proposed: a word of its name, or a word of
@@ -2182,6 +2185,8 @@ def link_files(ref, idx):
 
     - `placed`: an entry or the data map says where;
     - `none`: a person said the task keeps no file on this side (`kind: none`);
+    - `private`: the task keeps files there, but where is not disclosed (`kind: private`): the
+      place is confidential (a board reporting, payroll), the task stays public;
     - `proposed`, `to_choose`, `missing` (propose_place): nothing says where, and the task
       keeps files: its deliverable or input names a file (names_a_file) and its data is in a
       tool that stores files.
@@ -2208,7 +2213,7 @@ def link_files(ref, idx):
             entries = file_entries(t, field)
             linked, urls = [], []
             for f in entries:
-                if f.get("kind") == "none":
+                if f.get("kind") in NO_PLACE_KINDS:
                     continue
                 c = by_id.get(resolve(idx, f["container"])) if f.get("container") \
                     else by_url.get(url_key(f["url"])) if f.get("url") else None
@@ -2221,8 +2226,8 @@ def link_files(ref, idx):
                             "url": f["url"], "tool": f.get("tool"), "tasks": []})
                         u["tasks"].append(t["id"])
             tree = [x for x in named[side].get(t["id"], []) if x not in linked]
-            status = "none" if any(f.get("kind") == "none" for f in entries) else \
-                "placed" if entries or tree else None
+            kinds = [k for k in NO_PLACE_KINDS if any(f.get("kind") == k for f in entries)]
+            status = kinds[0] if kinds else "placed" if entries or tree else None
             place = {"status": status, "containers": linked + tree, "tree_only": tree,
                      "urls": urls}
             if status is None and live:
@@ -2261,7 +2266,7 @@ def files_stats(ref):
     live = active(ref["tasks"])
     sides = {side: {k: sum(1 for t in live if (t.get("_files") or {}).get(side, {})
                            .get("status") == k)
-                    for k in ("placed", "none") + PLACE_STATUSES}
+                    for k in ("placed",) + NO_PLACE_KINDS + PLACE_STATUSES}
              for side in FILE_SIDES}
     tools = file_tools(ref)
     homes = [c for c in ref["containers"] if c.get("state", "active") == "active"
@@ -2610,8 +2615,9 @@ def check_files(t, where, idx):
     """`output_files` (where the deliverable goes) and `input_files` (where the files the task
     reads are): each entry a fixed file (`kind: file`, its `url`) or a folder (`kind: folder`,
     its `url` and/or the `pattern` of the path and name, placeholders in brackets:
-    « Clients/[Client]/kickoff-[AAAA-MM-JJ].pptx »), or, alone in its list, `kind: none`: the
-    task keeps no file on this side. `tool`: where the file lives, a tool of the catalogue;
+    « Clients/[Client]/kickoff-[AAAA-MM-JJ].pptx »), or, alone in its list, `kind: none` (the
+    task keeps no file on this side) or `kind: private` (it keeps some, where is not disclosed:
+    neither `url`, `pattern` nor `container`). `tool`: where the file lives, a tool of the catalogue;
     `container`: the container of the data map that is this place. `templates`: the files the
     deliverable starts from, a URL or a tool of the catalogue (README_operations.md §1.12)."""
     errors = []
@@ -2625,9 +2631,12 @@ def check_files(t, where, idx):
             errors += check_enum(at, "kind", f.get("kind"), "output_kind")
             if not f.get("kind"):
                 errors.append(tr("check.files_kind_missing", where=at))
-            if f.get("kind") == "none":
+            if f.get("kind") in NO_PLACE_KINDS:
                 if len(entries) > 1:
-                    errors.append(tr("check.files_none_alone", where=at))
+                    errors.append(tr("check.files_none_alone", where=at, kind=f["kind"]))
+                if f["kind"] == "private" and any(f.get(k) for k in ("url", "pattern",
+                                                                      "container")):
+                    errors.append(tr("check.files_private_place", where=at))
                 continue
             if f.get("url") is not None and not (isinstance(f["url"], str)
                                                  and URL_RE.match(f["url"])):
@@ -6628,7 +6637,7 @@ def print_placements(ref, team=None):
                  likely=" — " + ", ".join(u["likely"]) if u["likely"] else ""))
 
 
-PLACEMENT_DECISIONS = ("validated", "elsewhere", "no_file")
+PLACEMENT_DECISIONS = ("validated", "elsewhere", "no_file", "private")
 PLACEMENT_FORMAT = "rpt-placements/v1"
 
 
@@ -6663,9 +6672,10 @@ def tool_of_url(url, idx):
 def placement_entry(ref, t, side, d, idx):
     """The entry of output_files or input_files a decision gives: the container, as a fixed
     file or a folder, with its link (else its path as pattern) and its tool; a link without a
-    container; `kind: none` when the task keeps no file on this side. A reason when it cannot."""
-    if d.get("decision") == "no_file":
-        return {"kind": "none"}, None
+    container; `kind: none` when the task keeps no file on this side, `kind: private` when the
+    place is not disclosed. A reason when it cannot."""
+    if d.get("decision") in ("no_file", "private"):
+        return {"kind": "none" if d["decision"] == "no_file" else "private"}, None
     c = idx.get(d.get("container")) if d.get("container") else None
     if c is not None and c.get("id") not in {x.get("id") for x in ref["containers"]}:
         return None, tr("placements.no_container", value=d.get("container"))

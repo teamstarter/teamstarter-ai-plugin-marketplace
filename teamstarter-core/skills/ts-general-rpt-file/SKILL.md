@@ -2,7 +2,7 @@
 name: ts-general-rpt-file
 description: "Store the deliverable of a task of the organization's RPT referential at the end of the task, where its entry says: update the fixed file the task maintains, or put the new file in the right folder (Google Drive, OneDrive, SharePoint, Notion, repository) under the name given by the entry's pattern, and start from the task's template when it cites one. Proposes the location and the name, and moves, renames or creates nothing without the person's approval. When the entry does not say where the deliverable goes, proposes the folder of the organization's data tree that the referential proposes for the task, else asks once, then passes the answer to the skill ts-general-rpt-observe to complete the entry and the data tree. Use when the deliverable of a work task done with Claude is ready, when the organization's global context asks for it, or when someone asks 'where do I store this?', 'file this in the right place', « où je range ça ? » or « range ce fichier au bon endroit »."
 metadata:
-  version: "1.6 (2026-10-27)"
+  version: "1.7 (2026-10-28)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-file; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -20,7 +20,9 @@ starts from (`templates`):
 - **a folder** (`kind: folder`), where each execution puts a new file, named according to a
   pattern: `Clients/[Client]/2. Support/meeting-[YYYY-MM-DD].pptx`;
 - **a template** (`templates`): the file to start from;
-- **no file** (`kind: none`, alone): a person said the task keeps no file on this side.
+- **no file** (`kind: none`, alone): a person said the task keeps no file on this side;
+- **not disclosed** (`kind: private`, alone): the task keeps files on this side, but where is
+  confidential (a board reporting, payroll): the referential describes the task, not the place.
 
 This skill stores the deliverable at that location at the end of the task. When the entry says
 nothing, it first proposes the folder of the organization's data tree that the referential
@@ -79,7 +81,8 @@ propose to start from this template (a copy, never the original). If the deliver
 done without it, say so at step 4 without redoing it.
 
 When the entry says where the files the task reads are (`input_files`), or the index places them
-(`places`, side `in`): look for them there first, and name the folder before reading it.
+(`places`, side `in`): look for them there first, and name the folder before reading it. When
+`input_files` is `kind: private`, do not look for them: ask the person for the files.
 
 ## Step 3 — Propose the location and the name
 
@@ -94,6 +97,10 @@ For each entry of `output_files`:
 Ask with the question tool "Shall I store it there?", with the answers "Yes", "Somewhere else"
 (the person says where) and "Not now".
 
+- **Not disclosed** (`kind: private`): propose no place, ask for none and read no folder to find
+  one. Say in one sentence that the referential does not give this place and that the person
+  stores the deliverable; skip steps 4 and 5 for this side.
+
 **The entry says nothing** (`output_files` missing): first check whether a pending observation
 already says it (step 2 of the skill `ts-general-rpt-observe`: the files whose name ends with the
 task, in the intake folder `intake.drive_folder` and in `observations/`). If so, propose that
@@ -107,6 +114,9 @@ location as above, saying it comes from an observation not yet merged. Otherwise
 - `missing`, or no line: ask "Where does this deliverable usually go?", with as answers the
   plausible locations seen in the session and "Somewhere else". The tree has no folder for this
   data: say it in one sentence ("this folder is not described in the data tree yet").
+
+Each of these questions also has the answer "Not disclosed": the place is confidential. Then
+store nothing; step 5 writes `kind: private`, never the place.
 
 It is the only question in this case.
 
@@ -140,6 +150,8 @@ What the entry did not say becomes an observation, with the skill `ts-general-rp
 - where the files it read were (`input_files`), when the session read them from a folder the
   entry does not give;
 - `kind: none` when the person says the task keeps no file on this side;
+- `kind: private` when the person answers "Not disclosed": neither link, pattern nor
+  container, and nothing of the place in the evidence;
 - the template used when the entry cites none.
 
 A location that is in no container of the index is written with its link only: the referential
