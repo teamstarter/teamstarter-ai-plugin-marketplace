@@ -259,9 +259,10 @@ SUB_KEYS = {"entries": ["what", "from", "trigger", "volume"],
             # an artifact changed (§1.17).
             "notify": ["channel", "to", "when", "notes"],
             # When an artifact is regenerated and by which agent; the skill and its version that
-            # made its published version (README_operations.md §1.17).
+            # made its published version, and the commit it was built from (README_operations.md
+            # §1.17).
             "refresh": ["cycle", "by", "notes"],
-            "generated_with": ["tool", "version", "date"],
+            "generated_with": ["tool", "version", "date", "commit"],
             # The tools of a data source: where the data is, how the AI reaches it. The `tools`
             # of a task or a process are ids (texts): only the mappings are checked.
             "tools": ["tool", "where", "connector", "notes"],
@@ -1695,6 +1696,11 @@ def check_artifact_refresh(a, idx, where):
             if g.get("date") is not None and not DATE_RE.match(str(g["date"])):
                 errors.append(tr("check.blocker_date", where=where,
                                  field="generated_with.date", value=repr(g["date"])))
+            # A hash of digits only would be read by YAML as a number: it is written in quotes.
+            if g.get("commit") is not None and not (isinstance(g["commit"], str)
+                                                    and COMMIT_RE.match(g["commit"])):
+                errors.append(tr("check.generated_with_commit", where=where,
+                                 value=repr(g["commit"])))
     notify = a.get("notify")
     if notify is not None and not isinstance(notify, list):
         return errors + [tr("check.agent_notify_shape", where=where)]
@@ -1743,9 +1749,11 @@ def skill_version(repo, tool):
 def artifact_due(ref, a, today, repo=None):
     """Why an artifact is to be regenerated on `today` (README_operations.md §1.17), [] when it
     is not: `never` (no published date), `cycle` (its period has passed since `updated`),
-    `inputs` (a zone, an insight or a decision it depends on changed after `updated`, for the
-    cycle on-change), `skill` (the skill that made it has a new version). A cycle by hand or once,
-    or a retired artifact, is never due."""
+    `inputs` (for the cycle on-change: a zone, an insight or a decision it depends on changed
+    after the commit its published version was built from, `generated_with.commit`; without
+    that commit, or when git cannot tell, has a date after `updated`), `skill` (the skill
+    that made it has a new version). A cycle by hand or once, or a retired artifact, is never
+    due."""
     r = a.get("refresh") if isinstance(a.get("refresh"), dict) else {}
     cycle = r.get("cycle")
     if cycle not in REFRESH_AUTO or a.get("state") == "retired":
@@ -1753,22 +1761,165 @@ def artifact_due(ref, a, today, repo=None):
     updated = str(a.get("updated") or "")[:10]
     if not DATE_RE.match(updated):
         return [{"reason": "never"}]
+    g = a.get("generated_with") if isinstance(a.get("generated_with"), dict) else {}
     reasons = []
     if cycle in REFRESH_DAYS:
         days = (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(updated)).days
         if days >= REFRESH_DAYS[cycle]:
             reasons.append({"reason": "cycle", "cycle": cycle, "days": days})
     else:
-        changed = [(x, d) for x, d in input_dates(ref, a, today) if d > updated]
-        if changed:
-            reasons.append({"reason": "inputs", "changed": changed})
-    g = a.get("generated_with") if isinstance(a.get("generated_with"), dict) else {}
+        commit = str(g.get("commit") or "")
+        changed = input_changes(ref, a, commit) if COMMIT_RE.match(commit) else None
+        if changed is not None:
+            if changed:
+                reasons.append({"reason": "inputs", "since": commit, "changed": changed})
+        else:
+            # A date has no hour: without the commit, an input changed later on the day of the
+            # publication is not seen (2026-10-28: the explorer published at 9h, insights merged
+            # at 17h). Counting that day would make each regeneration due again, its own PR
+            # changing artifacts.yaml.
+            changed = [(x, d) for x, d in input_dates(ref, a, today) if d > updated]
+            if changed:
+                reasons.append({"reason": "inputs", "changed": changed})
     tools = {t.get("id"): t for t in ref["tools"]}
     now = skill_version(repo, tools.get(g.get("tool"))) if g.get("tool") else None
     if now and str(g.get("version") or "") != now:
         reasons.append({"reason": "skill", "tool": g["tool"], "before": g.get("version"),
                         "after": now})
     return reasons
+
+
+COMMIT_RE = re.compile(r"^[0-9a-f]{7,40}$")
+# The fields of an entry of artifacts.yaml that a publication rewrites (README_operations.md
+# §1.17): a change limited to them is the record of a regeneration, not a change of an input.
+# Without this, the PR of each regeneration would make its artifact due again on the next run.
+PUBLICATION_KEYS = ("updated", "generated_with", "state")
+
+
+def git_out(root, *args):
+    """The output of a git command run in `root`; None when git is missing or the command fails
+    (outside git, a commit the clone does not hold)."""
+    try:
+        run = subprocess.run(["git", "-C", root, "-c", "core.quotePath=false", *args],
+                             capture_output=True, text=True)
+    except OSError:
+        return None
+    return run.stdout if run.returncode == 0 else None
+
+
+_GIT_CHANGED = {}
+
+
+def git_head(root):
+    """The hash of the commit checked out in `root`; None outside git."""
+    out = git_out(root, "rev-parse", "HEAD")
+    return out.strip() if out else None
+
+
+def git_changed(root, commit, head):
+    """The files under the OS `root` changed between `commit` and `head`, by real path; None when
+    git cannot tell. artifacts.yaml is left out when only the publication fields of its entries
+    changed (PUBLICATION_KEYS)."""
+    key = (os.path.realpath(root), commit, head)
+    if key not in _GIT_CHANGED:
+        names = None
+        if git_out(root, "rev-parse", "--verify", "--quiet", commit + "^{commit}") is not None:
+            names = git_out(root, "diff", "--name-only", "--no-renames", "--relative", commit,
+                            head, "--", ".")
+        _GIT_CHANGED[key] = None if names is None else {
+            os.path.realpath(os.path.join(root, rel)) for rel in names.splitlines()
+            if rel and not (os.path.basename(rel) == "artifacts.yaml"
+                            and publication_only(root, commit, head, rel))}
+    return _GIT_CHANGED[key]
+
+
+def publication_only(root, commit, head, rel):
+    """Whether artifacts.yaml (`rel`) at `head` holds the same data as at `commit`, the
+    publication fields of its entries (PUBLICATION_KEYS) aside."""
+    def without(rev):
+        data = git_yaml(root, rev, rel)
+        rows = data.get("artifacts") if isinstance(data, dict) else None
+        if not isinstance(rows, list):
+            return data
+        return dict(data, artifacts=[{k: v for k, v in x.items() if k not in PUBLICATION_KEYS}
+                                     if isinstance(x, dict) else x for x in rows])
+    before = without(commit)
+    return before is not None and before == without(head)
+
+
+_GIT_YAML = {}
+
+
+def git_yaml(root, rev, rel):
+    """The YAML of the file `rel` (from `root`) at the commit `rev`; None when git or the file
+    is missing there."""
+    key = (os.path.realpath(root), rev, rel)
+    if key not in _GIT_YAML:
+        text = git_out(root, "show", f"{rev}:./{rel}")
+        try:
+            _GIT_YAML[key] = yaml.safe_load(text) if text is not None else None
+        except yaml.YAMLError:
+            _GIT_YAML[key] = None
+    return _GIT_YAML[key]
+
+
+def entry_changed(ref, root, commit, head, item, list_name):
+    """Whether the entry of an insight or a decision differs between its file at `commit` and at
+    `head` (an entry added since has changed); False for an entry borrowed from another
+    folder."""
+    if not item.get("_file") or item.get("_borrowed"):
+        return False
+    rel = os.path.relpath(os.path.realpath(os.path.join(ref["dir"], item["_file"])),
+                          os.path.realpath(root))
+
+    def entry(rev):
+        data = git_yaml(root, rev, rel)
+        rows = data.get(list_name) if isinstance(data, dict) else None
+        return next((x for x in rows or [] if isinstance(x, dict) and x.get("id") == item["id"]),
+                    None)
+    return entry(commit) != entry(head)
+
+
+def zone_path(root, z, zones, path):
+    """Whether the real `path` is a document of the zone `z` (zone_files: its folder, the folders
+    of its child zones, READMEs, templates and generated views aside), the file deleted or not."""
+    folder = os.path.realpath(os.path.join(root, str(z["path"])))
+    inner = [os.path.realpath(os.path.join(root, str(c["path"]))) for c in zones
+             if c.get("parent") == z.get("id") and c.get("path")]
+    name = os.path.basename(path)
+    return (path.startswith(folder + os.sep)
+            and not any(path.startswith(x + os.sep) for x in inner)
+            and name.endswith((".md", ".yaml")) and not name.startswith(("README", "_"))
+            and not (os.path.exists(path) and generated_view(path)))
+
+
+def input_changes(ref, a, commit):
+    """[(id, n)]: the inputs of an artifact changed since `commit`, the commit its published
+    version was built from, with the number of files or entries changed (a zone: its documents;
+    an insight: its entry and its `file`; a decision: its entry); None when git cannot tell. Data
+    sources are not in git: left out."""
+    root = os_root(ref)
+    head = git_head(root) if root else None
+    changed = git_changed(root, commit, head) if head else None
+    if changed is None:
+        return None
+    zones = {z.get("id"): z for z in ref["os_zones"]}
+    items = {i.get("id"): ("insights", i) for i in ref["insights"]}
+    items.update({d.get("id"): ("decisions", d) for d in ref["decisions"]})
+    out = []
+    for x in a.get("depends_on") or []:
+        if x in zones and zones[x].get("path"):
+            n = sum(zone_path(root, zones[x], ref["os_zones"], p) for p in changed)
+        elif x in items:
+            list_name, item = items[x]
+            f = item.get("file")
+            n = int(entry_changed(ref, root, commit, head, item, list_name)) + int(
+                isinstance(f, str) and os.path.realpath(os.path.join(root, f)) in changed)
+        else:
+            continue
+        if n:
+            out.append((x, n))
+    return out
 
 
 def input_dates(ref, a, today):
@@ -1802,6 +1953,8 @@ def print_due(ref, today=None):
     repo = os.path.dirname(root) if root else None
     due = [(a, artifact_due(ref, a, today, repo)) for a in ref["artifacts"]]
     due = [(a, why) for a, why in due if why]
+    # The commit the agent builds from: written in generated_with.commit after the publication.
+    head = (git_out(root, "rev-parse", "--short", "HEAD") or "").strip() if root else ""
     print(tr("cli.due_header", count=len(due), today=today))
     for a, why in due:
         r = a.get("refresh") or {}
@@ -1811,6 +1964,11 @@ def print_due(ref, today=None):
                      a.get("produced_by") or []) or "-", url=a.get("url") or "-"))
         for w in why:
             args = {k: v for k, v in w.items() if k != "reason"}
+            if "since" in args:
+                args["changed"] = ", ".join(f"{x} ({tr('cli.due_files', n=n)})"
+                                            for x, n in args["changed"])
+                print("    " + tr("cli.due_inputs_since", **args))
+                continue
             if "changed" in args:
                 args["changed"] = ", ".join(f"{x} ({d})" for x, d in args["changed"])
             print("    " + tr(f"cli.due_{w['reason']}", **args))
@@ -1818,6 +1976,8 @@ def print_due(ref, today=None):
             if isinstance(n, dict):
                 print("    " + tr("cli.due_notify", channel=n.get("channel"), to=n.get("to"),
                                   when=n.get("when") or "update"))
+        if head:
+            print("    " + tr("cli.due_record", today=today, head=head))
     return 0
 
 

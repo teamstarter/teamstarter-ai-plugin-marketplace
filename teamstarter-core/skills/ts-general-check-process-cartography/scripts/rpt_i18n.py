@@ -884,6 +884,11 @@ MESSAGES = {
               "`version` (its version that made the published version) and `date`",
         "fr": "{where} : `generated_with` est un dictionnaire avec `tool` (le skill de "
               "tools.yaml), `version` (sa version qui a fait la version publiée) et `date`"},
+    "check.generated_with_commit": {
+        "en": "{where}: `generated_with.commit` is the hash of the commit the published version "
+              "was built from, in quotes (7 to 40 hexadecimal characters), not {value}",
+        "fr": "{where} : `generated_with.commit` est le hash du commit dont la version publiée a "
+              "été construite, entre guillemets (7 à 40 caractères hexadécimaux), pas {value}"},
     "check.artifact_slack_to": {
         "en": "{where}: a Slack notification goes to a person (`person:` id, sent as a direct "
               "message) or to a channel (`#name`), not {value}",
@@ -1705,6 +1710,15 @@ MESSAGES = {
     "cli.due_inputs": {
         "en": "inputs changed since the last publication: {changed}",
         "fr": "entrées changées depuis la dernière publication : {changed}"},
+    "cli.due_inputs_since": {
+        "en": "inputs changed since the commit of the published version ({since}): {changed}",
+        "fr": "entrées changées depuis le commit de la version publiée ({since}) : {changed}"},
+    "cli.due_files": {"en": "{n} change(s)", "fr": "{n} changement(s)"},
+    "cli.due_record": {
+        "en": "after publishing, write: updated '{today}', generated_with: {{date: '{today}', "
+              "commit: '{head}'}}",
+        "fr": "après la publication, écrire : updated '{today}', generated_with : {{date: "
+              "'{today}', commit: '{head}'}}"},
     "cli.due_skill": {
         "en": "{tool} has a new version: {before} → {after}",
         "fr": "{tool} a une nouvelle version : {before} → {after}"},
