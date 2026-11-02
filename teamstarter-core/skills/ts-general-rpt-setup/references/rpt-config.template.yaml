@@ -11,7 +11,10 @@ organization:
   name: <Organization name>
   language: en   # a code of tools/rpt_i18n.py LANGUAGES (en, fr today)
   description: <one sentence on what the organization does>
-  headcount: <number of people in the organization, each counted once>
+  # How many people should send a map, each counted once: the whole organization, or the part the
+  # mapping covers (the teams of a pilot). The « Coverage » page of the explorer measures the maps
+  # received against it (README_operations.md §1.16); leave it out only when nobody knows.
+  headcount: <number of people who should send a map>
 
 # The referential: role files, catalogues, task index. At least drive_folder or
 # repository_path. While it does not exist yet, keep the planned paths.

@@ -1226,6 +1226,18 @@ MESSAGES = {
               "(0 or more)",
         "fr": "{where} : équipe `{code}` : `headcount` = {value}, attendu un nombre entier de "
               "personnes (0 ou plus)"},
+    "config.no_org_headcount": {
+        "en": "{where}: no `organization.headcount`: write how many people should send a map, "
+              "each once (the whole organization, or the part the mapping covers, such as the "
+              "teams of a pilot); without it, the explorer measures the coverage on the sum of "
+              "the teams' headcounts, or on the people the referential knows, often only those "
+              "who already sent a map (README_operations.md §1.16)",
+        "fr": "{where} : pas de `organization.headcount` : écrire combien de personnes doivent "
+              "envoyer une carte, chacune une fois (toute l'organisation, ou la partie que la "
+              "cartographie couvre, comme les équipes d'un pilote) ; sans lui, l'explorateur "
+              "mesure la couverture sur la somme des effectifs des équipes, ou sur les personnes "
+              "que le référentiel connaît, souvent les seules qui ont déjà envoyé une carte "
+              "(README_operations.md §1.16)"},
     "config.no_headcount": {
         "en": "{where}: teams without `headcount` ({codes}): write how many people each team "
               "has, so the explorer shows how much of the organization the maps cover "
