@@ -8,6 +8,7 @@ organization:
   name: Acme
   language: fr
   description: Éditeur de logiciels de gestion pour les cabinets d'architectes.
+  headcount: 40
 
 referential:
   config_url: https://drive.google.com/drive/folders/1AcmeOsFolderExampleId
@@ -31,11 +32,11 @@ owners:
   ai_policy: {role: null, first_name: Karim Benali, what: ai-policy.yaml (la personne chargée des données)}
 
 teams:
-  - {code: dir, name: Direction, scope: direction, stratégie}
-  - {code: sales, name: Ventes, scope: ventes, renouvellements}
-  - {code: support, name: Support, scope: support client, formation}
-  - {code: tech, name: Tech, scope: développement, infrastructure}
-  - {code: fin, name: Finance, scope: finance, administration, juridique}
+  - {code: dir, name: Direction, scope: direction, stratégie, headcount: 3}
+  - {code: sales, name: Ventes, scope: ventes, renouvellements, headcount: 12}
+  - {code: support, name: Support, scope: support client, formation, headcount: 9}
+  - {code: tech, name: Tech, scope: développement, infrastructure, headcount: 12}
+  - {code: fin, name: Finance, scope: finance, administration, juridique, headcount: 4}
 
 catalogues:
   departments: departments.yaml

@@ -4417,14 +4417,18 @@ def check_config_lists(cfg, where):
 
 
 def config_warnings(cfg, where="rpt-config.yaml"):
-    """The warnings of a configuration: a language the messages do not exist in (the scripts
-    then speak English; the content of the referential stays in that language)."""
+    """The warnings of a configuration: a headcount left out, of the organization or of a team
+    (the coverage of the mapping then has no base, README_operations.md §1.16); a language the
+    messages do not exist in (the scripts then speak English; the content of the referential
+    stays in that language)."""
     org = (cfg.get("organization") if isinstance(cfg, dict) else None) or {}
     value = org.get("language") if isinstance(org, dict) else None
     teams = [t for t in (cfg.get("teams") if isinstance(cfg, dict) else None) or []
              if isinstance(t, dict) and t.get("code")]
     without = [str(t["code"]) for t in teams if t.get("headcount") is None]
-    out = [tr("config.no_headcount", where=where, codes=", ".join(without))] if without else []
+    out = [tr("config.no_org_headcount", where=where)] \
+        if isinstance(org, dict) and org.get("headcount") is None else []
+    out += [tr("config.no_headcount", where=where, codes=", ".join(without))] if without else []
     if not value or str(value).strip().lower() in rpt_i18n.LANGUAGES:
         return out
     return out + [tr("config.language", where=where, value=repr(value),
@@ -6724,7 +6728,7 @@ def dispatch(args):
     """The run main asks for, once the configuration of --dir is chosen."""
     setup_language(args.lang)
     if args.config_check:
-        return check_config_file(args.config_check)
+        return check_config_file(args.config_check, args.lang)
     if getattr(args, "empty", False):
         return build_blank(args)
     if args.observation:
@@ -6737,12 +6741,15 @@ def dispatch(args):
     return run(args)
 
 
-def check_config_file(path):
-    """--config-check FILE: the errors, then the warnings, of a configuration."""
+def check_config_file(path, lang=None):
+    """--config-check FILE: the errors, then the warnings, of a configuration, in the language
+    of --lang or RPT_LANG, else in that of FILE; not in that of the configuration next to the
+    script: a packaged skill has none, and the messages came out in English."""
     warnings = []
     try:
         if os.path.exists(path):
             cfg = load_config(path)
+            setup_language(lang, cfg)
             errors = check_config(cfg, os.path.basename(path))
             warnings = config_warnings(cfg, os.path.basename(path))
         else:

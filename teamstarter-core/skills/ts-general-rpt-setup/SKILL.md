@@ -1,8 +1,8 @@
 ---
 name: ts-general-rpt-setup
-description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
+description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, how many people should send a map, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.13 (2026-10-26)"
+  version: "1.14 (2026-11-02)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -120,12 +120,17 @@ The `scope` is written in the organization's language. A code is written in lowe
 and hyphens, short (2 to 8 characters), one per team. A person with several jobs will make one map
 per team: there is no "everything" team.
 
-Then ask, in a single question, **how many people the organization counts**
-(`organization.headcount`, each person once) **and how many work in each team** (`teams[].headcount`,
-a person who works for two teams counts in both): the explorer compares them with the people who
-sent a map, for the company and team by team, and says who to remind. Show the teams kept, each
-with an empty number to fill; "I don't know" leaves the number out (the script then warns, and the
-coverage is computed on the people the referential knows).
+### How many people should send a map
+
+Then ask, in a single question, **how many people should send a map** (`organization.headcount`,
+each person once: the whole organization, or the part the mapping covers, such as the teams of a
+pilot) **and how many of them work in each team** (`teams[].headcount`, a person who works for two
+teams counts in both). These numbers are the target: the explorer's « Coverage » page compares
+them with the people who sent a map, for the organization and team by team, and says who to
+remind. Without them, it has no base: it counts the people the referential knows, often only
+those who already sent a map, and shows a coverage close to 100 %. Show the teams kept, each with
+an empty number to fill. Do not skip this question, even when time is short: it takes one answer.
+"I don't know" is the only reason to leave a number out (the script then warns).
 
 ## Step 4 — Confidentiality and owners
 
@@ -142,7 +147,7 @@ rules written in them.
 ## Step 5 — Write and check the file
 
 Start from `references/rpt-config.template.yaml` and replace each `<…>`; the example
-`assets/exemple-rpt-config.yaml` shows the form of each field. For `global_context`, keep the
+`assets/exemple-rpt-config.yaml` shows the form of each field, the headcounts included. For `global_context`, keep the
 template's text, in the organization's language, and replace the organization's name, the link
 of the OS folder and the example id (a code of its teams). `global_context` is the whole text of
 the organization's instructions, pasted in place of the previous one: if the person wants their
@@ -159,14 +164,17 @@ python3 scripts/build_rpt.py --config-check rpt-config.yaml
 ```
 
 The script prints its messages in the organization's language. Fix each error and run it again
-until it reports no error. A value between `<…>` that remains is a forgotten question: ask it.
+until it reports no error. A value between `<…>` that remains is a forgotten question: ask it. A
+warning about `headcount` is a forgotten question too: ask the question of step 3, unless the
+person already answered "I don't know".
 Without a tool to run a script, read the file field by field against the template and tell the
 person it was not checked by the script.
 
 ## Step 6 — Show, then put in place
 
 Show the file **in full**, in an artifact if there is one, otherwise in a code block. Say what it
-contains in three lines: the folders, the teams, who merges. Then ask with the question tool
+contains in four lines: the folders, the teams with their headcount, how many people should send a
+map (or "not given"), who merges. Then ask with the question tool
 "Shall I put it in place as is?", answers "Put in place as is" and "Change something". An approval
 given before this display does not count.
 
