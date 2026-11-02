@@ -1,0 +1,1244 @@
+# Reference roles and processes: what a role usually covers, whatever the organization.
+# Read at step 3 of SKILL.md (point 11): each hat of the map is matched to one or two roles
+# below; a process of these roles that no task of the map covers becomes a question at the
+# first round of step 4 (three at most). Never a task to add without the person's answer.
+#
+# Fields
+#   roles[].id            `ref:<slug>`, stable: the maps cite it (`roles[].reference.roles`)
+#   roles[].department    the id of the main department (references/departments.yaml)
+#   roles[].aliases       the job titles that lead to this role, by language
+#   roles[].processes     the processes this role usually runs or answers for
+#   processes[].id        `refp:<slug>`, stable: the maps cite it (`reference.not_applicable`)
+#   processes[].weight    share of the role's time when the process exists: 1 low, 2, 3 high
+#   processes[].held_by   the roles that usually do the work (the answer "someone else does it"
+#                         names one of them)
+#   processes[].key_tasks the tasks that show the process is covered, by language: a task of
+#                         the map that does one of them covers the process
+#   processes[].signals   tools (names, case ignored) and words that, seen in the sources, make
+#                         the process likely in this organization
+#   processes[].challenge the question asked when the process is not covered, by language
+#
+# An id is never renumbered nor reused. A process that no longer fits gets `state: retired`.
+# Checked by teamstarter-os/tools/tests/test_build_rpt.py (TestReferenceRoles).
+format: rpt-reference/v1
+meta: {version: 1, updated: '2026-11-02'}
+
+roles:
+  - id: ref:ceo
+    department: strategy-management
+    name: {en: Chief executive, fr: Dirigeant}
+    aliases:
+      en: [ceo, founder, managing director, general manager]
+      fr: [pdg, dg, fondateur, directeur général, gérant, président]
+    processes: [refp:set-strategy, refp:run-leadership, refp:steer-budget, refp:report-board]
+
+  - id: ref:coo
+    department: strategy-management
+    name: {en: Operations director, fr: Directeur des opérations}
+    aliases:
+      en: [coo, head of operations, chief of staff]
+      fr: [directeur des opérations, chief of staff, directeur adjoint]
+    processes: [refp:run-leadership, refp:steer-budget, refp:improve-ways-of-working]
+
+  - id: ref:cto
+    department: software-development
+    name: {en: Chief technology officer, fr: Directeur technique}
+    aliases:
+      en: [cto, head of engineering, vp engineering, technical director]
+      fr: [cto, directeur technique, responsable technique, head of tech]
+    processes: [refp:deliver-code, refp:review-code, refp:run-production, refp:handle-incident,
+                refp:secure-platform, refp:staff-tech, refp:plan-tech-roadmap]
+
+  - id: ref:tech-lead
+    department: software-development
+    name: {en: Tech lead, fr: Lead développeur}
+    aliases:
+      en: [tech lead, lead developer, engineering manager, architect]
+      fr: [lead dev, lead développeur, architecte, référent technique]
+    processes: [refp:deliver-code, refp:review-code, refp:fix-bug, refp:plan-tech-roadmap]
+
+  - id: ref:developer
+    department: software-development
+    name: {en: Software developer, fr: Développeur}
+    aliases:
+      en: [developer, software engineer, full stack, backend, frontend, mobile developer]
+      fr: [développeur, ingénieur logiciel, dev, full stack, back-end, front-end]
+    processes: [refp:deliver-code, refp:review-code, refp:fix-bug, refp:test-release]
+
+  - id: ref:qa
+    department: software-development
+    name: {en: Quality assurance engineer, fr: Testeur}
+    aliases:
+      en: [qa, tester, test engineer, quality engineer]
+      fr: [qa, testeur, recette, ingénieur qualité logicielle]
+    processes: [refp:test-release, refp:fix-bug]
+
+  - id: ref:devops
+    department: it-operations
+    name: {en: DevOps engineer, fr: Ingénieur DevOps}
+    aliases:
+      en: [devops, sre, ops, platform engineer, sysadmin]
+      fr: [devops, sre, administrateur système, ingénieur infrastructure]
+    processes: [refp:run-production, refp:handle-incident, refp:deploy-release, refp:manage-cloud-costs]
+
+  - id: ref:it-manager
+    department: it-operations
+    name: {en: IT manager, fr: Responsable informatique}
+    aliases:
+      en: [it manager, it support, office it]
+      fr: [responsable informatique, dsi, support informatique, it interne]
+    processes: [refp:manage-internal-it, refp:manage-access]
+
+  - id: ref:product-manager
+    department: product-design
+    name: {en: Product manager, fr: Product manager}
+    aliases:
+      en: [product manager, product owner, pm, po, head of product]
+      fr: [product manager, product owner, chef de produit, responsable produit]
+    processes: [refp:collect-product-feedback, refp:prioritize-roadmap, refp:specify-feature,
+                refp:review-delivery, refp:measure-feature]
+
+  - id: ref:designer
+    department: product-design
+    name: {en: Product designer, fr: Designer produit}
+    aliases:
+      en: [designer, ux designer, ui designer, product designer]
+      fr: [designer, ux, ui, designer produit]
+    processes: [refp:design-solution, refp:interview-users]
+
+  - id: ref:data-analyst
+    department: data-analytics
+    name: {en: Data analyst, fr: Data analyst}
+    aliases:
+      en: [data analyst, bi, analytics engineer, data scientist]
+      fr: [data analyst, analyste, bi, contrôleur de données]
+    processes: [refp:build-reporting, refp:answer-data-request, refp:maintain-data-pipeline]
+
+  - id: ref:support-agent
+    department: customer-support
+    name: {en: Support agent, fr: Chargé de support}
+    aliases:
+      en: [support, customer support, helpdesk, customer care]
+      fr: [support, chargé de support, service client, hotline, assistance]
+    processes: [refp:answer-ticket, refp:qualify-bug, refp:maintain-help-center]
+
+  - id: ref:csm
+    department: customer-success
+    name: {en: Customer success manager, fr: Customer success manager}
+    aliases:
+      en: [csm, customer success, account manager, onboarding manager]
+      fr: [csm, chargé de clientèle, chargé de compte, chef de projet client, consultant]
+    processes: [refp:onboard-client, refp:run-client-review, refp:train-users, refp:renew-contract,
+                refp:prevent-churn, refp:upsell-client]
+
+  - id: ref:sdr
+    department: sales
+    name: {en: Sales development representative, fr: Business developer}
+    aliases:
+      en: [sdr, bdr, business developer, lead generation]
+      fr: [sdr, bdr, business developer, prospection, téléprospecteur]
+    processes: [refp:prospect, refp:qualify-lead, refp:book-meeting]
+
+  - id: ref:account-executive
+    department: sales
+    name: {en: Account executive, fr: Commercial}
+    aliases:
+      en: [account executive, ae, sales, salesperson, key account manager]
+      fr: [commercial, ae, ingénieur commercial, responsable grands comptes, chargé d'affaires]
+    processes: [refp:run-discovery, refp:demo-product, refp:send-proposal, refp:negotiate-close,
+                refp:update-crm, refp:answer-tender]
+
+  - id: ref:sales-manager
+    department: sales
+    name: {en: Sales manager, fr: Directeur commercial}
+    aliases:
+      en: [sales manager, head of sales, vp sales, cro]
+      fr: [directeur commercial, responsable commercial, head of sales]
+    processes: [refp:forecast-pipeline, refp:coach-sales, refp:negotiate-close, refp:update-crm]
+
+  - id: ref:presales
+    department: sales
+    name: {en: Presales consultant, fr: Avant-vente}
+    aliases:
+      en: [presales, solution engineer, sales engineer]
+      fr: [avant-vente, ingénieur avant-vente, consultant avant-vente]
+    processes: [refp:demo-product, refp:answer-tender]
+
+  - id: ref:marketing-manager
+    department: marketing
+    name: {en: Marketing manager, fr: Responsable marketing}
+    aliases:
+      en: [marketing manager, head of marketing, cmo, growth]
+      fr: [responsable marketing, directeur marketing, growth, chargé de marketing]
+    processes: [refp:plan-campaign, refp:produce-content, refp:run-events, refp:manage-website,
+                refp:nurture-leads, refp:measure-marketing]
+
+  - id: ref:content-manager
+    department: marketing
+    name: {en: Content manager, fr: Chargé de contenu}
+    aliases:
+      en: [content manager, copywriter, community manager, social media]
+      fr: [chargé de contenu, rédacteur, community manager, chargé de communication]
+    processes: [refp:produce-content, refp:publish-social]
+
+  - id: ref:hr-manager
+    department: people-hr
+    name: {en: HR manager, fr: Responsable RH}
+    aliases:
+      en: [hr, people, talent acquisition, recruiter, hr business partner]
+      fr: [rh, responsable rh, recruteur, chargé de recrutement, people]
+    processes: [refp:recruit, refp:onboard-employee, refp:run-reviews, refp:run-payroll-inputs,
+                refp:offboard-employee]
+
+  - id: ref:trainer
+    department: people-hr
+    name: {en: Trainer, fr: Formateur}
+    aliases:
+      en: [trainer, learning, training manager]
+      fr: [formateur, responsable formation, chargé de formation]
+    processes: [refp:design-training, refp:deliver-training]
+
+  - id: ref:finance-manager
+    department: finance-admin
+    name: {en: Finance manager, fr: Responsable financier}
+    aliases:
+      en: [cfo, finance, accountant, controller, office manager]
+      fr: [daf, comptable, contrôleur de gestion, responsable administratif, office manager]
+    processes: [refp:invoice-clients, refp:collect-payments, refp:pay-suppliers, refp:close-books,
+                refp:steer-budget, refp:manage-contracts]
+
+  - id: ref:security-officer
+    department: security-compliance
+    name: {en: Security and compliance officer, fr: Responsable sécurité et conformité}
+    aliases:
+      en: [ciso, rssi, dpo, compliance officer, quality manager]
+      fr: [rssi, dpo, responsable conformité, responsable qualité, responsable sécurité]
+    processes: [refp:secure-platform, refp:handle-gdpr, refp:answer-security-questionnaire,
+                refp:run-audit, refp:manage-access]
+
+  - id: ref:quality-manager
+    department: security-compliance
+    name: {en: Quality manager, fr: Responsable qualité}
+    aliases:
+      en: [quality manager, qhse, risk manager]
+      fr: [responsable qualité, qhse, gestionnaire des risques]
+    processes: [refp:run-audit, refp:handle-nonconformity, refp:maintain-procedures]
+
+  - id: ref:ops-ai-lead
+    department: knowledge-ai-tooling
+    name: {en: Operations and AI lead, fr: Responsable outillage et IA}
+    aliases:
+      en: [ai lead, automation, ops, revops, knowledge manager]
+      fr: [responsable ia, automatisation, revops, responsable outillage]
+    processes: [refp:improve-ways-of-working, refp:build-automation, refp:maintain-procedures]
+
+  - id: ref:operations-manager
+    department: operations-supply
+    name: {en: Operations manager, fr: Responsable de production}
+    aliases:
+      en: [operations manager, production manager, logistics, supply chain, purchasing]
+      fr: [responsable de production, logistique, supply chain, acheteur, responsable d'exploitation]
+    processes: [refp:plan-production, refp:purchase-supplies, refp:ship-orders]
+
+processes:
+  # Strategy and management
+  - id: refp:set-strategy
+    department: strategy-management
+    name: {en: Set the strategy and yearly objectives, fr: Fixer la stratégie et les objectifs annuels}
+    weight: 2
+    held_by: [ref:ceo]
+    key_tasks:
+      en: [write the yearly objectives, run a strategy offsite, decide an investment]
+      fr: [écrire les objectifs annuels, animer un séminaire stratégique, arbitrer un investissement]
+    signals: {tools: [], words: {en: [okr, objectives, strategy], fr: [okr, objectifs, stratégie, séminaire]}}
+    challenge:
+      en: How are the yearly objectives set and followed up, and by whom?
+      fr: Comment les objectifs de l'année sont-ils fixés et suivis, et par qui ?
+
+  - id: refp:run-leadership
+    department: strategy-management
+    name: {en: Run the leadership committee, fr: Animer le comité de direction}
+    weight: 2
+    held_by: [ref:ceo, ref:coo]
+    key_tasks:
+      en: [prepare the leadership meeting, write the decisions, follow up the actions]
+      fr: [préparer le codir, écrire les décisions, suivre les actions]
+    signals: {tools: [], words: {en: [leadership committee, board meeting], fr: [codir, comex, comité de direction]}}
+    challenge:
+      en: Who prepares the leadership meetings and follows up what they decide?
+      fr: Qui prépare les réunions de direction et suit ce qu'elles décident ?
+
+  - id: refp:steer-budget
+    department: finance-admin
+    name: {en: Build and follow the budget, fr: Construire et suivre le budget}
+    weight: 2
+    held_by: [ref:finance-manager, ref:ceo]
+    key_tasks:
+      en: [build the yearly budget, compare actuals with the budget, update the cash forecast]
+      fr: [construire le budget annuel, comparer le réel au budget, mettre à jour le prévisionnel de trésorerie]
+    signals: {tools: [Pennylane, Agicap, Excel], words: {en: [budget, forecast, cash], fr: [budget, prévisionnel, trésorerie]}}
+    challenge:
+      en: Who builds the budget and checks every month that it is kept?
+      fr: Qui construit le budget et vérifie chaque mois qu'il est tenu ?
+
+  - id: refp:report-board
+    department: strategy-management
+    name: {en: Report to the board and investors, fr: Rendre compte au conseil et aux investisseurs}
+    weight: 1
+    held_by: [ref:ceo]
+    key_tasks:
+      en: [write the investor update, prepare the board meeting]
+      fr: [écrire le point investisseurs, préparer le conseil d'administration]
+    signals: {tools: [], words: {en: [board, investors, reporting], fr: [conseil, actionnaires, investisseurs, board]}}
+    challenge:
+      en: Who prepares what the board or the shareholders receive?
+      fr: Qui prépare ce que reçoivent le conseil ou les actionnaires ?
+
+  # Software development and IT operations
+  - id: refp:deliver-code
+    department: software-development
+    name: {en: Develop and deliver a change of the product, fr: Développer et livrer une évolution du produit}
+    weight: 3
+    held_by: [ref:developer, ref:tech-lead]
+    key_tasks:
+      en: [develop a feature, open a pull request, merge a change]
+      fr: [développer une fonctionnalité, ouvrir une pull request, intégrer une évolution]
+    signals:
+      tools: [GitHub, GitLab, Bitbucket, Jira, Linear, Visual Studio Code, Cursor, Claude Code, IntelliJ]
+      words: {en: [pull request, merge, sprint, release, commit], fr: [pull request, merge, sprint, mise en production, commit]}
+    challenge:
+      en: Who writes the code of the product, and how does a change get to production?
+      fr: Qui écrit le code du produit, et comment une évolution arrive-t-elle en production ?
+
+  - id: refp:review-code
+    department: software-development
+    name: {en: Review code, fr: Relire le code}
+    weight: 2
+    held_by: [ref:tech-lead, ref:developer]
+    key_tasks:
+      en: [review a pull request, approve a change]
+      fr: [relire une pull request, valider une évolution]
+    signals: {tools: [GitHub, GitLab, Bitbucket], words: {en: [code review, review], fr: [revue de code, relecture]}}
+    challenge:
+      en: Who reviews the code before it is merged?
+      fr: Qui relit le code avant qu'il soit intégré ?
+
+  - id: refp:fix-bug
+    department: software-development
+    name: {en: Fix a bug, fr: Corriger un bug}
+    weight: 2
+    held_by: [ref:developer]
+    key_tasks:
+      en: [reproduce a bug, fix a bug, write a regression test]
+      fr: [reproduire un bug, corriger un bug, écrire un test de non-régression]
+    signals: {tools: [Jira, Linear, Sentry, AppSignal, Datadog], words: {en: [bug, hotfix], fr: [bug, anomalie, correctif]}}
+    challenge:
+      en: When a bug is reported, who fixes it and how long does it take?
+      fr: Quand un bug est signalé, qui le corrige et en combien de temps ?
+
+  - id: refp:test-release
+    department: software-development
+    name: {en: Test a release, fr: Recetter une version}
+    weight: 2
+    held_by: [ref:qa, ref:developer, ref:product-manager]
+    key_tasks:
+      en: [run the test plan, test on staging, validate a release]
+      fr: [dérouler le plan de test, tester en préproduction, valider une version]
+    signals: {tools: [Cypress, Playwright, Selenium, TestRail], words: {en: [staging, qa, test plan], fr: [recette, préprod, plan de test]}}
+    challenge:
+      en: Who tests a version before it reaches the clients?
+      fr: Qui teste une version avant qu'elle arrive chez les clients ?
+
+  - id: refp:plan-tech-roadmap
+    department: software-development
+    name: {en: Plan the technical work, fr: Planifier le travail technique}
+    weight: 1
+    held_by: [ref:cto, ref:tech-lead]
+    key_tasks:
+      en: [estimate the tickets, plan a sprint, decide the architecture]
+      fr: [estimer les tickets, planifier un sprint, décider de l'architecture]
+    signals: {tools: [Jira, Linear], words: {en: [sprint planning, architecture], fr: [sprint, planning technique, architecture]}}
+    challenge:
+      en: Who decides what the developers work on next, and in which order?
+      fr: Qui décide de ce sur quoi travaillent les développeurs, et dans quel ordre ?
+
+  - id: refp:staff-tech
+    department: people-hr
+    name: {en: Staff the technical team, fr: Staffer l'équipe technique}
+    weight: 1
+    held_by: [ref:cto, ref:hr-manager]
+    key_tasks:
+      en: [run a technical interview, brief a contractor, choose a development agency]
+      fr: [faire passer un entretien technique, briefer un prestataire, choisir une agence de développement]
+    signals: {tools: [Malt, Welcome to the Jungle, LinkedIn], words: {en: [freelance, contractor, agency], fr: [freelance, prestataire, régie, cabinet]}}
+    challenge:
+      en: Who are the developers, in house or contractors, and how many are they?
+      fr: Qui sont les développeurs, salariés ou prestataires, et combien sont-ils ?
+
+  - id: refp:run-production
+    department: it-operations
+    name: {en: Keep production running, fr: Faire tourner la production}
+    weight: 2
+    held_by: [ref:devops, ref:cto]
+    key_tasks:
+      en: [monitor the platform, scale the infrastructure, back up the data]
+      fr: [surveiller la plateforme, dimensionner l'infrastructure, sauvegarder les données]
+    signals: {tools: [AWS, Google Cloud, Azure, OVH, Scaleway, Datadog, Grafana], words: {en: [monitoring, uptime, backup], fr: [supervision, disponibilité, sauvegarde]}}
+    challenge:
+      en: Who watches that the platform is up and acts when it is not?
+      fr: Qui surveille que la plateforme fonctionne, et agit quand elle ne fonctionne pas ?
+
+  - id: refp:deploy-release
+    department: it-operations
+    name: {en: Deploy a release, fr: Déployer une version}
+    weight: 1
+    held_by: [ref:devops, ref:developer]
+    key_tasks:
+      en: [deploy to production, roll back a release]
+      fr: [déployer en production, revenir à la version précédente]
+    signals: {tools: [GitHub Actions, GitLab CI, CircleCI, Jenkins], words: {en: [deploy, ci, pipeline], fr: [déploiement, mise en production, ci]}}
+    challenge:
+      en: Who deploys a new version, and how often?
+      fr: Qui déploie une nouvelle version, et à quelle fréquence ?
+
+  - id: refp:handle-incident
+    department: it-operations
+    name: {en: Handle a production incident, fr: Traiter un incident de production}
+    weight: 2
+    held_by: [ref:devops, ref:developer, ref:cto]
+    key_tasks:
+      en: [diagnose an incident, restore the service, write the post-mortem]
+      fr: [diagnostiquer un incident, rétablir le service, écrire le post-mortem]
+    signals: {tools: [PagerDuty, Opsgenie, Sentry, AppSignal, Datadog], words: {en: [incident, outage, post-mortem], fr: [incident, panne, post-mortem, astreinte]}}
+    challenge:
+      en: When the platform breaks, who is called and who repairs it?
+      fr: Quand la plateforme tombe, qui est appelé et qui répare ?
+
+  - id: refp:manage-cloud-costs
+    department: it-operations
+    name: {en: Follow the hosting costs, fr: Suivre les coûts d'hébergement}
+    weight: 1
+    held_by: [ref:devops, ref:cto]
+    key_tasks:
+      en: [review the cloud bill, reduce an unused resource]
+      fr: [relire la facture cloud, supprimer une ressource inutilisée]
+    signals: {tools: [AWS, Google Cloud, Azure], words: {en: [finops, cloud costs], fr: [finops, coûts cloud, facture aws]}}
+    challenge:
+      en: Who follows the hosting bill and decides what to cut?
+      fr: Qui suit la facture d'hébergement et décide de ce qu'on coupe ?
+
+  - id: refp:manage-internal-it
+    department: it-operations
+    name: {en: Equip and support the employees, fr: Équiper et dépanner les salariés}
+    weight: 2
+    held_by: [ref:it-manager]
+    key_tasks:
+      en: [set up a laptop, answer an internal it request, keep the hardware inventory]
+      fr: [préparer un ordinateur, répondre à une demande informatique interne, tenir l'inventaire du matériel]
+    signals: {tools: [Jamf, Intune, Google Workspace Admin, Microsoft 365 Admin], words: {en: [laptop, wifi, it support], fr: [ordinateur, wifi, support interne, matériel]}}
+    challenge:
+      en: Who equips the newcomers and repairs a laptop that breaks down?
+      fr: Qui équipe les arrivants et dépanne un ordinateur en panne ?
+
+  - id: refp:manage-access
+    department: security-compliance
+    name: {en: Grant and remove access to tools, fr: Ouvrir et fermer les accès aux outils}
+    weight: 1
+    held_by: [ref:it-manager, ref:security-officer, ref:cto]
+    key_tasks:
+      en: [create a user account, remove the access of a leaver, review the access rights]
+      fr: [créer un compte utilisateur, fermer les accès d'un partant, revoir les droits d'accès]
+    signals: {tools: [Okta, Google Workspace Admin, Microsoft Entra, 1Password, Bitwarden], words: {en: [access, sso, rights], fr: [accès, droits, sso, habilitations]}}
+    challenge:
+      en: Who opens the accounts of a newcomer and closes those of a leaver?
+      fr: Qui ouvre les comptes d'un arrivant et ferme ceux d'un partant ?
+
+  # Product and design
+  - id: refp:collect-product-feedback
+    department: product-design
+    name: {en: Collect and sort product feedback, fr: Recueillir et trier les retours produit}
+    weight: 2
+    held_by: [ref:product-manager]
+    key_tasks:
+      en: [log a feature request, sort the feedback, answer a client about a request]
+      fr: [enregistrer une demande d'évolution, trier les retours, répondre à un client sur sa demande]
+    signals: {tools: [Productboard, Canny, Jira, Linear, Notion], words: {en: [feature request, feedback], fr: [demande d'évolution, retour client, feedback]}}
+    challenge:
+      en: Where do the clients' requests for the product go, and who sorts them?
+      fr: Où vont les demandes d'évolution des clients, et qui les trie ?
+
+  - id: refp:prioritize-roadmap
+    department: product-design
+    name: {en: Prioritize the product roadmap, fr: Prioriser la roadmap produit}
+    weight: 2
+    held_by: [ref:product-manager]
+    key_tasks:
+      en: [update the roadmap, decide the next priorities, present the roadmap]
+      fr: [mettre à jour la roadmap, arbitrer les prochaines priorités, présenter la roadmap]
+    signals: {tools: [Productboard, Jira, Linear, Notion], words: {en: [roadmap, priorities], fr: [roadmap, priorités, arbitrage]}}
+    challenge:
+      en: Who decides what the product will do next quarter?
+      fr: Qui décide de ce que fera le produit le trimestre prochain ?
+
+  - id: refp:specify-feature
+    department: product-design
+    name: {en: Specify a feature, fr: Spécifier une fonctionnalité}
+    weight: 3
+    held_by: [ref:product-manager]
+    key_tasks:
+      en: [write a user story, write the specification, write the acceptance criteria]
+      fr: [écrire une user story, rédiger la spécification, écrire les critères d'acceptation]
+    signals: {tools: [Jira, Linear, Notion, Confluence], words: {en: [user story, spec], fr: [user story, spécification, cahier des charges]}}
+    challenge:
+      en: Who writes what the developers must build, and where?
+      fr: Qui écrit ce que les développeurs doivent construire, et où ?
+
+  - id: refp:review-delivery
+    department: product-design
+    name: {en: Check what was delivered, fr: Vérifier ce qui a été livré}
+    weight: 1
+    held_by: [ref:product-manager, ref:qa]
+    key_tasks:
+      en: [check a delivered feature against the spec, accept a ticket]
+      fr: [vérifier une fonctionnalité livrée par rapport à la spécification, valider un ticket]
+    signals: {tools: [Jira, Linear], words: {en: [acceptance, po review], fr: [recette, relecture po, validation]}}
+    challenge:
+      en: Who checks that what was delivered matches what was asked?
+      fr: Qui vérifie que ce qui a été livré correspond à ce qui était demandé ?
+
+  - id: refp:measure-feature
+    department: product-design
+    name: {en: Measure the use of a feature, fr: Mesurer l'usage d'une fonctionnalité}
+    weight: 1
+    held_by: [ref:product-manager, ref:data-analyst]
+    key_tasks:
+      en: [define the tracking of a feature, read the usage figures]
+      fr: [définir le suivi d'une fonctionnalité, lire les chiffres d'usage]
+    signals: {tools: [Amplitude, Mixpanel, Google Analytics, PostHog], words: {en: [tracking, usage, adoption], fr: [tracking, usage, adoption]}}
+    challenge:
+      en: How do you know whether a new feature is used?
+      fr: Comment savez-vous si une nouvelle fonctionnalité est utilisée ?
+
+  - id: refp:design-solution
+    department: product-design
+    name: {en: Design the screens, fr: Concevoir les écrans}
+    weight: 3
+    held_by: [ref:designer]
+    key_tasks:
+      en: [draw a mock-up, design a user journey, update the design system]
+      fr: [dessiner une maquette, concevoir un parcours, mettre à jour le design system]
+    signals: {tools: [Figma, Sketch, Adobe XD, Claude Design], words: {en: [mock-up, wireframe, design], fr: [maquette, wireframe, design]}}
+    challenge:
+      en: Who draws the screens before they are developed?
+      fr: Qui dessine les écrans avant qu'ils soient développés ?
+
+  - id: refp:interview-users
+    department: product-design
+    name: {en: Interview users, fr: Interroger les utilisateurs}
+    weight: 1
+    held_by: [ref:designer, ref:product-manager]
+    key_tasks:
+      en: [run a user interview, test a prototype with users]
+      fr: [mener un entretien utilisateur, tester un prototype avec des utilisateurs]
+    signals: {tools: [Maze, Lookback, Calendly], words: {en: [user interview, user test], fr: [entretien utilisateur, test utilisateur]}}
+    challenge:
+      en: Who talks with the users to understand their needs?
+      fr: Qui parle avec les utilisateurs pour comprendre leurs besoins ?
+
+  # Data
+  - id: refp:build-reporting
+    department: data-analytics
+    name: {en: Build and keep the dashboards, fr: Construire et tenir les tableaux de bord}
+    weight: 2
+    held_by: [ref:data-analyst]
+    key_tasks:
+      en: [build a dashboard, update the monthly reporting]
+      fr: [construire un tableau de bord, mettre à jour le reporting mensuel]
+    signals: {tools: [Looker Studio, Metabase, Power BI, Tableau, BigQuery], words: {en: [dashboard, kpi, reporting], fr: [tableau de bord, kpi, reporting]}}
+    challenge:
+      en: Who builds the figures the company follows every month?
+      fr: Qui construit les chiffres que l'entreprise suit chaque mois ?
+
+  - id: refp:answer-data-request
+    department: data-analytics
+    name: {en: Answer a data request, fr: Répondre à une demande de données}
+    weight: 2
+    held_by: [ref:data-analyst]
+    key_tasks:
+      en: [write a query, extract a dataset, analyse a figure]
+      fr: [écrire une requête, extraire un jeu de données, analyser un chiffre]
+    signals: {tools: [BigQuery, Snowflake, Metabase, Excel], words: {en: [sql, extract, query], fr: [sql, extraction, requête]}}
+    challenge:
+      en: When someone needs a figure that no dashboard gives, who extracts it?
+      fr: Quand quelqu'un a besoin d'un chiffre qu'aucun tableau de bord ne donne, qui l'extrait ?
+
+  - id: refp:maintain-data-pipeline
+    department: data-analytics
+    name: {en: Keep the data flows running, fr: Faire tourner les flux de données}
+    weight: 1
+    held_by: [ref:data-analyst, ref:devops]
+    key_tasks:
+      en: [fix a broken sync, add a data source to the warehouse]
+      fr: [réparer une synchronisation cassée, ajouter une source à l'entrepôt de données]
+    signals: {tools: [Airbyte, Fivetran, dbt, BigQuery], words: {en: [etl, pipeline, warehouse], fr: [etl, flux, entrepôt de données]}}
+    challenge:
+      en: Who repairs the data flows when a figure stops updating?
+      fr: Qui répare les flux de données quand un chiffre ne se met plus à jour ?
+
+  # Support and customer success
+  - id: refp:answer-ticket
+    department: customer-support
+    name: {en: Answer a user request, fr: Répondre à une demande d'utilisateur}
+    weight: 3
+    held_by: [ref:support-agent]
+    key_tasks:
+      en: [answer a support ticket, answer a chat message, close a ticket]
+      fr: [répondre à un ticket de support, répondre à un message de chat, clôturer un ticket]
+    signals: {tools: [Zendesk, Intercom, Freshdesk, Crisp, HubSpot Service], words: {en: [ticket, support, helpdesk], fr: [ticket, support, assistance]}}
+    challenge:
+      en: Who answers the users' questions and problems, and through which tool?
+      fr: Qui répond aux questions et aux problèmes des utilisateurs, et par quel outil ?
+
+  - id: refp:qualify-bug
+    department: customer-support
+    name: {en: Qualify a reported bug, fr: Qualifier un bug signalé}
+    weight: 1
+    held_by: [ref:support-agent]
+    key_tasks:
+      en: [reproduce a reported bug, create the bug ticket for the developers]
+      fr: [reproduire un bug signalé, créer le ticket de bug pour les développeurs]
+    signals: {tools: [Jira, Linear, Intercom, Zendesk], words: {en: [bug report, escalation], fr: [remontée de bug, escalade]}}
+    challenge:
+      en: When a user reports a bug, who checks it and passes it to the developers?
+      fr: Quand un utilisateur signale un bug, qui le vérifie et le transmet aux développeurs ?
+
+  - id: refp:maintain-help-center
+    department: customer-support
+    name: {en: Keep the help center up to date, fr: Tenir le centre d'aide à jour}
+    weight: 1
+    held_by: [ref:support-agent, ref:csm]
+    key_tasks:
+      en: [write a help article, update an article after a release]
+      fr: [écrire un article d'aide, mettre à jour un article après une version]
+    signals: {tools: [Intercom, Zendesk, Notion, GitBook], words: {en: [help center, faq, knowledge base], fr: [centre d'aide, faq, base de connaissances]}}
+    challenge:
+      en: Who writes and updates the help articles of the users?
+      fr: Qui écrit et met à jour les articles d'aide des utilisateurs ?
+
+  - id: refp:onboard-client
+    department: customer-success
+    name: {en: Launch a new client, fr: Lancer un nouveau client}
+    weight: 3
+    held_by: [ref:csm]
+    key_tasks:
+      en: [run the kick-off, set up the client account, send the launch plan]
+      fr: [animer le kick-off, paramétrer le compte client, envoyer le plan de lancement]
+    signals: {tools: [HubSpot, Salesforce, Planhat, Vitally], words: {en: [onboarding, kick-off], fr: [onboarding, lancement, kick-off]}}
+    challenge:
+      en: Once a client signs, who launches them, and how?
+      fr: Une fois un client signé, qui le lance, et comment ?
+
+  - id: refp:run-client-review
+    department: customer-success
+    name: {en: Run a client review, fr: Animer un point de suivi client}
+    weight: 2
+    held_by: [ref:csm]
+    key_tasks:
+      en: [prepare the review deck, run the review, send the minutes]
+      fr: [préparer le support du point, animer le point, envoyer le compte rendu]
+    signals: {tools: [Google Slides, PowerPoint, Planhat], words: {en: [qbr, business review], fr: [point de suivi, comité de pilotage, bilan]}}
+    challenge:
+      en: Who meets the clients regularly to review their results?
+      fr: Qui rencontre régulièrement les clients pour faire le point sur leurs résultats ?
+
+  - id: refp:train-users
+    department: customer-success
+    name: {en: Train the users of a client, fr: Former les utilisateurs d'un client}
+    weight: 2
+    held_by: [ref:csm, ref:trainer]
+    key_tasks:
+      en: [run a training session, send the training material]
+      fr: [animer une session de formation, envoyer les supports de formation]
+    signals: {tools: [Zoom, Google Meet, Teams, Livestorm], words: {en: [training, webinar], fr: [formation, webinaire, prise en main]}}
+    challenge:
+      en: Who trains the users of the clients?
+      fr: Qui forme les utilisateurs des clients ?
+
+  - id: refp:renew-contract
+    department: customer-success
+    name: {en: Renew a contract, fr: Renouveler un contrat}
+    weight: 2
+    held_by: [ref:csm, ref:account-executive]
+    key_tasks:
+      en: [prepare the renewal, send the renewal proposal, negotiate the renewal]
+      fr: [préparer le renouvellement, envoyer la proposition de renouvellement, négocier le renouvellement]
+    signals: {tools: [HubSpot, Salesforce], words: {en: [renewal, churn], fr: [renouvellement, reconduction]}}
+    challenge:
+      en: Who handles the renewal of the contracts, and how early?
+      fr: Qui s'occupe du renouvellement des contrats, et combien de temps avant l'échéance ?
+
+  - id: refp:prevent-churn
+    department: customer-success
+    name: {en: Spot and save an account at risk, fr: Repérer et sauver un compte à risque}
+    weight: 1
+    held_by: [ref:csm]
+    key_tasks:
+      en: [review the health of the accounts, run a rescue plan]
+      fr: [revoir la santé des comptes, lancer un plan de sauvetage]
+    signals: {tools: [Planhat, Vitally, Gainsight], words: {en: [churn, health score, at risk], fr: [churn, compte à risque, attrition]}}
+    challenge:
+      en: How do you spot a client who is about to leave, and who acts?
+      fr: Comment repérez-vous un client sur le point de partir, et qui agit ?
+
+  - id: refp:upsell-client
+    department: sales
+    name: {en: Sell more to an existing client, fr: Vendre plus à un client existant}
+    weight: 1
+    held_by: [ref:csm, ref:account-executive]
+    key_tasks:
+      en: [spot an upsell opportunity, send an extension proposal]
+      fr: [repérer une opportunité d'extension, envoyer une proposition d'extension]
+    signals: {tools: [HubSpot, Salesforce], words: {en: [upsell, cross-sell, extension], fr: [upsell, extension, vente additionnelle]}}
+    challenge:
+      en: Who sells more to the clients already signed?
+      fr: Qui vend davantage aux clients déjà signés ?
+
+  # Sales
+  - id: refp:prospect
+    department: sales
+    name: {en: Prospect new accounts, fr: Prospecter de nouveaux comptes}
+    weight: 3
+    held_by: [ref:sdr]
+    key_tasks:
+      en: [build a prospect list, send a prospecting sequence, call prospects]
+      fr: [construire une liste de prospects, envoyer une séquence de prospection, appeler des prospects]
+    signals: {tools: [lemlist, La Growth Machine, Apollo, Sales Navigator, Kaspr, Ringover, Aircall], words: {en: [prospecting, cold call, sequence], fr: [prospection, appel à froid, séquence]}}
+    challenge:
+      en: Who finds the new prospects, and how?
+      fr: Qui trouve les nouveaux prospects, et comment ?
+
+  - id: refp:qualify-lead
+    department: sales
+    name: {en: Qualify an inbound lead, fr: Qualifier un contact entrant}
+    weight: 2
+    held_by: [ref:sdr]
+    key_tasks:
+      en: [qualify a lead, route a lead to a salesperson]
+      fr: [qualifier un lead, attribuer un lead à un commercial]
+    signals: {tools: [HubSpot, Salesforce, Pipedrive], words: {en: [lead, inbound, mql], fr: [lead, entrant, demande de démo]}}
+    challenge:
+      en: When a prospect asks for a demo, who calls them back?
+      fr: Quand un prospect demande une démo, qui le rappelle ?
+
+  - id: refp:book-meeting
+    department: sales
+    name: {en: Book a first meeting, fr: Obtenir un premier rendez-vous}
+    weight: 2
+    held_by: [ref:sdr]
+    key_tasks:
+      en: [book a meeting for a salesperson, prepare the handover note]
+      fr: [prendre un rendez-vous pour un commercial, préparer la note de passation]
+    signals: {tools: [Calendly, HubSpot Meetings], words: {en: [meeting booked], fr: [rendez-vous, rdv pris]}}
+    challenge:
+      en: Who books the first meetings of the salespeople?
+      fr: Qui prend les premiers rendez-vous des commerciaux ?
+
+  - id: refp:run-discovery
+    department: sales
+    name: {en: Run a discovery meeting, fr: Mener un rendez-vous de découverte}
+    weight: 3
+    held_by: [ref:account-executive]
+    key_tasks:
+      en: [prepare the meeting, run the discovery, write the meeting notes]
+      fr: [préparer le rendez-vous, mener la découverte, écrire le compte rendu]
+    signals: {tools: [Zoom, Google Meet, Teams, Modjo, Gong], words: {en: [discovery, first meeting], fr: [découverte, premier rendez-vous, r1]}}
+    challenge:
+      en: Who runs the first meeting with a prospect?
+      fr: Qui mène le premier rendez-vous avec un prospect ?
+
+  - id: refp:demo-product
+    department: sales
+    name: {en: Demonstrate the product, fr: Faire la démonstration du produit}
+    weight: 2
+    held_by: [ref:account-executive, ref:presales]
+    key_tasks:
+      en: [prepare a demo account, run the demo]
+      fr: [préparer un compte de démo, faire la démo]
+    signals: {tools: [Zoom, Google Meet, Teams], words: {en: [demo], fr: [démo, démonstration]}}
+    challenge:
+      en: Who shows the product to the prospects?
+      fr: Qui montre le produit aux prospects ?
+
+  - id: refp:send-proposal
+    department: sales
+    name: {en: Send a commercial proposal, fr: Envoyer une proposition commerciale}
+    weight: 2
+    held_by: [ref:account-executive]
+    key_tasks:
+      en: [write the proposal, build the quote, send the proposal]
+      fr: [rédiger la proposition, construire le devis, envoyer la proposition]
+    signals: {tools: [PandaDoc, Qwilr, HubSpot Quotes, Google Docs, Word], words: {en: [proposal, quote], fr: [proposition commerciale, devis, offre]}}
+    challenge:
+      en: Who writes the proposals and the quotes?
+      fr: Qui rédige les propositions et les devis ?
+
+  - id: refp:negotiate-close
+    department: sales
+    name: {en: Negotiate and sign, fr: Négocier et signer}
+    weight: 2
+    held_by: [ref:account-executive, ref:sales-manager]
+    key_tasks:
+      en: [negotiate the terms, send the contract for signature, hand the client over]
+      fr: [négocier les conditions, envoyer le contrat à signer, passer le client au csm]
+    signals: {tools: [DocuSign, Yousign, HubSpot, Salesforce], words: {en: [closing, signature, contract], fr: [closing, signature, contrat, bon de commande]}}
+    challenge:
+      en: Who negotiates and gets the contracts signed?
+      fr: Qui négocie et fait signer les contrats ?
+
+  - id: refp:update-crm
+    department: sales
+    name: {en: Keep the CRM up to date, fr: Tenir le CRM à jour}
+    weight: 1
+    held_by: [ref:account-executive, ref:sdr]
+    key_tasks:
+      en: [update a deal, log a meeting in the crm]
+      fr: [mettre à jour une affaire, enregistrer un rendez-vous dans le crm]
+    signals: {tools: [HubSpot, Salesforce, Pipedrive, Axonaut, Sellsy], words: {en: [crm, pipeline, deal], fr: [crm, pipe, affaire]}}
+    challenge:
+      en: Who keeps the deals of the CRM up to date?
+      fr: Qui tient les affaires du CRM à jour ?
+
+  - id: refp:answer-tender
+    department: sales
+    name: {en: Answer a tender, fr: Répondre à un appel d'offres}
+    weight: 1
+    held_by: [ref:account-executive, ref:presales]
+    key_tasks:
+      en: [read the tender, write the answer, submit the bid]
+      fr: [lire le cahier des charges, rédiger la réponse, déposer l'offre]
+    signals: {tools: [Marchés Online, BOAMP], words: {en: [tender, rfp], fr: [appel d'offres, ao, marché public]}}
+    challenge:
+      en: Who answers the tenders, if you answer any?
+      fr: Qui répond aux appels d'offres, si vous y répondez ?
+
+  - id: refp:forecast-pipeline
+    department: sales
+    name: {en: Forecast the sales, fr: Prévoir les ventes}
+    weight: 2
+    held_by: [ref:sales-manager]
+    key_tasks:
+      en: [review the pipeline, update the forecast]
+      fr: [revoir le pipe, mettre à jour la prévision]
+    signals: {tools: [HubSpot, Salesforce, Pipedrive], words: {en: [forecast, pipeline review], fr: [forecast, revue de pipe, prévisionnel]}}
+    challenge:
+      en: Who reviews the pipeline and commits to a sales forecast?
+      fr: Qui revoit le pipe et s'engage sur une prévision de ventes ?
+
+  - id: refp:coach-sales
+    department: sales
+    name: {en: Coach the salespeople, fr: Accompagner les commerciaux}
+    weight: 1
+    held_by: [ref:sales-manager]
+    key_tasks:
+      en: [listen to a recorded call, run a one-to-one, set the targets]
+      fr: [écouter un appel enregistré, mener un point individuel, fixer les objectifs]
+    signals: {tools: [Modjo, Gong], words: {en: [coaching, one-to-one, quota], fr: [coaching, point individuel, objectifs commerciaux]}}
+    challenge:
+      en: Who sets the targets of the salespeople and helps them reach them?
+      fr: Qui fixe les objectifs des commerciaux et les aide à les atteindre ?
+
+  # Marketing
+  - id: refp:plan-campaign
+    department: marketing
+    name: {en: Plan and run a campaign, fr: Planifier et mener une campagne}
+    weight: 2
+    held_by: [ref:marketing-manager]
+    key_tasks:
+      en: [plan the campaign, set up the ads, send the campaign e-mail]
+      fr: [planifier la campagne, paramétrer les publicités, envoyer l'e-mail de campagne]
+    signals: {tools: [HubSpot, Brevo, Mailchimp, LinkedIn Ads, Google Ads], words: {en: [campaign, ads], fr: [campagne, publicité, emailing]}}
+    challenge:
+      en: Who decides and runs the marketing campaigns?
+      fr: Qui décide et mène les campagnes marketing ?
+
+  - id: refp:produce-content
+    department: marketing
+    name: {en: Produce content, fr: Produire du contenu}
+    weight: 3
+    held_by: [ref:content-manager, ref:marketing-manager]
+    key_tasks:
+      en: [write an article, make a case study, write a white paper]
+      fr: [écrire un article, réaliser un cas client, écrire un livre blanc]
+    signals: {tools: [Canva, WordPress, Webflow, Notion], words: {en: [blog, case study, white paper], fr: [article, cas client, livre blanc]}}
+    challenge:
+      en: Who writes the articles, case studies and white papers?
+      fr: Qui écrit les articles, cas clients et livres blancs ?
+
+  - id: refp:publish-social
+    department: marketing
+    name: {en: Publish on social networks, fr: Publier sur les réseaux sociaux}
+    weight: 2
+    held_by: [ref:content-manager]
+    key_tasks:
+      en: [write a linkedin post, schedule the posts]
+      fr: [rédiger un post linkedin, programmer les publications]
+    signals: {tools: [LinkedIn, Buffer, Hootsuite, Canva], words: {en: [post, social media], fr: [post, réseaux sociaux]}}
+    challenge:
+      en: Who publishes on the company's social networks?
+      fr: Qui publie sur les réseaux sociaux de l'entreprise ?
+
+  - id: refp:run-events
+    department: marketing
+    name: {en: Organize events and webinars, fr: Organiser des événements et des webinaires}
+    weight: 1
+    held_by: [ref:marketing-manager]
+    key_tasks:
+      en: [organize a webinar, prepare a trade show, follow up the attendees]
+      fr: [organiser un webinaire, préparer un salon, relancer les participants]
+    signals: {tools: [Livestorm, Eventbrite, Zoom Webinars], words: {en: [webinar, trade show, event], fr: [webinaire, salon, événement]}}
+    challenge:
+      en: Who organizes the webinars and the trade shows?
+      fr: Qui organise les webinaires et les salons ?
+
+  - id: refp:manage-website
+    department: marketing
+    name: {en: Keep the website up to date, fr: Tenir le site web à jour}
+    weight: 1
+    held_by: [ref:marketing-manager]
+    key_tasks:
+      en: [update a page of the website, improve the search ranking]
+      fr: [mettre à jour une page du site, améliorer le référencement]
+    signals: {tools: [WordPress, Webflow, Google Search Console, Semrush], words: {en: [website, seo], fr: [site web, seo, référencement]}}
+    challenge:
+      en: Who updates the website and follows its search ranking?
+      fr: Qui met à jour le site et suit son référencement ?
+
+  - id: refp:nurture-leads
+    department: marketing
+    name: {en: Nurture the contacts, fr: Entretenir les contacts}
+    weight: 1
+    held_by: [ref:marketing-manager]
+    key_tasks:
+      en: [send the newsletter, set up a nurturing sequence]
+      fr: [envoyer la newsletter, paramétrer une séquence de nurturing]
+    signals: {tools: [HubSpot, Brevo, Mailchimp, ActiveCampaign], words: {en: [newsletter, nurturing], fr: [newsletter, nurturing]}}
+    challenge:
+      en: Who sends the newsletters and the nurturing e-mails?
+      fr: Qui envoie les newsletters et les e-mails de nurturing ?
+
+  - id: refp:measure-marketing
+    department: marketing
+    name: {en: Measure the marketing results, fr: Mesurer les résultats marketing}
+    weight: 1
+    held_by: [ref:marketing-manager]
+    key_tasks:
+      en: [report the leads generated, compute the cost per lead]
+      fr: [faire le bilan des leads générés, calculer le coût par lead]
+    signals: {tools: [Google Analytics, HubSpot, Looker Studio], words: {en: [attribution, cost per lead], fr: [attribution, coût par lead, bilan marketing]}}
+    challenge:
+      en: Who measures what each marketing action brings?
+      fr: Qui mesure ce que rapporte chaque action marketing ?
+
+  # People and HR
+  - id: refp:recruit
+    department: people-hr
+    name: {en: Recruit, fr: Recruter}
+    weight: 3
+    held_by: [ref:hr-manager]
+    key_tasks:
+      en: [publish a job ad, screen the applications, run an interview, make an offer]
+      fr: [publier une offre, trier les candidatures, mener un entretien, faire une proposition d'embauche]
+    signals: {tools: [Welcome to the Jungle, LinkedIn Recruiter, Teamtailor, Indeed], words: {en: [hiring, candidate], fr: [recrutement, candidat, embauche]}}
+    challenge:
+      en: Who runs the recruitments, from the job ad to the offer?
+      fr: Qui mène les recrutements, de l'offre à la proposition d'embauche ?
+
+  - id: refp:onboard-employee
+    department: people-hr
+    name: {en: Welcome a newcomer, fr: Accueillir un arrivant}
+    weight: 1
+    held_by: [ref:hr-manager]
+    key_tasks:
+      en: [prepare the arrival, run the welcome day]
+      fr: [préparer l'arrivée, animer la journée d'accueil]
+    signals: {tools: [Lucca, PayFit, Notion], words: {en: [onboarding, newcomer], fr: [intégration, arrivant, onboarding]}}
+    challenge:
+      en: Who prepares the arrival of a newcomer?
+      fr: Qui prépare l'arrivée d'un nouveau salarié ?
+
+  - id: refp:run-reviews
+    department: people-hr
+    name: {en: Run the yearly reviews, fr: Mener les entretiens annuels}
+    weight: 1
+    held_by: [ref:hr-manager]
+    key_tasks:
+      en: [launch the review campaign, run a yearly review]
+      fr: [lancer la campagne d'entretiens, mener un entretien annuel]
+    signals: {tools: [Lucca, Eurécia, Factorial], words: {en: [performance review], fr: [entretien annuel, entretien professionnel]}}
+    challenge:
+      en: Who organizes the yearly reviews?
+      fr: Qui organise les entretiens annuels ?
+
+  - id: refp:run-payroll-inputs
+    department: people-hr
+    name: {en: Prepare the payroll, fr: Préparer la paie}
+    weight: 2
+    held_by: [ref:hr-manager, ref:finance-manager]
+    key_tasks:
+      en: [collect the absences, send the payroll inputs, check the payslips]
+      fr: [collecter les absences, envoyer les variables de paie, contrôler les bulletins]
+    signals: {tools: [PayFit, Silae, Lucca], words: {en: [payroll, payslip], fr: [paie, bulletin, variables de paie]}}
+    challenge:
+      en: Who prepares the payroll every month?
+      fr: Qui prépare la paie chaque mois ?
+
+  - id: refp:offboard-employee
+    department: people-hr
+    name: {en: Handle a departure, fr: Gérer un départ}
+    weight: 1
+    held_by: [ref:hr-manager]
+    key_tasks:
+      en: [prepare the leaving documents, collect the equipment]
+      fr: [préparer les documents de sortie, récupérer le matériel]
+    signals: {tools: [Lucca, PayFit], words: {en: [offboarding, leaver], fr: [départ, solde de tout compte, offboarding]}}
+    challenge:
+      en: Who handles the departure of an employee?
+      fr: Qui gère le départ d'un salarié ?
+
+  - id: refp:design-training
+    department: people-hr
+    name: {en: Design a training, fr: Concevoir une formation}
+    weight: 2
+    held_by: [ref:trainer]
+    key_tasks:
+      en: [write the training program, build the training material]
+      fr: [écrire le programme de formation, construire les supports]
+    signals: {tools: [Google Slides, PowerPoint, 360Learning, Moodle], words: {en: [training program, e-learning], fr: [programme de formation, e-learning, qualiopi]}}
+    challenge:
+      en: Who designs the trainings and their material?
+      fr: Qui conçoit les formations et leurs supports ?
+
+  - id: refp:deliver-training
+    department: people-hr
+    name: {en: Deliver a training, fr: Animer une formation}
+    weight: 3
+    held_by: [ref:trainer]
+    key_tasks:
+      en: [run a training session, collect the attendance sheet, send the evaluation]
+      fr: [animer une session, faire signer la feuille d'émargement, envoyer l'évaluation]
+    signals: {tools: [Zoom, Teams, Digiforma], words: {en: [training session], fr: [session de formation, émargement]}}
+    challenge:
+      en: Who delivers the trainings?
+      fr: Qui anime les formations ?
+
+  # Finance and administration
+  - id: refp:invoice-clients
+    department: finance-admin
+    name: {en: Invoice the clients, fr: Facturer les clients}
+    weight: 2
+    held_by: [ref:finance-manager]
+    key_tasks:
+      en: [issue an invoice, send the invoices of the month]
+      fr: [émettre une facture, envoyer les factures du mois]
+    signals: {tools: [Pennylane, Stripe, Chargebee, Axonaut, Sellsy, QuickBooks], words: {en: [invoice, billing], fr: [facture, facturation]}}
+    challenge:
+      en: Who issues the invoices to the clients?
+      fr: Qui émet les factures des clients ?
+
+  - id: refp:collect-payments
+    department: finance-admin
+    name: {en: Collect the payments, fr: Recouvrer les paiements}
+    weight: 1
+    held_by: [ref:finance-manager]
+    key_tasks:
+      en: [remind a late payer, reconcile a payment]
+      fr: [relancer un impayé, rapprocher un paiement]
+    signals: {tools: [Pennylane, Agicap, Upflow, Libeo], words: {en: [unpaid, dunning], fr: [impayé, relance, recouvrement]}}
+    challenge:
+      en: Who reminds the clients who pay late?
+      fr: Qui relance les clients qui paient en retard ?
+
+  - id: refp:pay-suppliers
+    department: finance-admin
+    name: {en: Pay the suppliers and expenses, fr: Payer les fournisseurs et les notes de frais}
+    weight: 1
+    held_by: [ref:finance-manager]
+    key_tasks:
+      en: [check a supplier invoice, pay the suppliers, approve the expense reports]
+      fr: [vérifier une facture fournisseur, payer les fournisseurs, valider les notes de frais]
+    signals: {tools: [Spendesk, Libeo, Qonto, Pennylane, Expensya], words: {en: [supplier, expenses], fr: [fournisseur, note de frais, justificatif]}}
+    challenge:
+      en: Who checks and pays the supplier invoices and the expense reports?
+      fr: Qui vérifie et paie les factures fournisseurs et les notes de frais ?
+
+  - id: refp:close-books
+    department: finance-admin
+    name: {en: Close the accounts, fr: Clôturer les comptes}
+    weight: 2
+    held_by: [ref:finance-manager]
+    key_tasks:
+      en: [send the documents to the accountant, close the month, prepare the yearly accounts]
+      fr: [transmettre les pièces à l'expert-comptable, clôturer le mois, préparer le bilan]
+    signals: {tools: [Pennylane, Cegid, Sage, QuickBooks], words: {en: [closing, accountant], fr: [clôture, expert-comptable, bilan, tva]}}
+    challenge:
+      en: Who works with the accountant on the monthly and yearly closing?
+      fr: Qui travaille avec l'expert-comptable sur la clôture du mois et de l'année ?
+
+  - id: refp:manage-contracts
+    department: finance-admin
+    name: {en: Manage the contracts, fr: Gérer les contrats}
+    weight: 1
+    held_by: [ref:finance-manager, ref:ceo]
+    key_tasks:
+      en: [review a contract, file a signed contract, follow the renewal dates]
+      fr: [relire un contrat, archiver un contrat signé, suivre les dates d'échéance]
+    signals: {tools: [DocuSign, Yousign, Hyperline], words: {en: [contract, legal], fr: [contrat, juridique, échéance]}}
+    challenge:
+      en: Who reviews the contracts and follows their end dates?
+      fr: Qui relit les contrats et suit leurs échéances ?
+
+  # Security, compliance and quality
+  - id: refp:secure-platform
+    department: security-compliance
+    name: {en: Secure the platform, fr: Sécuriser la plateforme}
+    weight: 2
+    held_by: [ref:security-officer, ref:cto]
+    key_tasks:
+      en: [run a penetration test, fix a vulnerability, follow the security plan]
+      fr: [piloter un test d'intrusion, corriger une vulnérabilité, suivre le plan de sécurité]
+    signals: {tools: [Vanta, Drata, Snyk, Dependabot], words: {en: [security, pentest, iso 27001], fr: [sécurité, pentest, iso 27001, smsi]}}
+    challenge:
+      en: Who decides and follows the security measures of the platform?
+      fr: Qui décide et suit les mesures de sécurité de la plateforme ?
+
+  - id: refp:handle-gdpr
+    department: security-compliance
+    name: {en: Apply the GDPR, fr: Appliquer le RGPD}
+    weight: 1
+    held_by: [ref:security-officer]
+    key_tasks:
+      en: [keep the processing register, answer a data subject request]
+      fr: [tenir le registre des traitements, répondre à une demande d'exercice de droits]
+    signals: {tools: [Axeptio, Didomi], words: {en: [gdpr, dpo, personal data], fr: [rgpd, dpo, données personnelles]}}
+    challenge:
+      en: Who keeps the GDPR register and answers the requests about personal data?
+      fr: Qui tient le registre RGPD et répond aux demandes sur les données personnelles ?
+
+  - id: refp:answer-security-questionnaire
+    department: security-compliance
+    name: {en: Answer a security questionnaire, fr: Répondre à un questionnaire de sécurité}
+    weight: 1
+    held_by: [ref:security-officer, ref:cto]
+    key_tasks:
+      en: [fill in a client security questionnaire, send the security documents]
+      fr: [remplir le questionnaire de sécurité d'un client, envoyer les documents de sécurité]
+    signals: {tools: [Vanta, Drata], words: {en: [security questionnaire, dpa], fr: [questionnaire de sécurité, pas, dpa]}}
+    challenge:
+      en: Who answers the security questionnaires of the clients?
+      fr: Qui répond aux questionnaires de sécurité des clients ?
+
+  - id: refp:run-audit
+    department: security-compliance
+    name: {en: Prepare and pass an audit, fr: Préparer et passer un audit}
+    weight: 2
+    held_by: [ref:quality-manager, ref:security-officer]
+    key_tasks:
+      en: [prepare the audit evidence, follow the audit, close the findings]
+      fr: [préparer les preuves de l'audit, suivre l'audit, lever les écarts]
+    signals: {tools: [], words: {en: [audit, certification, iso], fr: [audit, certification, iso, qualiopi]}}
+    challenge:
+      en: Who prepares the audits and certifications, and closes what they find?
+      fr: Qui prépare les audits et les certifications, et lève les écarts qu'ils trouvent ?
+
+  - id: refp:handle-nonconformity
+    department: security-compliance
+    name: {en: Handle a nonconformity or a complaint, fr: Traiter une non-conformité ou une réclamation}
+    weight: 2
+    held_by: [ref:quality-manager]
+    key_tasks:
+      en: [record a complaint, analyse the cause, follow the corrective action]
+      fr: [enregistrer une réclamation, analyser la cause, suivre l'action corrective]
+    signals: {tools: [], words: {en: [nonconformity, complaint, corrective action], fr: [non-conformité, réclamation, action corrective]}}
+    challenge:
+      en: When a client complains or a defect is found, who handles it to the end?
+      fr: Quand un client se plaint ou qu'un défaut est trouvé, qui le traite jusqu'au bout ?
+
+  - id: refp:maintain-procedures
+    department: knowledge-ai-tooling
+    name: {en: Keep the procedures written, fr: Tenir les procédures écrites}
+    weight: 1
+    held_by: [ref:quality-manager, ref:ops-ai-lead]
+    key_tasks:
+      en: [write a procedure, update a procedure, review the documentation]
+      fr: [écrire une procédure, mettre à jour une procédure, relire la documentation]
+    signals: {tools: [Notion, Confluence, Google Drive, SharePoint], words: {en: [procedure, documentation, wiki], fr: [procédure, documentation, wiki, mode opératoire]}}
+    challenge:
+      en: Who writes the procedures, and who keeps them up to date?
+      fr: Qui écrit les procédures, et qui les tient à jour ?
+
+  # Knowledge and AI tooling
+  - id: refp:improve-ways-of-working
+    department: knowledge-ai-tooling
+    name: {en: Improve the ways of working, fr: Améliorer la façon de travailler}
+    weight: 1
+    held_by: [ref:ops-ai-lead, ref:coo]
+    key_tasks:
+      en: [choose a new tool, train a team on a tool, set the ai policy]
+      fr: [choisir un nouvel outil, former une équipe à un outil, fixer la politique ia]
+    signals: {tools: [Claude, ChatGPT, Copilot, Notion], words: {en: [ai, tooling, process], fr: [ia, outillage, processus]}}
+    challenge:
+      en: Who chooses the tools of the company and teaches the teams how to use them?
+      fr: Qui choisit les outils de l'entreprise et apprend aux équipes à s'en servir ?
+
+  - id: refp:build-automation
+    department: knowledge-ai-tooling
+    name: {en: Build automations and agents, fr: Construire des automatisations et des agents}
+    weight: 2
+    held_by: [ref:ops-ai-lead, ref:developer]
+    key_tasks:
+      en: [build a zap, write a skill, set up a scheduled agent]
+      fr: [construire un scénario d'automatisation, écrire un skill, mettre en place un agent planifié]
+    signals: {tools: [Zapier, Make, n8n, Claude, Claude Code], words: {en: [automation, agent, skill, workflow], fr: [automatisation, agent, skill, scénario]}}
+    challenge:
+      en: Who builds the automations and AI agents, and who repairs them when they break?
+      fr: Qui construit les automatisations et les agents IA, et qui les répare quand ils cassent ?
+
+  # Operations and supply
+  - id: refp:plan-production
+    department: operations-supply
+    name: {en: Plan the production, fr: Planifier la production}
+    weight: 3
+    held_by: [ref:operations-manager]
+    key_tasks:
+      en: [plan the production runs, assign the teams]
+      fr: [planifier les lots de production, affecter les équipes]
+    signals: {tools: [SAP, Odoo, Excel], words: {en: [production plan, shift], fr: [planning de production, équipe, fournée]}}
+    challenge:
+      en: Who plans what is produced, when and by whom?
+      fr: Qui planifie ce qui est produit, quand et par qui ?
+
+  - id: refp:purchase-supplies
+    department: operations-supply
+    name: {en: Buy the supplies, fr: Acheter les fournitures}
+    weight: 2
+    held_by: [ref:operations-manager]
+    key_tasks:
+      en: [order the supplies, compare suppliers, follow the stock]
+      fr: [commander les fournitures, comparer les fournisseurs, suivre le stock]
+    signals: {tools: [SAP, Odoo], words: {en: [purchase order, stock], fr: [bon de commande, stock, achat]}}
+    challenge:
+      en: Who orders the supplies and follows the stock?
+      fr: Qui commande les fournitures et suit le stock ?
+
+  - id: refp:ship-orders
+    department: operations-supply
+    name: {en: Ship the orders, fr: Expédier les commandes}
+    weight: 2
+    held_by: [ref:operations-manager]
+    key_tasks:
+      en: [prepare an order, book the carrier, handle a delivery problem]
+      fr: [préparer une commande, réserver le transporteur, traiter un problème de livraison]
+    signals: {tools: [Shopify, Sendcloud, Boxtal], words: {en: [shipping, delivery], fr: [expédition, livraison, transporteur]}}
+    challenge:
+      en: Who prepares and ships the orders?
+      fr: Qui prépare et expédie les commandes ?

@@ -40,7 +40,7 @@ roles: [...]
 processes: [...]
 tasks: [...]
 blockers: [...]   # what keeps tasks from reaching their target (§11)
-people: [...]     # the person mapped, in their first map only (§12)
+people: [...]     # the person mapped, in their first map only, and the colleagues named at step 4 (§12)
 agents: [...]     # their recurring agents, in their first map only (§12)
 ```
 
@@ -48,7 +48,7 @@ agents: [...]     # their recurring agents, in their first map only (§12)
 version proposes with what the referential keeps (deltas, README_operations.md §4.2).
 
 No other top-level key, no other key in `meta`. `people` and `agents` (§12) are written once, in
-the first map of the person. The order of the lists is free; this one is the
+the first map of the person; the entries of the colleagues named at step 4 are written in any map. The order of the lists is free; this one is the
 order of the referential, which `validate_rpt.py --format` restores.
 
 An update (`SKILL.md`, "Updating a map already sent") keeps the ids of the starting map;
@@ -92,6 +92,7 @@ gap is not an error.
 | `level` | | `"01"` (automated tasks), `"02"` (processes that run once launched), `"03"` (the role runs with its agents). Omit if no task is automated. |
 | `verdict` | | One or two sentences: where the automation of the role stands, and why. |
 | `gaps` | | List: what is missing or remains to be confirmed, as questions. |
+| `reference` | | `{roles, not_applicable}`: the ids of the roles of `references/reference-roles.yaml` this role matches (`[ref:cto]`, `[]` when none fits), and of the reference processes the person said are not done in the organization (`[refp:answer-tender]`). Written at step 3 (point 11) and step 4; `validate_rpt.py` warns about an active role without it. |
 | `basis` | | Where each fact comes from: `{holders: declared, routing: inferred}`, a field of the element and its origin (§7). Also applies to a process, a task and a data source. |
 | `notes` | | Free text. |
 | `sources` | | List: where this information comes from. |
@@ -309,6 +310,9 @@ are quoted here in English, the same message in every language. An error line st
 | `` `x` contains {…}, which is not a text `` | An unprotected ":" in a list between brackets made a text into a key-value pair. | Double quotes around the text (§9). |
 | `` required field `x` missing `` | A required field is missing. | Add it. |
 | `malformed … id` | Code in lower case, with a hyphen, or form `T1-2`. | Form of §2. |
+| `` tool(s) that no task, process, data source or agent uses `` | A tool is declared in `tools` and cited nowhere else in the map. | Ask the person what they do in it (a forgotten task) or who works in it (a colleague, step 4); remove it only if it is not a work tool. |
+| `` role(s) without `reference` `` | An active role does not say which reference roles it matches. | `reference: {roles: [ref:…]}` from `references/reference-roles.yaml`, `roles: []` if none fits (SKILL.md, step 3, point 11). |
+| `` `ref:…` is not in references/reference-roles.yaml `` | A misspelled or invented reference id. | An id of the file; never invent one. |
 | `id already used in …` | Two elements have the same id. | Renumber one of them. |
 | `` `x` points to X, which is not in the referential `` | `role`, `steps` or `routing.to` cites an id that does not exist. | Create the element, or correct the id; for a person, write free text ("the sales management"). |
 | `` unknown tool `x` `` | The tool is declared neither in the file nor in `catalogues/tools.yaml`. | Declare it in `tools` (§6). |
@@ -426,13 +430,18 @@ Rules:
 Two lists, written once, at the top level of the person's first map (`people`, `agents`). The
 merge adds them to the organization's `people.yaml` and `agents.yaml`.
 
-`people`, one entry: the person who is mapped.
+`people`: one entry for the person who is mapped (their first map only), and one entry per
+colleague the person named at step 4 as doing work the map does not cover (any map). A colleague's
+entry has `id`, `name`, `teams` and `notes` (what they do), and `external: true` for a contractor
+outside the organization; never `os_access`, `ai_plan` or `maps`, which their own map gives.
 
 | Field | Required | Content |
 |---|---|---|
 | `id` | yes | `person:<first name>`, lower case, without accents: `person:helene`; `-2` when a person with the same first name already has the id. |
 | `name` | yes | The first and last name (two people can share a first name). Never an e-mail or a phone number. |
 | `aliases` | | Other ways the name is written in the maps (`Houlé`). |
+| `teams` | | A colleague named at step 4: the team codes of the work they do, in lower case (`[tech]`). The organization counts them in the coverage of these teams until they send their map. |
+| `external` | | `true` for a contractor outside the organization: neither counted nor reminded for a map. |
 | `os_access` | | One entry per way the person's AI reaches the OS: `mode` (`connector`, `local`, `repository`, `none`), `tool` (the tool id: `saas:google-drive`), `state` (`works`, `not_found`, `unchecked`; required unless `mode: none`), `checked` (the date the AI read the folder), `basis`, `evidence` (300 characters at most), `notes`. |
 | `ai_plan` | | The AI licence the person uses for work: `tool` (the tool id: `saas:claude`), `plan` (as the vendor names it: Pro, Max, Team, Enterprise), `tier` (`free`, `standard`, `premium`), `modes` (a list among `thinking`: the AI reasons before it answers, and `work`: it works on files and tools, as in Cowork, Claude Code, artifacts, generation of assets), `checked`, `basis`, `evidence`, `notes`. |
 | `notes`, `sources` | | As for a role. |

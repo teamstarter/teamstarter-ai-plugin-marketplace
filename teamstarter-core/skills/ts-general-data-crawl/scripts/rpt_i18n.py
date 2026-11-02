@@ -1216,6 +1216,19 @@ MESSAGES = {
               "it now (README_operations.md §1.16)",
         "fr": "{where} : {name} est `{state}` dans people.yaml : donner le travail à la personne "
               "qui le fait aujourd'hui (README_operations.md §1.16)"},
+    "check.reference_shape": {
+        "en": "{where}: `reference` = {value}: `{{roles, not_applicable}}`, lists of ids of "
+              "reference-roles.yaml (`ref:cto`, `refp:deliver-code`)",
+        "fr": "{where} : `reference` = {value} : `{{roles, not_applicable}}`, des listes d'ids "
+              "de reference-roles.yaml (`ref:cto`, `refp:deliver-code`)"},
+    "check.person_teams": {
+        "en": "{where}: `teams` = {value}: a list of team codes in lower case (`tech`)",
+        "fr": "{where} : `teams` = {value} : une liste de codes d'équipe en minuscules (`tech`)"},
+    "check.person_external": {
+        "en": "{where}: `external` = {value}: `true` for a contractor outside the organization, "
+              "else leave it out",
+        "fr": "{where} : `external` = {value} : `true` pour un prestataire extérieur à "
+              "l'organisation, sinon ne pas l'écrire"},
     "check.maps_shape": {
         "en": "{where}: `maps` = {value}: a list of `{{hat, date}}`, the team code of each map "
               "merged and its date ('YYYY-MM-DD') (README_operations.md §1.16)",

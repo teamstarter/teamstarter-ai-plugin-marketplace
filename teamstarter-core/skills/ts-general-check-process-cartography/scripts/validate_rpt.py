@@ -174,6 +174,22 @@ MESSAGES = {
         "en": "Blockers: {total} ({states}); still holding tasks back: {current}",
         "fr": "Bloqueurs : {total} ({states}) ; bloquent encore des tâches : {current}"},
     "validate.blocker_item": {"en": "{id} {type} ({tasks})", "fr": "{id} {type} ({tasks})"},
+    "validate.unused_tool": {
+        "en": "{count} tool(s) that no task, process, data source or agent uses ({ids}): ask the "
+              "person what they do in it, or who works in it (SKILL.md, step 3, point 10)",
+        "fr": "{count} outil(s) qu'aucune tâche, aucun processus, aucune source ni aucun agent "
+              "n'utilise ({ids}) : demander à la personne ce qu'elle y fait, ou qui y travaille "
+              "(SKILL.md, étape 3, point 10)"},
+    "validate.no_reference": {
+        "en": "{count} role(s) without `reference` ({ids}): match each one with the roles of "
+              "references/reference-roles.yaml, `roles: []` if none fits (SKILL.md, step 3, "
+              "point 11)",
+        "fr": "{count} rôle(s) sans `reference` ({ids}) : rapprocher chacun des rôles de "
+              "references/reference-roles.yaml, `roles: []` si aucun ne convient (SKILL.md, "
+              "étape 3, point 11)"},
+    "validate.reference_unknown": {
+        "en": "{where}: `{value}` is not in references/reference-roles.yaml",
+        "fr": "{where} : `{value}` n'est pas dans references/reference-roles.yaml"},
     "validate.relevance_line": {
         "en": "Relevance: estimated for {rated} active task(s) out of {total}; most relevant M "
               "and S tasks: {best}",
@@ -258,6 +274,7 @@ def check(path, reformat, starts=()):
         warnings += detector_warnings(data) + code_warnings(data) + automation_warnings(ref)
         warnings += relevance_warnings(ref, build_rpt.RELEVANCE_AXES) + data_warnings(ref)
         warnings += measure_warnings(ref) + chain_warnings(ref) + blocker_warnings(ref)
+        warnings += unused_tool_warnings(data) + reference_warnings(data)
         warnings += [tr("validate.data_alert", where=where, label=label, excerpt=excerpt)
                      for where, label, excerpt in preview_rpt.alerts(data)]
         if starts:
@@ -309,6 +326,49 @@ def code_warnings(data):
     if not other:
         return []
     return [tr("validate.codes", codes=", ".join(other), team=team.lower())]
+
+
+def unused_tool_warnings(data):
+    """A tool the map declares that nothing in the map uses: a forgotten task, or the work of
+    someone else (a developer's GitHub in a CTO's map). Each id is searched in the rest of the
+    file."""
+    import json
+    rest = json.dumps({k: v for k, v in data.items() if k != "tools"}, default=str)
+    # A shared assistant (a bot with `shared`) is declared for the access it gives, not a task.
+    unused = [str(x.get("id")) for x in data.get("tools") or []
+              if isinstance(x, dict) and x.get("id") and not x.get("shared")
+              and f'"{x["id"]}"' not in rest]
+    if not unused:
+        return []
+    return [tr("validate.unused_tool", count=len(unused), ids=", ".join(unused))]
+
+
+def reference_ids():
+    """The ids of the roles and processes of references/reference-roles.yaml."""
+    import yaml
+    try:
+        with open(os.path.join(REFERENCES, "reference-roles.yaml"), encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except OSError:
+        return None
+    return {"roles": {r.get("id") for r in data.get("roles") or []},
+            "not_applicable": {p.get("id") for p in data.get("processes") or []}}
+
+
+def reference_warnings(data):
+    """Each active role names the reference roles it matches (`reference.roles`, `[]` when none
+    fits): the questions of step 4 that challenge the missing processes come from them."""
+    known = reference_ids()
+    roles = [r for r in data.get("roles") or [] if isinstance(r, dict)
+             and r.get("state", "active") == "active"]
+    missing = [str(r.get("id")) for r in roles if not isinstance(r.get("reference"), dict)]
+    out = [tr("validate.no_reference", count=len(missing), ids=", ".join(missing))] \
+        if missing else []
+    for r in roles if known else []:
+        for key, ids in (r.get("reference") or {}).items():
+            out += [tr("validate.reference_unknown", where=f"{r.get('id')} reference.{key}",
+                       value=i) for i in ids or [] if key in known and i not in known[key]]
+    return out
 
 
 def relevance_warnings(ref, axes):

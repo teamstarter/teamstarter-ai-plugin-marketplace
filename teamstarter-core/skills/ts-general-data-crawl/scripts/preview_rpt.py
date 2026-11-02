@@ -60,6 +60,11 @@ MESSAGES = {
     "preview.kind.people": {"en": "The person mapped", "fr": "La personne cartographiée"},
     "preview.kind.agents": {"en": "Recurring agents", "fr": "Agents récurrents"},
     "preview.mapped": {"en": "person mapped", "fr": "personne cartographiée"},
+    # A colleague the person named at step 4 as doing work of a team, who has no map yet.
+    "preview.expected": {"en": "works for {teams}, map expected",
+                         "fr": "travaille pour {teams}, carte attendue"},
+    "preview.external": {"en": "contractor for {teams}, no map expected",
+                         "fr": "prestataire pour {teams}, pas de carte attendue"},
     # The blockers of the map: count by state, then those still open or being resolved.
     "preview.blockers_count": {
         "en": "{total} blocker(s): {states}.",
@@ -475,7 +480,10 @@ def people(data):
             seen.setdefault(str(author), []).append(tr("preview.author"))
     for item in data.get("people") or []:
         if isinstance(item, dict) and item.get("name"):
-            seen.setdefault(str(item["name"]), []).append(tr("preview.mapped"))
+            teams = ", ".join(str(c) for c in item.get("teams") or [])
+            label = tr("preview.mapped") if not teams else tr(
+                "preview.external" if item.get("external") else "preview.expected", teams=teams)
+            seen.setdefault(str(item["name"]), []).append(label)
     for kind in ("roles", "processes", "tasks"):
         for item in data.get(kind) or []:
             for field in NAME_FIELDS:
