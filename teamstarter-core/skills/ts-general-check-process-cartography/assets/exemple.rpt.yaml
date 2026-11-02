@@ -108,6 +108,7 @@ roles:
     level: '01'
     verdict: Le tri des candidatures est assisté par Claude ; la publication des offres, les entretiens et les décisions restent humains.
     gaps: ['Qui valide la fiche de poste quand le manager est absent ?']
+    reference: {roles: ['ref:hr-manager'], not_applicable: ['refp:run-reviews']}
     sources: [conversations (18 tris de CV avec Claude), réponses du 2026-09-24]
 
   - id: RH-R2
@@ -127,6 +128,7 @@ roles:
     criteria: {entry: 'no', routing: 'yes', key_tasks: 'no', fallback: 'yes', supervision: 'no'}
     verdict: Tout est manuel ; la liste des accès à créer pour chaque poste n'est écrite nulle part.
     gaps: ['La liste des accès par poste existe-t-elle quelque part ?']
+    reference: {roles: ['ref:hr-manager']}
     sources: [agenda (3 accueils depuis juin), réponses du 2026-09-24]
 
 processes:
@@ -466,3 +468,7 @@ people:
     name: Alex Martin
     ai_plan: {tool: 'saas:claude', plan: Team, tier: standard, modes: [thinking, work], basis: declared}
     notes: pas encore d'OS dans l'organisation
+  - id: person:sam
+    name: Sam Leroy
+    teams: [fin]
+    notes: prépare la paie et les variables chaque mois (réponse du 2026-09-24 à la question sur refp:run-payroll-inputs)

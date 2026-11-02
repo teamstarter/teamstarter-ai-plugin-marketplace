@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.21 (2026-10-27)"
+  version: "2.22 (2026-11-02)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -265,7 +265,8 @@ end, to what you read as well as to what you write:
    birth, no phone number, no e-mail address, no family situation, no health, no pay (fixed,
    variable, commission target), no absence. The only personal data allowed is the first name
    and the name of a person **where they hold a role, do a task or act as a fallback**
-   (`holders`, `by`, `fallback`) and in `meta.authors`. Everywhere else (`notes`, `sources`,
+   (`holders`, `by`, `fallback`), in `meta.authors`, and in the `people` entries: the person
+   mapped, and a colleague they named at step 4 as doing work of a team (`teams`). Everywhere else (`notes`, `sources`,
    `gaps`, `supervision`, free texts), write their role, with no word that would say their
    gender: without an article ("to be validated by: CEO", "reviewed by Head of CS") or with a
    phrasing that does not depend on the person ("the management", "the CEO position", "the person
@@ -553,6 +554,8 @@ The map also says how far the AI of the organization reaches the person's work: 
 AI reads the organization's OS, and which agents run tasks for them without being launched by
 hand. The map writes both at the top level of the person's first map (`references/format-rpt-v1.md`
 §12): one `people` entry for the person, and one `agents` entry per recurring agent they set up.
+The colleagues named at step 4 add their own `people` entries, in any map, first or not: the
+organization then counts them in the coverage of their team, as people expected to send a map.
 The organization adds them up into its coverage of the OS and its list of recurring agents.
 
 **Access to the OS.** The OS is the folder that holds the referential: the parent of
@@ -639,6 +642,12 @@ it.
    e-mails they send each week or each month. Also offer the messaging (Slack, Teams), the
    ticketing tool and the meeting notes or transcripts when you can read them: they show what
    blocks the tasks (section "Blockers").
+   In the same question, ask for **their 5 to 10 work tools of every day**, with the list you
+   already know offered as answers (their connectors, their skills, what their memory says); the
+   person ticks and adds the others. In Cowork or Claude Code, also offer the source **"my
+   computer"**: the names of the applications installed and open, and the development tools
+   (step 2); it finds the tools that send no e-mail and need no account (a code editor, a
+   spreadsheet, a business software installed on the computer).
 5. **Full** mode (I read the authorized sources, then interview you: 30 to 40 minutes) or
    **quick** mode (I only interview you: 15 minutes)? In quick mode, for a first map, also tell
    me about a typical week: what comes to you (requests, meetings, deadlines), what you do with
@@ -681,6 +690,8 @@ message: it will be used in `evidence`.
 | Ticketing tool, CRM, tracking spreadsheet (Jira, Linear, HubSpot, Notion…) | The statuses of a ticket or a deal (they are the steps of a process), who moves what, the volumes. The blocked tickets and the "is blocked by" links: blockers. |
 | Meeting notes and transcripts | Recurring meetings and what they decide; the signals of a blocker: « on n'a pas pu », « il faut une décision de ». Never what a person said. |
 | Existing automations (Zapier, Make, scripts, agents, saved prompts) | What they do: they are the A or S tasks. |
+| Mailbox: e-mails sent by tools (Gmail: `from:(no-reply OR noreply OR notifications) newer_than:12m`; Outlook: the same senders) | The inventory of their tools: each domain that sends welcome e-mails, invoices, alerts or digests (`github.com`, `figma.com`, `hubspot.com`) is a tool they use, connector or not. Only the sender's domain, how many e-mails and the date of the last; never the subject or the text. A tool that appears here and in no task of the draft is a question (step 3, point 10). |
+| Their computer (Cowork or Claude Code only, after approval: see below) | The applications installed and open, the development tools: the tools that leave no trace in the mailbox. |
 | Scheduled tasks and Routines of their Claude, the OS folder | The recurring agents and the access to the OS (section "Access to the OS and recurring agents"): the title and the schedule of each scheduled task, never its prompt; whether the OS folder is found. |
 
 In Claude Code, in a repository: the instruction files (`CLAUDE.md`, `AGENTS.md`), the skills
@@ -688,6 +699,26 @@ In Claude Code, in a repository: the instruction files (`CLAUDE.md`, `AGENTS.md`
 agents, hooks, CI workflows and scripts, and `git log` of the last three months; with the
 person's explicit approval, their past sessions (their messages and the skills they launch
 there, not the tool outputs).
+
+**Their computer.** Only in Cowork or Claude Code (claude.ai on the web sees nothing of the
+computer), only when the person ticked "my computer" at step 1, and without asking for any
+right (no administrator, no full disk access). Read names, never contents:
+
+| What | macOS | Windows | Linux |
+|---|---|---|---|
+| Applications installed | `ls /Applications ~/Applications` | the Start menu shortcuts; `Get-StartApps` | `ls /usr/share/applications ~/.local/share/applications` |
+| Applications open now | `ps -A -o comm=` | `Get-Process` (`ProcessName`) | `ps -A -o comm=` |
+| Applications pinned | `defaults read com.apple.dock persistent-apps` (the `file-label` values) | the taskbar shortcuts | — |
+| Development tools | `command -v git node python3 docker`; the folders of the home folder that hold a `.git` (two levels deep), and the host of their `remote` only (`github.com`, `gitlab.com`) | the same in PowerShell | the same |
+
+Keep only work tools: match each name with `catalogues/tools.yaml` (or a known tool), drop the
+system, the games and what is personal (health, bank, messaging with relatives). Show the person
+the list kept before writing anything, with what you dropped in one line; they remove what they
+want. The raw list never goes into the map, a note or a question: only the tools kept, with the
+source "computer (application names, <date>)" in `sources`. Never read a file of an application,
+the browsing history, the bookmarks, the keychain, the SSH keys, the content of a repository or
+its commits. A development tool or a repository is a strong signal: a person who codes, or a
+technical job whose code is written by others (step 3, point 11).
 
 In quick mode, skip this step and start from the answers of step 1, typical week included.
 
@@ -768,12 +799,44 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    monthly meetings): a gap is a question for the first round. Likewise match each kind of sent
    e-mail that comes back with the tasks of the draft: an e-mail delivered without a matching
    task is a forgotten task, to confirm in the first round.
+10. **Match the tools with the tasks.** Each tool of step 1 and step 2 (ticked, declared, read in
+    the mailbox, found on the computer) is used by at least one task of the draft (`tools` of a
+    task or a process, a data source, an agent). A tool without a task is a forgotten task, or
+    the work of someone else: it goes into the first round ("GitHub is among your tools, but no
+    task uses it: what do you do in it, or who works in it?"), all such tools in one question.
+    `validate_rpt.py` flags a tool the map declares that nothing uses.
+11. **Challenge the draft against the reference roles** (`references/reference-roles.yaml`).
+    Match each role of the draft with one or two roles of this file by its name, its mission and
+    the job titles of the person (`aliases`); write them in `reference.roles` of the role
+    (`roles: []` when none fits: a job proper to this organization). A process of these
+    reference roles is covered when a task of the map does one of its `key_tasks`, whoever does
+    it. Rank the processes not covered by `weight`, then by the signals seen in the sources (a
+    tool of `signals.tools` among their tools, a word of `signals.words` in the subjects or the
+    titles read); a process already in `reference.not_applicable` (an update) is left out. The
+    first three at most become the questions of step 4, from their `challenge` text. Never add a
+    task from this file without the person's answer: the file says what a role usually covers,
+    not what the person does.
 
 ## Step 4 — Have it validated (three rounds at most)
 
 Show the first draft in summary: one table per role (tasks, statuses and relevance), the roles
 filed by hat, then the list of processes. Then ask, with the question tool, **3 or 4 questions
-at a time**, the most important first: a missing role, a process whose order is doubtful, an
+at a time**, the most important first.
+
+**The first round starts with the challenge questions** of step 3 (point 11, three at most, and
+the question about the tools without a task, point 10): they take the place of the questions of
+least weight, never one round more. Each names the process and asks who does it, without
+proposing a task. The answers offered, and what each one writes:
+
+| Answer | What the map gets |
+|---|---|
+| "I do it, it was forgotten" | The task, in the draft, with the source "answer to the question on <refp id>" (`basis: declared`); the next rounds complete it. |
+| "Someone else in the organization does it" (first and last name, their job) | A `people` entry for that colleague: `id`, `name`, `teams` (the team code of their job, from the configuration), `notes` (what they do, in one sentence). Their own map will describe the work; you write no task for them. |
+| "A contractor outside the organization" (name of the firm or the person) | The same entry with `external: true`; no map is expected from them. When the person steers the work (briefs, reviews, pays), that steering is their task. |
+| "It is not done here" | The id in `reference.not_applicable` of the role: no one asks again. |
+| "I don't know" | Nothing, and the question is not asked again. |
+
+The questions that follow are, in order of importance: a missing role, a process whose order is doubtful, an
 uncertain status or relevance, an unknown human fallback, a frequency or a duration, a tool for
 which you do not know whether the AI reaches it (a single question for all these tools). The
 relevance axes you could not estimate make a single question: your message shows a table of the
@@ -880,6 +943,8 @@ the map is never sent.
   those resolved or dropped since the starting map: the script's "Blockers" line;
 - the connectors to activate first, and those the AI already reaches: the script's "Connectors"
   line;
+- the colleagues named as doing work of a team, who will be asked for their own map, and the
+  contractors;
 - the questions left open;
 - the sources read (in conversion mode, the document) and those set aside (refused by the person
   or inaccessible);
@@ -990,6 +1055,7 @@ the new version of this file with the suffix `-v2` before `.rpt.yaml`.
 |---|---|
 | `references/format-rpt-v1.md` | At step 3 to choose `automation` (§7), at step 5 before writing the file: fields, allowed values, YAML pitfalls, script messages, the `blockers` list (§11). |
 | `assets/exemple.rpt.yaml` | At step 5: a complete and valid map whose structure to copy. |
+| `references/reference-roles.yaml` | At step 3 (point 11): the reference roles and processes, the questions that challenge the processes the map does not cover. |
 | `rpt-config.yaml` (address in the organization's instructions) | Before your first message: the organization, its team codes, the intake folder and address, what is never sent, where its catalogues are. |
 | `catalogues/departments.yaml` | When an element hesitates between two departments: examples and aliases of each (without the organization's catalogue: `references/departments.yaml`). |
 | `catalogues/tools.yaml` | At step 5: ids of the tools and skills already known to the referential. |

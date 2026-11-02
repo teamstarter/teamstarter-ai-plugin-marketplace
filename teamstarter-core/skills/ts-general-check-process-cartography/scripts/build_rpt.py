@@ -129,7 +129,7 @@ KEYS = {
             "shared_key_results", "basis", "notes", "aliases", "sources"],
     "role": ["id", "name", "team", "departments", "state", "mission", "holders", "fallback",
              "entries", "routing", "gates", "supervision", "criteria", "level", "verdict", "gaps",
-             "basis", "notes", "aliases", "sources"],
+             "reference", "basis", "notes", "aliases", "sources"],
     "process": ["id", "name", "role", "departments", "state", "replaced_by", "trigger", "steps",
                 "gates", "exit", "fixed_path", "blockers", "automation", "tools", "next",
                 "handoffs", "basis", "notes", "aliases", "sources"],
@@ -164,8 +164,10 @@ KEYS = {
                 "notes", "sources"],
     # A person of the organization, first and last name, and the ways their AI reaches the OS
     # (people.yaml, README_operations.md §1.16).
-    "person": ["id", "name", "aliases", "state", "os_access", "ai_plan", "maps", "notes",
-               "sources"],
+    # `teams` and `external`: a person a map names as doing work of a team (the answer « someone
+    # else does it » at step 4 of the cartography), before they send a map themselves.
+    "person": ["id", "name", "aliases", "state", "teams", "external", "os_access", "ai_plan",
+               "maps", "notes", "sources"],
     # An agent that runs recurring tasks without being launched by hand: a managed agent, a
     # Routine, a scheduled task of a person's Claude, a worker (agents.yaml, §1.16).
     "agent": ["id", "name", "kind", "platform", "state", "stage", "schedule", "owner", "people",
@@ -219,6 +221,9 @@ SUB_KEYS = {"entries": ["what", "from", "trigger", "volume"],
             "trigger": ["what", "type", "by", "volume"],
             "criteria": ["entry", "routing", "key_tasks", "fallback", "supervision"],
             "relevance": ["reach", "frequency", "effort", "describability", "payback"],
+            # The reference roles a role matches and the reference processes that do not exist
+            # in this organization (reference-roles.yaml of the cartography skill).
+            "reference": ["roles", "not_applicable"],
             # Measured duration and rate of a task, what is at stake when it is late or wrong,
             # the cost to automate it (README_operations.md §1.6).
             "measure": ["minutes", "runs", "basis"],
@@ -1115,7 +1120,26 @@ def check_role(r, idx, dept_ids):
         errors += check_enum(where, "routing.status", route.get("status"), "route_status")
         errors += check_enum(where, "routing.state", route.get("state"), "state")
         errors += check_ref(where, "routing.to", route.get("to"), idx)
+    errors += check_reference(r.get("reference"), where)
     return errors + check_basis("role", r, where)
+
+
+REFERENCE_IDS = {"roles": re.compile(r"^ref:[a-z0-9-]+$"),
+                 "not_applicable": re.compile(r"^refp:[a-z0-9-]+$")}
+
+
+def check_reference(ref, where):
+    """`reference` of a role: `{roles, not_applicable}`, the ids of the reference roles it
+    matches (`ref:cto`) and of the reference processes the person said do not exist here
+    (`refp:deliver-code`). `roles: []` says no reference role fits. The cartography's
+    validator checks that the ids exist in its reference-roles.yaml."""
+    if ref is None:
+        return []
+    if not isinstance(ref, dict):
+        return [tr("check.reference_shape", where=where, value=repr(ref))]
+    return [tr("check.reference_shape", where=f"{where} reference.{key}", value=repr(ids))
+            for key, pattern in REFERENCE_IDS.items() if (ids := ref.get(key)) is not None
+            and not (isinstance(ids, list) and all(pattern.match(str(i)) for i in ids))]
 
 
 def check_process(p, idx, dept_ids, tool_ids):
@@ -1414,6 +1438,12 @@ def check_person(x, idx=None):
     errors = check_keys("person", x, where) + check_plan(x.get("ai_plan"), where, idx)
     errors += check_maps(x.get("maps"), where)
     errors += check_enum(where, "state", x.get("state"), "person_state")
+    teams = x.get("teams")
+    if teams is not None and not (isinstance(teams, list) and all(
+            TEAM_RE.match(str(c)) for c in teams)):
+        errors.append(tr("check.person_teams", where=where, value=repr(teams)))
+    if x.get("external") is not None and not isinstance(x["external"], bool):
+        errors.append(tr("check.person_external", where=where, value=repr(x["external"])))
     access = x.get("os_access") or []
     if not isinstance(access, list):
         return errors + [tr("check.access_shape", where=where)]
@@ -1489,7 +1519,8 @@ def map_coverage(ref, cfg=None, today=None):
         return None
     day = datetime.date.fromisoformat(today)
     people = []
-    for x in ref["people"]:
+    # An external person (a contractor named by a map) sends no map: not counted, not reminded.
+    for x in (x for x in ref["people"] if x.get("external") is not True):
         maps = [m for m in x.get("maps") or [] if isinstance(m, dict) and m.get("date")]
         last = max((str(m["date"]) for m in maps), default=None)
         days = (day - datetime.date.fromisoformat(last)).days if last else None
@@ -3408,7 +3439,8 @@ def link_people(ref):
         x["_roles"] = [r["id"] for r in ref["roles"] if any(
             names_person(ref["people"], x, human_name(h)) for h in r.get("holders") or []
             if human_name(h))]
-        x["_teams"] = sorted({r["team"] for r in ref["roles"] if r["id"] in x["_roles"]})
+        x["_teams"] = sorted({r["team"] for r in ref["roles"] if r["id"] in x["_roles"]}
+                             | {str(c) for c in x.get("teams") or []})
         x["_agents"] = [a["id"] for a in ref["agents"] if x.get("id") in (a.get("people") or [])]
         access = [a for a in x.get("os_access") or [] if isinstance(a, dict)]
         states = [a.get("state") for a in access if a.get("mode") != "none" and a.get("state")]
