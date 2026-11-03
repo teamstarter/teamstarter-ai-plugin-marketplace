@@ -72,9 +72,9 @@ the others are pending.
 |---|---|---|
 | `measure` | `{minutes: 45}`, `{runs: 8}` or both | The duration of the work on the task, seen or said; the number of times per month, said |
 | `frequency` | a text: `every Monday`, `about 8 per month` | What the person says about the rhythm |
-| `tools` | the complete list of tool ids (`skill:…`, `saas:…`) | A skill, an agent or a software used to do the task |
+| `tools` | the complete list of tool ids (`skill:…`, `project:…`, `saas:…`) | A skill, a project, an agent or a software used to do the task; a Claude project, a custom GPT or a Gem is `project:…`, never `skill:…` (README_operations.md §1.21) |
 | `data` | the complete list of sources (`data:…`) | A data source read or written for the task |
-| `method` | a URL, or a tool id (`skill:…`) | The written method followed, or written during the session |
+| `method` | a URL, or a tool id (`skill:…`, `project:…`) | The written method followed, or written during the session |
 | `okrs` | the complete list of key results served (`O1.3.KR1`, at most two) | The session's deliverable directly moves the measure of a KR of `okrs.yaml` (README_operations.md §1.13); a link that is only indirect is not written |
 | `output_files` | the complete list of locations (below) | Where the deliverable was stored |
 | `input_files` | the complete list of locations (same form) | Where the files the task read were |
@@ -274,8 +274,9 @@ tasks, as usual. An agent is never deleted: one that stopped is `paused` or `ret
 
 ## The status
 
-- **M → C**: the task was done by talking with Claude (a chat, no skill), and the person says
-  they will do it that way from now on. A single execution is not enough without this answer.
+- **M → C**: the task was done by talking with Claude (a chat or a project, no skill), and the
+  person says they will do it that way from now on. A single execution is not enough without
+  this answer. A task done in a project, with a saved prompt or in a conversation stays C.
 - **M → S** or **C → S**: a skill or an agent now runs the method of the task, and a person
   validates the result; the skill is in `tools`. Same condition: the person says they will do it
   that way from now on.

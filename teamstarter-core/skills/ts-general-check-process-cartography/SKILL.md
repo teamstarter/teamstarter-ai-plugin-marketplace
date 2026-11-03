@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.22 (2026-11-02)"
+  version: "2.23 (2026-11-03)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -312,16 +312,17 @@ The status of each task, **today**:
 |---|---|
 | **A** automated | An agent, a script or a tool does it; a human steps in only if it fails. |
 | **S** skilled | The AI runs the method of the task through a skill or an agent (cited in `tools`) and produces the result; a human validates or triggers before what follows. |
-| **C** conversational | The AI only helps through a conversation: a chat (Claude, ChatGPT…) or a bot that answers. The person asks, copies, adapts and does the work; no skill carries the method. |
+| **C** conversational | The AI only helps through a conversation: a chat (Claude, ChatGPT…), a project of an AI assistant (Claude project, custom GPT, Gem) or a bot that answers. The person asks, copies, adapts and does the work; no skill carries the method. |
 | **M** manual | A human does it; no tool carries it. |
 | **J** judgment | A human decision on value, priority, risk or the relationship, or a live exchange that depends on the person (running a client meeting, a webinar, negotiating). It will stay human. |
 
 Four cases that cause confusion:
 
-- A task done with Claude by writing or pasting a prompt each time is **C**; when its method is
-  written in a skill (or an agent) that Claude runs, it is **S**, and that skill is in `tools`.
-  Ask: "When you use the AI for it, does it follow a skill, or do you explain what to do in the
-  chat?"
+- A task done with Claude by writing or pasting a prompt each time, or in a project (a Claude
+  project, a custom GPT, a Gem) whose instructions write the method, is **C**; when its method
+  is written in a skill (or an agent) that Claude runs, it is **S**, and that skill is in
+  `tools`. Ask: "When you use the AI for it, does it follow a skill, do you open a project, or do
+  you explain what to do in the chat?" (below, "What a skill is").
 
 - A decision that applies simple and stable criteria (company size, sector, amount) is **M**,
   not J: it would become A if its criteria were written, and that is its blocker (section
@@ -333,6 +334,26 @@ Four cases that cause confusion:
   do but that nobody hands over to it is M. The referential compares teams with each other; an
   optimistic status distorts the comparison. What is possible goes into `target`, and what is
   missing to get there into a blocker (section "Blockers").
+
+**What a skill is.** A skill is one precise object: a folder with a `SKILL.md` file (a name, a
+description, instructions, sometimes scripts) that the assistant loads by itself when a request
+matches its description, in any conversation. What the person opens, fills and follows in a
+conversation is something else, even when its instructions are long: name each tool by its type
+(`references/format-rpt-v1.md` §6, "What a skill is").
+
+| What the person uses | How to tell | `type` | Status of the task |
+|---|---|---|---|
+| A skill | It is in the list of skills you see (in claude.ai, a folder under `/mnt/skills/`; in Claude Code, `.claude/skills/`, `~/.claude/skills/`, a plugin); the person asks, and you follow it without being given instructions | `skill` | S when you produce and they validate |
+| A project: Claude project, ChatGPT project or custom GPT, Gemini Gem | A name in the sidebar (the "projects" of your memory or of their answers); its instructions apply only to the conversations opened in it; the person opens it and pastes the input | `project` | C, its instructions in `method`, `target: S`, `build: {size: S, kind: skill}` |
+| A saved prompt | A text kept in a document or a note, pasted at each run | `prompt` | C |
+| A conversation they reopen or duplicate for the task | A title in their history, no written instructions | `conversation` | C |
+| An agent | It acts with tools by itself and chains the steps (an AI agent in n8n, Make or Zapier, a Claude Code subagent) | `agent` | S or A |
+
+A Claude project is never `skill:…`, even when the person calls it « mon skill »: write
+`project:<name>` and keep their word in `notes`. When you cannot tell, ask: "Do you open it
+from your projects, or does Claude use it by itself when you ask?" A project, a prompt or a
+conversation that writes the method of a task is the first candidate for a skill: its
+instructions become the `SKILL.md`.
 
 A role can be handed over to agents when five conditions are met: the work arrives without a
 human launching it (**automatic entry**), the list "case → what handles it" is written
@@ -680,8 +701,8 @@ message: it will be used in `evidence`.
 
 | Source | What to look for |
 |---|---|
-| Your memory about the person, their instructions, their Claude projects | Their job, their responsibilities, their tools, what they often hand over to you. |
-| Their skills: those they created or installed, those of the organization they launch (the list of available skills you see; in claude.ai, the skill folders mounted under `/mnt/skills/`) | Each skill they use carries at least one task, often S (the skill produces, they validate); its description gives the input and the deliverable. Past conversations say which ones they really launch, and how often. A personal or business skill installed but never launched is not a task: ask. A generic skill (docx, xlsx, pptx…) is a task only through the activity it serves (a client review in pptx). A skill unrelated to their work stays out of the map. |
+| Your memory about the person, their instructions, their Claude projects | Their job, their responsibilities, their tools, what they often hand over to you. Each project they use for a task is a tool of type `project`, not `skill` ("What a skill is"); its instructions say the input, the deliverable and the method. |
+| Their skills: those they created or installed, those of the organization they launch (the list of available skills you see; in claude.ai, the skill folders mounted under `/mnt/skills/`) | Only what is in this list is a skill. Each skill they use carries at least one task, often S (the skill produces, they validate); its description gives the input and the deliverable. Past conversations say which ones they really launch, and how often. A personal or business skill installed but never launched is not a task: ask. A generic skill (docx, xlsx, pptx…) is a task only through the activity it serves (a client review in pptx). A skill unrelated to their work stays out of the map. |
 | Past conversations (history search tool, if it exists) | Requests that come back are tasks; those you do alone are A or S. Look for "every week", "every month", "as usual", "reminder", "report", "minutes", "validate", "prepare" (and their equivalents in the person's language: « chaque semaine », « tous les mois », « comme d'habitude », « relance », « rapport », « compte rendu », « valider », « préparer »). |
 | Attached files, project files, Drive | Procedures, templates, checklists, minutes, tracking sheets. |
 | Calendar | Recurring meetings (often processes or judgments), typical appointments, and their frequency. Not personal appointments. |
@@ -689,7 +710,7 @@ message: it will be used in `evidence`.
 | Mailbox: received e-mails; messaging (Slack, Teams) | What is asked of the person: types of requests (the entries of a role), where they come from by type, their volume; reminders. The signals of a blocker (section "Blockers"): access requests, follow-ups without an answer, refusals, « je n'ai pas accès », « en attente de », "still not". Never the content. |
 | Ticketing tool, CRM, tracking spreadsheet (Jira, Linear, HubSpot, Notion…) | The statuses of a ticket or a deal (they are the steps of a process), who moves what, the volumes. The blocked tickets and the "is blocked by" links: blockers. |
 | Meeting notes and transcripts | Recurring meetings and what they decide; the signals of a blocker: « on n'a pas pu », « il faut une décision de ». Never what a person said. |
-| Existing automations (Zapier, Make, scripts, agents, saved prompts) | What they do: they are the A or S tasks. |
+| Existing automations (Zapier, Make, scripts, agents) | What they do: they are the A or S tasks. A saved prompt they paste is a `prompt` tool of a C task. |
 | Mailbox: e-mails sent by tools (Gmail: `from:(no-reply OR noreply OR notifications) newer_than:12m`; Outlook: the same senders) | The inventory of their tools: each domain that sends welcome e-mails, invoices, alerts or digests (`github.com`, `figma.com`, `hubspot.com`) is a tool they use, connector or not. Only the sender's domain, how many e-mails and the date of the last; never the subject or the text. A tool that appears here and in no task of the draft is a question (step 3, point 10). |
 | Their computer (Cowork or Claude Code only, after approval: see below) | The applications installed and open, the development tools: the tools that leave no trace in the mailbox. |
 | Scheduled tasks and Routines of their Claude, the OS folder | The recurring agents and the access to the OS (section "Access to the OS and recurring agents"): the title and the schedule of each scheduled task, never its prompt; whether the OS folder is found. |
@@ -754,7 +775,7 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    without a blocker), is `assisted`. When the process ends with someone else, write `handoffs`
    (section "The model").
 5. **Write the tasks**: name "verb + object", input → deliverable, tools (including the skill
-   they launch for this task), data sources (`data`, point 6), who does it today (`by`), status
+   they launch, or the project they open, for this task), data sources (`data`, point 6), who does it today (`by`), status
    A/S/C/M/J, and its relevance (`relevance`: rate the axes you can estimate, keep the others for
    step 4). A task belongs to a single role, the one that holds it; it can be the step of
    several processes, or of none. Put `target` when an automation is conceivable, and write in
@@ -876,8 +897,9 @@ the map is never sent.
 2. For the software and skills already known to the referential (Claude, Slack, Google Drive,
    Notion, Jira, Linear, HubSpot, the organization's skills…), reuse their id as it appears in
    `catalogues/tools.yaml`. Declare in the `tools` list of the file any other tool cited: a tool
-   the catalogue lists (Gmail, when it is there) is not declared again; a Zap, a personal skill
-   or a saved prompt is. Without `catalogues/tools.yaml` (an organization without an OS, a first
+   the catalogue lists (Gmail, when it is there) is not declared again; a Zap, a personal skill,
+   a project or a saved prompt is, with its type ("What a skill is": `project:<name>` for a
+   Claude project, never `skill:`). Without `catalogues/tools.yaml` (an organization without an OS, a first
    run), declare every tool cited, Claude and Gmail included, with an id `saas:<name>` as in
    `assets/exemple.rpt.yaml`. Same for the data sources: the ids of
    `catalogues/data-sources.yaml` (or `references/data-sources.yaml`), and `data_sources` for
@@ -939,6 +961,8 @@ the map is never sent.
 - the processes that already run on their own;
 - the five tasks to automate first: the most relevant (highest score) among the M and S tasks,
   with their score and what is missing for each; reuse the script's "Relevance" line;
+- the projects, saved prompts and conversations that carry a task: each one can become a skill,
+  which would take its task from C to S;
 - the blockers that still hold tasks back, with their tasks and since when, and, for an update,
   those resolved or dropped since the starting map: the script's "Blockers" line;
 - the connectors to activate first, and those the AI already reaches: the script's "Connectors"

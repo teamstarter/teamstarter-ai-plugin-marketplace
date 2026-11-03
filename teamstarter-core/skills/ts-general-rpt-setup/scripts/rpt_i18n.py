@@ -663,8 +663,14 @@ MESSAGES = {
 
     # Warnings of the referential.
     "warn.skilled_without_skill": {
-        "en": "{where}: status S (skilled), but `tools` cites no skill, agent or routine: C (conversational) if the AI only helps in a chat, or the skill to cite",
-        "fr": "{where} : statut S (skillisée), mais `tools` ne cite aucun skill, agent ou routine : C (conversationnelle) si l'IA aide seulement dans un chat, sinon le skill à citer"},
+        "en": "{where}: status S (skilled), but `tools` cites no skill, agent or routine: C (conversational) if the AI only helps in a chat or a project, or the skill to cite",
+        "fr": "{where} : statut S (skillisée), mais `tools` ne cite aucun skill, agent ou routine : C (conversationnelle) si l'IA aide seulement dans un chat ou un projet, sinon le skill à citer"},
+    "warn.skilled_in_a_chat": {
+        "en": "{where}: status S (skilled), but its only AI tools are projects, saved prompts or conversations ({tools}), not a skill: the person opens a conversation and gives the input each time, C (conversational), with `method` on it and `target: S` (README_operations.md §1.21)",
+        "fr": "{where} : statut S (skillisée), mais ses seuls outils d'IA sont des projets, des prompts enregistrés ou des conversations ({tools}), pas un skill : la personne ouvre une conversation et donne l'entrée à chaque fois, C (conversationnelle), avec `method` dessus et `target: S` (README_operations.md §1.21)"},
+    "warn.tool_not_a_skill": {
+        "en": "{where}: type `skill`, but it says « {words} »: a project of an AI assistant (Claude or ChatGPT project, custom GPT, Gem) is `project`, a saved prompt `prompt`, a conversation `conversation`; `skill` is for a skill the assistant loads by itself (a SKILL.md, README_operations.md §1.21)",
+        "fr": "{where} : type `skill`, mais il dit « {words} » : un projet d'assistant IA (projet Claude ou ChatGPT, GPT personnalisé, Gem) est `project`, un prompt enregistré `prompt`, une conversation `conversation` ; `skill` est réservé au skill que l'assistant charge seul (un SKILL.md, README_operations.md §1.21)"},
     "warn.no_config": {
         "en": "{folder}: no rpt-config.yaml (here, in its two parent folders, --config or RPT_CONFIG): the views are built without a global context or an intake address",
         "fr": "{folder} : aucune rpt-config.yaml (ici, dans ses deux dossiers parents, --config ou RPT_CONFIG) : les vues sont construites sans contexte global ni adresse de dépôt"},
