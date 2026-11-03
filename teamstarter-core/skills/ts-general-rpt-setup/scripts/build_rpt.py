@@ -356,8 +356,8 @@ ID_RE = {
     "role": re.compile(r"^[A-Z][A-Z0-9]*-R\d+[a-z]?$"),
     "process": re.compile(r"^[A-Z][A-Z0-9]*-P\d+[a-z]?$"),
     "task": re.compile(r"^[A-Z][A-Z0-9]*-T\d+(\.\d+)?[a-z]?$"),
-    "tool": re.compile(r"^(skill|agent|managed-agent|hook|ci|bot|script|saas|reference|routine"
-                       r"|command):[a-z0-9][a-z0-9._-]*$"),
+    "tool": re.compile(r"^(skill|project|prompt|conversation|agent|managed-agent|hook|ci|bot"
+                       r"|script|saas|reference|routine|command):[a-z0-9][a-z0-9._-]*$"),
     "department": re.compile(r"^[a-z][a-z0-9-]*$"),
     "task_type": re.compile(r"^tt:[a-z0-9][a-z0-9-]*$"),
     "data_source": re.compile(r"^data:[a-z0-9][a-z0-9-]*$"),
@@ -386,8 +386,10 @@ ENUMS = {
                    "routing"},
     "criterion": {"yes", "partial", "no"}, "level": {"01", "02", "03"},
     # `managed-agent`: an agent of the Claude platform, kept as a file in managed-agents/.
-    "tool_type": {"skill", "agent", "managed-agent", "hook", "ci", "bot", "script", "saas",
-                  "reference", "routine", "command"},
+    # `project`, `prompt`, `conversation`: what a person uses in an AI assistant that is not a
+    # skill (README_operations.md §1.21).
+    "tool_type": {"skill", "project", "prompt", "conversation", "agent", "managed-agent", "hook",
+                  "ci", "bot", "script", "saas", "reference", "routine", "command"},
     "tool_status": {"live", "deprecated", "removed", "external"},
     "route_status": {"A", "S", "C", "M", "J", "-"},
     "connector": {"native", "mcp", "api", "export", "none"},
@@ -888,6 +890,7 @@ def validate(ref):
                             department=x.get("department")))
     for t in ref["tools"]:
         errors += check_tool(t)
+        warnings += not_a_skill_warnings(t)
     for d in ref["data_sources"]:
         e, w = check_data_source(d, tool_ids, idx)
         errors, warnings = errors + e, warnings + w
@@ -989,6 +992,29 @@ def check_tool(t):
     if t.get("type") and prefix != t.get("type"):
         errors.append(tr("check.tool_prefix", where=where, type=t.get("type")))
     return errors + check_rights(t, where) + check_shared(t, where)
+
+
+# What a tool of type `skill` names when it is something else (README_operations.md §1.21): a
+# project of an AI assistant (Claude or ChatGPT project, custom GPT, Gemini Gem), a saved prompt,
+# a conversation: the words that give it away in its name, its description or its place.
+NOT_A_SKILL_RE = re.compile(
+    r"\bprojets?\s+(?:claude|chatgpt|gpt|gemini|copilot|mistral|le chat)\b"
+    r"|\b(?:claude|chatgpt|gemini)\s+projects?\b"
+    r"|\bcustom\s+gpts?\b|\bgpts?\s+personnalis\w*|\bgems?\b"
+    r"|\bsaved\s+prompts?\b|\bprompts?\s+(?:enregistr|sauvegard|stock)\w*"
+    r"|\b(?:conversations?|discussions?)\s+(?:claude|chatgpt|gemini|copilot)\b", re.I)
+
+
+def not_a_skill_warnings(t):
+    """A tool of type `skill` whose name, description or place says it is a project, a saved
+    prompt or a conversation (README_operations.md §1.21). A tool of a catalogue a map borrows
+    was checked in its own folder."""
+    if t.get("type") != "skill" or t.get("_borrowed"):
+        return []
+    text = " ".join(str(t.get(k) or "") for k in ("name", "description", "where"))
+    found = NOT_A_SKILL_RE.search(text)
+    return [tr("warn.tool_not_a_skill", where=f"{t['_file']} {t.get('id')}",
+               words=found.group(0))] if found else []
 
 
 # A shared assistant (README_operations.md §1.18): a bot that people reach in the team's chat
@@ -1220,10 +1246,13 @@ def check_task(t, idx, dept_ids, tool_ids, type_ids=()):
     warnings += measure_warnings(t, where)
     if t.get("status") in ("M", "J") and not t.get("by"):
         warnings.append(tr("warn.task_without_by", where=where, status=t.get("status")))
-    # A skilled task runs its method through a skill or an agent (README_operations.md §1.2).
-    if t.get("status") == "S" and not any((idx.get(x) or {}).get("type") in SKILL_TOOL_TYPES
-                                          for x in t.get("tools") or []):
-        warnings.append(tr("warn.skilled_without_skill", where=where))
+    # A skilled task runs its method through a skill or an agent (README_operations.md §1.2); a
+    # project, a saved prompt or a conversation keeps the person in a chat: C (§1.21).
+    kinds = {x: (idx.get(x) or {}).get("type") for x in t.get("tools") or []}
+    if t.get("status") == "S" and not any(k in SKILL_TOOL_TYPES for k in kinds.values()):
+        chat = [x for x, k in kinds.items() if k in CHAT_TOOL_TYPES]
+        warnings.append(tr("warn.skilled_in_a_chat", where=where, tools=", ".join(chat))
+                        if chat else tr("warn.skilled_without_skill", where=where))
     if type_ids and t.get("state") == "active" and not t.get("type"):
         warnings.append(tr("warn.task_without_type", where=where))
     return errors, warnings
@@ -3978,6 +4007,8 @@ PROFILE_GRADES = (("F", 0, "common"), ("D", 4, "common"), ("C", 8, "uncommon"),
                   ("B", 12, "uncommon"), ("A", 16, "rare"), ("S", 20, "mythic"))
 PROFILE_MAX = 4 * len(PROFILE_AXES)
 SKILL_TOOL_TYPES = ("skill", "agent", "managed-agent", "routine")
+# What a person uses in an AI assistant without a skill: the task stays in a chat (§1.21).
+CHAT_TOOL_TYPES = ("project", "prompt", "conversation")
 
 
 def _cap(value):

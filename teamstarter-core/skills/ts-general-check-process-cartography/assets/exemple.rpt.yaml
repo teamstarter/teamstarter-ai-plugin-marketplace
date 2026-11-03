@@ -10,6 +10,9 @@
 # its `target` is an entry of the `blockers` list (ids local to the map, renumbered at the
 # merge), not a `blocker` text on the task: one problem, one entry, with every task it holds
 # back. BLK-6 was inferred from a Slack message and confirmed by the person; BLK-8 is resolved.
+# skill:tri-cv is a skill installed in Claude, which Claude follows by itself (RH-T1.4, S);
+# project:fiches-de-poste is a Claude project in which the person opens a conversation and
+# describes the position each time (RH-T1.1, C): a project is never a skill (format §6).
 format: rpt/v1
 
 meta:
@@ -59,10 +62,16 @@ tools:
     description: 'Logiciel de recrutement : offres et candidatures.'
 
   - id: skill:tri-cv
-    name: Prompt de tri de CV
+    name: Skill de tri de CV
     type: skill
     status: live
-    description: 'Prompt enregistré dans un projet Claude : compare un CV aux critères du poste.'
+    description: 'Skill installé dans Claude : compare un CV aux critères du poste et classe la candidature.'
+
+  - id: project:fiches-de-poste
+    name: Projet Claude des fiches de poste
+    type: project
+    status: live
+    description: 'Projet Claude : consignes et modèle de fiche ; on y décrit le besoin du manager à chaque poste.'
 
 data_sources:
   - id: data:candidatures
@@ -196,11 +205,13 @@ tasks:
     state: active
     input: besoin exprimé par le manager du poste
     output: fiche de poste prête à valider
-    tools: ['saas:claude']
+    tools: ['saas:claude', 'project:fiches-de-poste']
     data: ['data:documents']
     method: https://www.notion.so/exemple/modele-de-fiche-de-poste
     by: [Claude, Alex Martin]
     status: C
+    target: S
+    build: {size: S, kind: skill}
     frequency: 2 à 3 par trimestre
     measure: {minutes: 45, runs: 1, basis: declared}
     stakes: {level: 2, text: le recrutement prend du retard et le manager attend}
@@ -248,7 +259,7 @@ tasks:
     by: [Claude, Alex Martin]
     status: S
     target: A
-    build: {size: S, kind: skill}
+    build: {size: M, kind: agent}
     frequency: environ 40 par poste
     measure: {minutes: 5, runs: 30, basis: observed}
     stakes: {level: 2, text: un bon candidat attend et peut accepter une autre offre}

@@ -64,7 +64,7 @@ these ids.
 | Role | `<CODE>-R<n>` | `CSM-R2` |
 | Process | `<CODE>-P<n>` | `CSM-P3` |
 | Task | `<CODE>-T<n>.<m>`, n = number of the role that holds it | `CSM-T2.4` |
-| Tool | `<type>:<name>`, lower case, digits, `.`, `_`, `-`, no space or accent | `saas:hubspot`, `skill:compte-rendu-rdv` |
+| Tool | `<type>:<name>`, lower case, digits, `.`, `_`, `-`, no space or accent | `saas:hubspot`, `skill:tri-cv`, `project:compte-rendu-rdv` |
 | Data source | `data:<name>`, lower case, digits, `-` | `data:pipe-prospects`, `data:candidatures` |
 
 `<CODE>`: the code of the hat (list in `SKILL.md`, "One map per hat"); capitals and digits,
@@ -127,14 +127,14 @@ gap is not an error.
 | `name` | yes | Verb + object: "Write the reminder to an inactive admin". |
 | `role` | yes | Id of the role that holds it. |
 | `state` | yes | `active`, or `proposed` for a desired task that does not exist yet, or `retired`, in an update, for a task that is no longer done. |
-| `status` | yes | A, S, C, M or J: what happens **today** (S skilled: the AI runs a skill; C conversational: the AI only talks, in a chat or a bot). |
+| `status` | yes | A, S, C, M or J: what happens **today** (S skilled: the AI runs a skill; C conversational: the AI only talks, in a chat, a project, a saved prompt or a bot; §6). |
 | `input` | | What it takes. |
 | `output` | | What it produces (checkable). |
 | `job` | | What the task is for: `{when, so_that}`, read as « When <when>, I want to <name>, so that <so_that>. » `when`: the situation or the trigger that starts it; `so_that`: the result for someone, never the deliverable. Each part without its leading words. |
 | `tools` | | Ids of the tools used. |
 | `data` | | Ids of the data sources the task reads or writes (§6): `[data:pipe-prospects, data:emails]`. Expected for an M, C or S task; absent for a task that touches no business data. |
 | `okrs` | | At most two ids of key results of `catalogues/okrs.yaml` that the deliverable of the task moves directly: `[O1.3.KR1]` (`SKILL.md`, step 3, point 7). Absent for a task without a direct link, that is most of them. With `basis: {okrs: inferred}` or `declared`. |
-| `method` | | Where the method of the task is written: the URL of a procedure (Notion page, Drive document) the person can open, or the id of the skill or of the written rule that carries it (`skill:compte-rendu-rdv`). Only a link found in a source or given by the person, never guessed. |
+| `method` | | Where the method of the task is written: the URL of a procedure (Notion page, Drive document) the person can open, or the id of the skill, the project, the saved prompt or the written rule that carries it (`project:compte-rendu-rdv`). Only a link found in a source or given by the person, never guessed. |
 | `by` | | Who does it today: first and last name or role, "Claude", or a tool, by its name as declared ("HubSpot") or its id (`saas:hubspot`). Expected for M and J. |
 | `target` | | The status aimed at, when an automation is conceivable. |
 | `blocker` | | What is missing to reach `target`, as one text. Still read in an older map; a map writes its blockers in the `blockers` list (§11), and the script warns when a task still writes `blocker`. |
@@ -156,17 +156,33 @@ Declare in `tools` of the file each tool cited that is not in `catalogues/tools.
 ```yaml
 tools:
   - {id: "saas:hubspot", name: "HubSpot", type: saas, status: external, description: "CRM: deals, contacts, sequences."}
-  - {id: "skill:compte-rendu-rdv", name: "Meeting minutes prompt", type: skill, status: live, description: "Prompt saved in a Claude project."}
+  - {id: "project:compte-rendu-rdv", name: "Meeting minutes project", type: project, status: live, description: "Claude project with the minutes template; the notes are pasted in it after each meeting."}
 ```
 
 | Field | Required | Content |
 |---|---|---|
 | `id` | yes | `<type>:<name>`; the prefix is the `type`. |
 | `name` | yes | Readable name. |
-| `type` | yes | `skill` (skill or saved prompt of an AI assistant), `agent` (configured AI agent), `script`, `bot` (an automaton that reacts to an event: a Zap, a Make scenario, a Slack bot), `saas` (software or service), `reference` (procedure or written rule), `routine` (scheduled task), `ci`, `hook`, `command`. |
+| `type` | yes | `skill`, `project`, `prompt`, `conversation`, `agent`: the table below. `script`, `bot` (an automaton that reacts to an event: a Zap, a Make scenario, a Slack bot), `saas` (software or service), `reference` (procedure or written rule), `routine` (scheduled task or Routine), `ci`, `hook`, `command`. |
 | `status` | yes | `external` for software or a service of a vendor; `live` for what the team built and uses; `deprecated`, `removed`. |
 | `description` | | One sentence. |
 | `shared` | | For a `bot` that people talk to in the team's chat tool and whose AI reads the company's data (a shared assistant): `{channel: slack, audience: all, reaches: os, state: works, checked: '2026-10-20', basis: declared, evidence: …}`. `audience` is `all` or a list of team codes; `reaches: os` when its AI reads the OS; `state` `works`, `not_found` or `unchecked`. The people of its audience count as reaching the OS (README_operations.md §1.18). |
+
+**What a skill is.** A skill is one precise object: a folder with a `SKILL.md` file that the
+assistant loads by itself when a request matches its description, in any conversation. What the
+person opens, fills and follows in a conversation is something else, even when its instructions
+are long. Name each object by its type:
+
+| `type` | What it is | How to tell | Status of the task it carries |
+|---|---|---|---|
+| `skill` | A skill (Agent Skills format), installed for the person, for the organization or in a plugin | In the assistant's list of skills (claude.ai: `/mnt/skills/`; Claude Code: `.claude/skills/`, `~/.claude/skills/`, a plugin); the person asks, the assistant follows it without being given instructions | S when the AI produces and the person validates |
+| `project` | A Claude project, a ChatGPT project or custom GPT, a Gemini Gem, a Copilot or Le Chat agent that only converses: instructions and files in which the person opens conversations | A name in the sidebar or the list of GPTs; the person opens it and pastes or describes the input | C, with `method: project:<name>`, `target: S`, `build: {size: S, kind: skill}` |
+| `prompt` | A saved prompt, kept outside the assistant (document, note, prompt library) | The person copies and pastes it at each run | C, with `method: prompt:<name>` |
+| `conversation` | A conversation (discussion) the person reopens or duplicates for a recurring task | A title in the history; no written instructions | C |
+| `agent` | An AI agent that acts with tools by itself and chains the steps (Claude Code subagent, AI agent in n8n, Make or Zapier, Claude Agent SDK, Copilot Studio agent with actions) | It goes to the end without a person between its steps | S or A |
+
+The id carries the type: `project:synthese-rdv`, never `skill:synthese-rdv` for a Claude project.
+A shared assistant of the team's chat tool is a `bot` (field `shared` above).
 
 Declare in `data_sources` each data source cited that is not in `catalogues/data-sources.yaml` (without it, `references/data-sources.yaml`),
 and declare again, complete, a source of the catalogue when what you observed differs from it
@@ -225,7 +241,7 @@ data_sources:
 | `blockers.basis` | one value: `observed`, `declared` or `inferred` (below) |
 | `blockers.opened`, `blockers.resolved` | a date `YYYY-MM-DD`, between quotes in the example (`'2026-10-08'`) |
 | `build.size` | `S` (less than a day); `M` (a few days); `L` (more than a week) |
-| `build.kind` | `prompt` (a saved prompt); `skill`; `agent` (does it alone); `workflow` (Zapier, Make, n8n); `script`; `feature` (a feature to develop); `connector` (a connector to activate or configure) |
+| `build.kind` | `prompt` (a saved prompt); `skill` (also to turn a project or a prompt into a skill); `agent` (does it alone); `workflow` (Zapier, Make, n8n); `script`; `feature` (a feature to develop); `connector` (a connector to activate or configure) |
 | `data_sources.tools.connector` | `native` (connector of Claude's directory, enabled for the organization: native MCP); `mcp` (MCP server the company added, custom connector); `api` (a skill or a script calls the tool's API); `export` (someone exports or copies the data for the AI); `none` (the AI has no access to it); `null` (to be specified) |
 | `departments` | the 14 ids of `catalogues/departments.yaml` (without it, `references/departments.yaml`) |
 | `sensitivity` | `public` (already published or meant to be); `personal` (what identifies a person: name, e-mail, phone, behaviour); `client` (data and documents of a client); `hr` (headcount, arrivals and departures, organization, positions); `internal_confidential` (non-public finances, strategy, intellectual property, code included); `regulated` (sensitive personal data: health, opinions, biometrics; individual files and named salaries; trade secrets; regulatory or contractual obligation); `credentials` (logins, passwords, API keys); `[]` for internal data only |
@@ -316,6 +332,8 @@ are quoted here in English, the same message in every language. An error line st
 | `id already used in …` | Two elements have the same id. | Renumber one of them. |
 | `` `x` points to X, which is not in the referential `` | `role`, `steps` or `routing.to` cites an id that does not exist. | Create the element, or correct the id; for a person, write free text ("the sales management"). |
 | `` unknown tool `x` `` | The tool is declared neither in the file nor in `catalogues/tools.yaml`. | Declare it in `tools` (§6). |
+| `` warning … type `skill`, but it says « projet Claude » `` (or « custom GPT », « Gem », « prompt enregistré », « conversation Claude »…) | A project, a saved prompt or a conversation declared as a skill. | The type of §6 (`project`, `prompt`, `conversation`), in `type` and in the id, and the id rewritten everywhere it is cited; then the status of its tasks (next row). |
+| `` warning … status S (skilled), but its only AI tools are projects, saved prompts or conversations (project:x) `` | The only AI tool of an S task is a project, a saved prompt or a conversation. | `status: C`, `method: project:x`, `target: S`, `build: {size: S, kind: skill}` (§6, "What a skill is"); S only if a skill or an agent also carries it. |
 | `` `data` points to data:x, which is not in the referential `` | The data source is declared neither in `data_sources` nor in `catalogues/data-sources.yaml` (or `references/data-sources.yaml`). | Declare it in `data_sources` (§6), or take the id of the catalogue. |
 | `` `tools.connector (saas:x)` = …, expected […] `` | An AI access outside the list. | A value of §7, `null` if you do not know. |
 | `` tool `x` cited twice `` | The same tool appears twice in a data source. | One line per tool; join the two `where`. |
