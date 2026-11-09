@@ -1,8 +1,8 @@
 ---
 name: ts-general-rpt-setup
-description: "Set up the RPT referential (roles, processes, tasks) in an organization: run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, how many people should send a map, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
+description: "Set up the RPT referential (roles, processes, tasks) in an organization: start with its explorer's artifact, shared in edit mode with Teamstarter, then run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, how many people should send a map, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.14 (2026-11-02)"
+  version: "1.15 (2026-11-09)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -22,10 +22,12 @@ These skills contain nothing specific to an organization. They read a single fil
 `rpt-config.yaml`, placed at the root of the organization's OS folder: its name, its language,
 where the referential lives, where maps arrive, its teams, who is responsible for what, what is
 never sent, and the text to paste into Claude's instructions. This skill writes that file with the
-person who sets RPT up. Count 15 minutes.
+person who sets RPT up. Count 15 minutes. It starts with the explorer: the page that will
+show the referential is an artifact of the organization's own Claude account, which Teamstarter
+fills (step 0).
 
-You read no source without approval, you create no folder or file without approval, and the
-person sees the whole file before it is put in place.
+You read no source without approval, you create no artifact, folder or file without approval, and
+the person sees the whole file before it is put in place.
 
 ## Skill files
 
@@ -43,6 +45,45 @@ Every question goes through the question tool when you have it: at most four que
 closed answers, the recommended answer first with "(Recommended)" in the person's language, and
 the person can always write something else. Without this tool, ask the questions as a numbered
 list. Do not ask again a question that a previous message already answers.
+
+## Step 0 — The explorer: an artifact shared with Teamstarter
+
+The setup starts here, before the interview (Vincent, 2026-11-09). The explorer is the page that
+will show the organization's referential: its roles, processes and tasks, the priorities, the
+action plan. It is an artifact of the organization's own Claude account: the organization creates
+it and shares it in edit mode with Teamstarter's address, `vincent@teamstarter.co`. Teamstarter
+publishes the explorer in it from its Claude session: a setup page first, then the referential
+after each merge of the maps. The organization shares it with the people who need to read it;
+Teamstarter shares it with nobody. Why: the explorer stays in the organization's account,
+Teamstarter reaches it only through a sharing the organization grants, and the organization can
+withdraw that sharing at any time.
+
+Ask, with the question tool: "Does <organization> already have the artifact of its explorer,
+shared with Teamstarter?", answers "Not yet: let's create it (Recommended)" and "Yes: I paste its
+link". With a link, check that it starts with `https://claude.ai/`, keep it for
+`referential.explorer` (step 5) and go to step 1. Otherwise:
+
+1. **Create the artifact.** Ask the organization's name (the first question of step 1, which then
+   does not ask it again). The answer "let's create it" is the approval: create an artifact
+   titled « AI mapping <Organization> » (« Cartographie IA <Organisation> » in French, the title
+   of the explorer), holding one sentence in the person's language, such as "Teamstarter
+   publishes the AI mapping of <Organization> here." Nothing else: no data of the organization.
+   When you cannot create an artifact here, the person does it in claude.ai: « Create an empty
+   artifact titled AI mapping <Organization> ».
+2. **Share it in edit mode.** The person opens the artifact's share menu and gives edit access to
+   `vincent@teamstarter.co`, and to nobody else for now.
+3. **Send its link.** The person pastes the artifact's link here: it goes in
+   `referential.explorer` at step 5. They also send it to `vincent@teamstarter.co` by e-mail: an
+   artifact shared from another organization does not always appear in the list of the person it
+   is shared with, and Teamstarter needs the link to publish in it.
+
+Then say, in two lines: Teamstarter publishes the explorer in this artifact, first a setup page
+that lists the next steps, then the referential after each merge; <Organization> shares it with
+the people who need to read it (the teams that map, their managers), and can withdraw
+Teamstarter's access from the same menu.
+
+If the sharing is refused or the person wants to do it later, go on: `explorer` stays `null`,
+and step 8 reminds it first. If the organization sets RPT up without Teamstarter, skip this step.
 
 ## Step 1 — The organization and the person
 
@@ -93,8 +134,8 @@ Then ask for:
   maps there are readable by these people: say so.
 
 If the organization has a code repository where it keeps its documents, `repository` and
-`repository_path` say so; otherwise `null`. `explorer` stays `null` as long as no explorer is
-published.
+`repository_path` say so; otherwise `null`. `explorer` is the link of the artifact of step 0
+(`null` if the step was skipped or left for later).
 
 ## Step 3 — The teams
 
@@ -173,8 +214,8 @@ person it was not checked by the script.
 ## Step 6 — Show, then put in place
 
 Show the file **in full**, in an artifact if there is one, otherwise in a code block. Say what it
-contains in four lines: the folders, the teams with their headcount, how many people should send a
-map (or "not given"), who merges. Then ask with the question tool
+contains in five lines: the explorer's artifact (or "to create"), the folders, the teams with their
+headcount, how many people should send a map (or "not given"), who merges. Then ask with the question tool
 "Shall I put it in place as is?", answers "Put in place as is" and "Change something". An approval
 given before this display does not count.
 
@@ -232,21 +273,25 @@ client name, no person, no figure.
 
 Tell the person, in this order:
 
-1. Install the RPT skills in Claude (Settings, Capabilities, Skills), for the whole
+1. The explorer: Teamstarter publishes it in the artifact of step 0, first as a setup page that
+   lists these steps; <Organization> shares it with the people who need it. If step 0 was left
+   for later, propose it now: no other step waits for it, but Teamstarter can publish the
+   explorer only there.
+2. Install the RPT skills in Claude (Settings, Capabilities, Skills), for the whole
    organization if the plan allows it: the same `.skill` files as every organization, given by
    the person who gave them this skill. They carry no value of any organization.
-2. Paste the `global_context` text into the organization's instructions (or into their profile
+3. Paste the `global_context` text into the organization's instructions (or into their profile
    preferences): its `Config RPT` line is how the skills find `rpt-config.yaml`.
-3. Have a first team mapped: in Claude, ask "map my roles and my processes" (« fais la carte de
+4. Have a first team mapped: in Claude, ask "map my roles and my processes" (« fais la carte de
    mes rôles et de mes process »). Nothing else is needed: no OS, no referential, no catalogue.
    The map arrives in the intake folder; the person who maintains the referential merges it,
    which creates the referential.
-4. To know where the organization's data is (which tool, which folder, how fresh, who keeps
+5. To know where the organization's data is (which tool, which folder, how fresh, who keeps
    it), have the people who reach the shared tools run the skill `ts-general-data-crawl` ("map
    where our data is", « cartographie nos données »): it describes the places of their Drive,
    Notion, HubSpot, Slack, Gmail, Linear and Jira without reading any content, and drops the
    data map in the same intake folder.
-5. So that what people produce with Claude ends up in the OS and in the right Drive folder, install
+6. So that what people produce with Claude ends up in the OS and in the right Drive folder, install
    the skill `ts-general-os-place` with the others: the `global_context` text proposes it at the
    end of a conversation that produced a content, and `privacy.not_filed` lists what it never
    stores nor describes (payroll, HR files, capital).
@@ -263,3 +308,5 @@ line, then the organization's instructions.
   sentence, its tools, and, at step 7, the questions it asks itself.
 - It creates or moves nothing without approval, and keeps no personal data other than the first
   and last name of the people named in the file.
+- It does not publish the explorer: Teamstarter does, in the artifact of step 0, and only the
+  organization shares it with its people.
