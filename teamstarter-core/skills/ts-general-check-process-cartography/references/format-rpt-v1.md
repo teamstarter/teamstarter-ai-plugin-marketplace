@@ -133,6 +133,7 @@ gap is not an error.
 | `job` | | What the task is for: `{when, so_that}`, read as « When <when>, I want to <name>, so that <so_that>. » `when`: the situation or the trigger that starts it; `so_that`: the result for someone, never the deliverable. Each part without its leading words. |
 | `tools` | | Ids of the tools used. |
 | `data` | | Ids of the data sources the task reads or writes (§6): `[data:pipe-prospects, data:emails]`. Expected for an M, C or S task; absent for a task that touches no business data. |
+| `crud` | | What the task does with each of its data sources: `{'data:pipe-prospects': RU}`, letters among `C` (create; sending a message counts as creating it), `R` (read), `U` (update), `D` (delete), each once. A key is a source of `data`. Expected for each source of an M, C or S task in a tool the AI reaches (`connector` `native`, `mcp` or `api`): the referential compares it with what the connector allows (§6) and says which right is missing, reading or writing. |
 | `okrs` | | At most two ids of key results of `catalogues/okrs.yaml` that the deliverable of the task moves directly: `[O1.3.KR1]` (`SKILL.md`, step 3, point 7). Absent for a task without a direct link, that is most of them. With `basis: {okrs: inferred}` or `declared`. |
 | `method` | | Where the method of the task is written: the URL of a procedure (Notion page, Drive document) the person can open, or the id of the skill, the project, the saved prompt or the written rule that carries it (`project:compte-rendu-rdv`). Only a link found in a source or given by the person, never guessed. |
 | `by` | | Who does it today: first and last name or role, "Claude", or a tool, by its name as declared ("HubSpot") or its id (`saas:hubspot`). Expected for M and J. |
@@ -202,6 +203,7 @@ data_sources:
       - tool: saas:gmail
         where: candidatures spontanées reçues par e-mail
         connector: native
+        crud: {enabled: R, available: C}
     basis: {sensitivity: declared}
     sources: [réponses du 2026-09-24]
 ```
@@ -215,7 +217,16 @@ data_sources:
 | `name` | yes | The type of business data, in a few words: "Pipeline and prospects", "Applications". |
 | `description` | | One sentence: what this data contains. |
 | `sensitivity` | | What this data contains, among the categories of §7: `[personal, client]`; `[]` for internal working data only. The AI policy rule of each category is in `catalogues/ai-policy.yaml`. |
-| `tools` | | The tools where this data is found, the reference tool first; for each, `tool` (tool id, declared or present in `catalogues/tools.yaml`), `where` (where in the tool: "client records"), `connector` (how the AI reaches it, §7) and `notes`. |
+| `tools` | | The tools where this data is found, the reference tool first; for each, `tool` (tool id, declared or present in `catalogues/tools.yaml`), `where` (where in the tool: "client records"), `connector` (how the AI reaches it, §7), `crud` (what the connector lets the AI do on this data, below) and `notes`. |
+
+`crud` of a tool of a data source sorts the letters `C R U D` into three states: `enabled` (the
+AI does it today), `available` (the connector offers it, nobody has enabled it: an administrator
+does it in the connector's settings), `unavailable` (the connector does not offer it: another
+connector, the API or a skill would be needed). A letter is in one state at most; a letter in
+none is "to be checked". Write only what you saw: the actions of the connector present in your
+list of tools (a tool that reads deals and one that updates them), its settings, or what the
+person says. `enabled` only with `connector` `native`, `mcp` or `api`; for a tool the AI does
+not reach, what the connector would offer goes in `available` or `unavailable`.
 | `basis`, `notes`, `sources` | | As for a role. |
 
 ## 7. Allowed values
@@ -237,6 +248,8 @@ data_sources:
 | `blocker_type` | `connector` (the AI does not reach the data); `method` (the method is not written); `tool` (a skill, an agent or a script to build); `decision` (someone must decide or validate); `data` (data missing or of poor quality); `licence`; `other` |
 | `blockers.type` | the values of `blocker_type`, and `access` (a person or the AI lacks a right), `security` (a security or compliance rule), `budget`, `organization` (nobody in charge, priorities), `provider` (a vendor or a provider does not deliver) |
 | `blockers.state` | `open` (nothing moves); `in_progress` (someone works on it); `resolved` (lifted); `dropped` (given up) |
+| `crud` (task), `data_sources.tools.crud.*`, `blockers.crud` | letters among `C` (create; sending counts as creating), `R` (read), `U` (update), `D` (delete), each once, in any order: `RU`, `CRU` |
+| `data_sources.tools.crud` keys | `enabled` (the AI does it); `available` (offered by the connector, not enabled); `unavailable` (not offered by the connector) |
 | `blockers.source` | `map` (said during the mapping); `slack`; `email`; `ticket`; `meeting`; `other`. (`observation` and `merge` are written by the referential, not by a map.) |
 | `blockers.basis` | one value: `observed`, `declared` or `inferred` (below) |
 | `blockers.opened`, `blockers.resolved` | a date `YYYY-MM-DD`, between quotes in the example (`'2026-10-08'`) |
@@ -337,6 +350,13 @@ are quoted here in English, the same message in every language. An error line st
 | `` `data` points to data:x, which is not in the referential `` | The data source is declared neither in `data_sources` nor in `catalogues/data-sources.yaml` (or `references/data-sources.yaml`). | Declare it in `data_sources` (§6), or take the id of the catalogue. |
 | `` `tools.connector (saas:x)` = …, expected […] `` | An AI access outside the list. | A value of §7, `null` if you do not know. |
 | `` tool `x` cited twice `` | The same tool appears twice in a data source. | One line per tool; join the two `where`. |
+| `` crud.data:x = …: expected letters among C R U D `` (or `` tools.crud.enabled (x) = … ``) | A word, a lower-case letter or a letter twice. | Letters of §7: `RU`, not `read, update` nor `ru`. |
+| `` `crud` of x is a mapping {enabled, available, unavailable} `` | A tool's `crud` written as letters (`crud: RU`) or with another key. | `crud: {enabled: R, available: U}` (§6). |
+| `` `X` of x is both enabled and available `` | The same letter in two states of a tool. | Keep the state you observed. |
+| `` x has `crud.enabled` while the AI does not reach it `` | `enabled` on a tool whose `connector` is `export`, `none` or `null`. | The connector is reached (`native`, `mcp`, `api`), or the letters go to `available`. |
+| `` `crud` names data:x, which the task does not cite in `data` `` | A key of the task's `crud` is not one of its data sources. | Add the source to `data`, or remove the key. |
+| `` `crud` says the operations the AI lacks in a tool: name it in `tool` `` | A blocker has `crud` without `tool`. | The tool where the AI lacks them (§11). |
+| `` warning … M, C or S task(s) do not say what they do with data the AI reaches (`crud`) `` | A task cites data in a tool the AI reaches, without its operations. | `crud` on the task, one entry per source of `data` (§5). |
 | `` warning … M, C or S task(s) without `data` `` | A manual, conversational or skilled task does not say which data it reads or writes. | Write its data sources (`SKILL.md`, step 3, point 6). |
 | `` unknown KR `O…KRn` (okrs.yaml) `` | `okrs` cites a key result absent from `catalogues/okrs.yaml`. | Take the id of a KR of the file, or remove the link. |
 | `` `okrs` = …, expected a KR id (`O1.2.KR1`) `` | `okrs` cites an objective (`O1.3`) or a text. | The id of a KR: `O1.3.KR1`. |
@@ -423,6 +443,7 @@ blockers:
 | `resolved` | if `resolved` or `dropped` | The date it was lifted or dropped. Required for these two states, forbidden for the others. |
 | `resolution` | | What lifted it ("connector enabled", "criteria written") or why it was dropped. Expected when `resolved` is written. |
 | `owner` | | The id of the role of the file that can lift it. A person or a team outside the map goes in `notes`, as a role. |
+| `tool`, `crud` | | For a blocker about what the AI cannot do in a tool (`type: connector` or `access`): the tool (`saas:hubspot`) and the operations it lacks there (`U`). « The AI reads HubSpot but cannot update the deals » is `tool: saas:hubspot`, `crud: U`; « the AI does not reach HubSpot » is `crud: R`. Reading and writing are two blockers: they are lifted by different people (§7, `crud`). |
 | `source` | | Where it was found (§7, `blockers.source`). |
 | `basis` | | How the problem is known: `inferred` when you deduced it from a source (a Slack message, an e-mail, a ticket, a meeting note) and the person confirmed it; `declared` when the person raised it. `observed` is accepted, for a blocker a tool reports by itself; a map writes `inferred` or `declared`. One value, not a mapping. |
 | `evidence` | | Where and when it was seen, 300 characters at most, without personal content: "Slack #csm, 2026-10-08", "ticket DP-6301", "e-mail, 2026-09-30", "team meeting of 2026-10-02". Expected for a blocker whose `source` is `slack`, `email`, `ticket` or `meeting`, or whose `basis` is `inferred`. |

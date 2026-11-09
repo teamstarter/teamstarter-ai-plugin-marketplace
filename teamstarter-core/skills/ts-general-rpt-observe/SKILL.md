@@ -2,7 +2,7 @@
 name: ts-general-rpt-observe
 description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed (the agent's own entry included), when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
 metadata:
-  version: "1.15 (2026-11-03)"
+  version: "1.16 (2026-11-09)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-observe; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -130,7 +130,10 @@ session showed it differently from the entry. The most frequent cases:
 - the duration of the work (`measure`), when the entry has none;
 - a skill, a project, an agent or a software used (`tools`), with its type: a Claude project, a
   custom GPT or a Gem is a `project`, not a `skill` (README_operations.md §1.21); a data source
-  read (`data`), and the AI's access to that source (the connector worked, or was missing);
+  read (`data`), what the task did with it (`crud`: created, read, updated, deleted), and the
+  AI's access to that source: the connector worked, was missing, or reached the tool without the
+  right the task needed (reading worked, updating was refused: `crud` of the source's tool, and
+  a blocker with `tool` and `crud` when it holds the task back);
 - the link to the method followed or written (`method`);
 - where the deliverable was stored (`output_files`), where the files the task read were
   (`input_files`) and the template it started from (`templates`): the skill

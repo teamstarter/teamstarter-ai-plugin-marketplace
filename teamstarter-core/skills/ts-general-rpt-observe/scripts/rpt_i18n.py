@@ -113,6 +113,20 @@ LABELS = {
         "send": {"en": "send", "fr": "envoyer"},
         "run": {"en": "run", "fr": "lancer"},
         "other": {"en": "other", "fr": "autre"}},
+    # The operations on a type of data and their state for the AI (README_operations.md §1.7,
+    # `crud`).
+    "crud": {
+        "C": {"en": "create", "fr": "créer"},
+        "R": {"en": "read", "fr": "lire"},
+        "U": {"en": "update", "fr": "modifier"},
+        "D": {"en": "delete", "fr": "supprimer"}},
+    "crud_state": {
+        "enabled": {"en": "enabled", "fr": "activé"},
+        "available": {"en": "offered by the connector, not enabled",
+                      "fr": "proposé par le connecteur, pas activé"},
+        "unavailable": {"en": "not offered by the connector", "fr": "absent du connecteur"},
+        "unknown": {"en": "right to be checked", "fr": "droit à vérifier"},
+        "not_connected": {"en": "tool not reached", "fr": "outil non atteint"}},
     "right_state": {
         "enabled": {"en": "enabled", "fr": "activé"},
         "available": {"en": "offered, not enabled", "fr": "proposé, pas activé"},
@@ -481,6 +495,35 @@ MESSAGES = {
     "check.source_tool_missing": {
         "en": "{where}: an element of `tools` has no `tool`",
         "fr": "{where}: un élément de `tools` n'a pas de `tool`"},
+    "check.crud_tool_shape": {
+        "en": "{where}: `crud` of {tool} is a mapping {{enabled, available, unavailable}} of "
+              "letters among C R U D (README_operations.md §1.7)",
+        "fr": "{where}: `crud` de {tool} est un dictionnaire {{enabled, available, unavailable}} "
+              "de lettres parmi C R U D (README_operations.md §1.7)"},
+    "check.crud_letters": {
+        "en": "{where} = {value}: expected letters among C R U D (create, read, update, delete), "
+              "each once",
+        "fr": "{where} = {value} : attendu des lettres parmi C R U D (créer, lire, modifier, "
+              "supprimer), chacune une fois"},
+    "check.crud_letter_twice": {
+        "en": "{where}: `{letter}` of {tool} is both {first} and {second}",
+        "fr": "{where}: `{letter}` de {tool} est à la fois {first} et {second}"},
+    "check.crud_enabled_unreached": {
+        "en": "{where}: {tool} has `crud.enabled` while the AI does not reach it (connector "
+              "{connector}): what the connector would offer goes in `available`",
+        "fr": "{where}: {tool} a `crud.enabled` alors que l'IA ne l'atteint pas (connecteur "
+              "{connector}) : ce que le connecteur proposerait va dans `available`"},
+    "check.crud_task_shape": {
+        "en": "{where}: `crud` is a mapping {{<data source>: <letters among C R U D>}}",
+        "fr": "{where}: `crud` est un dictionnaire {{<source de données>: <lettres parmi C R U "
+              "D>}}"},
+    "check.crud_not_in_data": {
+        "en": "{where}: `crud` names {data}, which the task does not cite in `data`",
+        "fr": "{where}: `crud` nomme {data}, que la tâche ne cite pas dans `data`"},
+    "check.crud_blocker_tool": {
+        "en": "{where}: `crud` says the operations the AI lacks in a tool: name it in `tool`",
+        "fr": "{where}: `crud` dit les opérations qui manquent à l'IA dans un outil : le nommer "
+              "dans `tool`"},
     "check.tool_unknown": {
         "en": "{where}: unknown tool `{tool}`",
         "fr": "{where}: outil inconnu `{tool}`"},
@@ -722,6 +765,18 @@ MESSAGES = {
         "en": "{where}: same problem as {other}: one blocker, several tasks in its `tasks`",
         "fr": "{where}: même problème que {other} : un seul bloqueur, plusieurs tâches dans "
               "son `tasks`"},
+    "warn.blocker_alike": {
+        "en": "{where}: probably the same problem as {other} in other words: merge them "
+              "(rpt_blockers.py --write), or keep both with --keep",
+        "fr": "{where}: sans doute le même problème que {other}, dit autrement : les fusionner "
+              "(rpt_blockers.py --write), ou garder les deux avec --keep"},
+    "warn.blocker_access_enabled": {
+        "en": "{where}: the AI lacks {crud} in {tool}, but data-sources.yaml says these "
+              "operations are enabled for the data of its tasks: blocker lifted, or catalogue "
+              "to correct?",
+        "fr": "{where}: il manquerait {crud} à l'IA dans {tool}, mais data-sources.yaml dit ces "
+              "opérations activées pour les données de ses tâches : bloqueur levé, ou catalogue "
+              "à corriger ?"},
     "warn.blocker_no_resolution": {
         "en": "{where}: closed without `resolution`: say what lifted it, or why it is dropped",
         "fr": "{where}: clos sans `resolution` : dire ce qui l'a levé, ou pourquoi il est "
@@ -1392,8 +1447,9 @@ MESSAGES = {
         "en": "{where}: new task without `{key}`",
         "fr": "{where}: tâche nouvelle sans `{key}`"},
     "obs.connector_field": {
-        "en": "{where}: a change on a data source has `field: connector`",
-        "fr": "{where}: un changement sur une source de données a `field: connector`"},
+        "en": "{where}: a change on a data source has `field: connector` or `field: crud`",
+        "fr": "{where}: un changement sur une source de données a `field: connector` ou "
+              "`field: crud`"},
     "obs.tool_expected": {
         "en": "{where}: `tool` expected: the tool where the AI reaches the data",
         "fr": "{where}: `tool` attendu : l'outil où l'IA atteint la donnée"},
@@ -1530,8 +1586,29 @@ MESSAGES = {
               "encore (pas connecté, export à la main, accès à préciser), par nombre de tâches\n"
               "manuelles, conversationnelles ou skillisées, puis par gain estimé."},
     "md.connectors_header": {
-        "en": "| Tool | AI access | Data | M, C or S tasks | Active tasks | Estimated gain |",
-        "fr": "| Outil | Accès de l'IA | Données | Tâches M, C ou S | Tâches actives | Gain estimé |"},
+        "en": "| Tool | AI access | Data | Operations of the tasks | M, C or S tasks | Active tasks "
+              "| Estimated gain |",
+        "fr": "| Outil | Accès de l'IA | Données | Opérations des tâches | Tâches M, C ou S | "
+              "Tâches actives | Gain estimé |"},
+    "md.crud_unsaid": {"en": "to be specified", "fr": "à préciser"},
+    "md.access_title": {
+        "en": "### Rights to enable on the tools the AI reaches",
+        "fr": "### Droits à activer sur les outils que l'IA atteint"},
+    "md.access_intro": {
+        "en": "Operations (create, read, update, delete) that active tasks do on their data and\n"
+              "that the AI may not do yet in a tool it reaches: offered by the connector but not\n"
+              "enabled (an administrator enables them), to be checked, or not offered (another\n"
+              "connector, the API or a skill) (README_operations.md §1.7).",
+        "fr": "Opérations (créer, lire, modifier, supprimer) que des tâches actives font sur leurs\n"
+              "données et que l'IA ne peut pas encore faire dans un outil qu'elle atteint :\n"
+              "proposées par le connecteur mais pas activées (un administrateur les active), à\n"
+              "vérifier, ou absentes du connecteur (un autre connecteur, l'API ou un skill)\n"
+              "(README_operations.md §1.7)."},
+    "md.access_header": {
+        "en": "| Tool | Missing operations | State | Data | M, C or S tasks | Active tasks | "
+              "Estimated gain |",
+        "fr": "| Outil | Opérations manquantes | État | Données | Tâches M, C ou S | Tâches actives "
+              "| Gain estimé |"},
     "md.gain": {
         "en": "≈ {hours} h/month ({count} estimated task(s))",
         "fr": "≈ {hours} h/mois ({count} tâche(s) estimée(s))"},
