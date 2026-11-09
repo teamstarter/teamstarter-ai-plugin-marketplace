@@ -17,7 +17,7 @@ referential:
   repository_path: null
   tools_path: null
   index: index-taches.json
-  explorer: null
+  explorer: https://claude.ai/artifact/AcmeExplorerExampleId
   archive_drive_folder: Acme/OS/documents-processed/Operations/
 
 intake:

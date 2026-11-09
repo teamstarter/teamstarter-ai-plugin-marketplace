@@ -29,6 +29,10 @@ referential:
   repository_path: null
   tools_path: null
   index: index-taches.json
+  # The link of the explorer: an artifact of the organization's own Claude account, created at
+  # the start of the setup and shared in edit mode with Teamstarter, which publishes the
+  # explorer in it (README_operations.md §3.3, « Deploying RPT in another organization »).
+  # null until it exists.
   explorer: null
   archive_drive_folder: <Organization>/OS/documents-processed/Operations/
 
