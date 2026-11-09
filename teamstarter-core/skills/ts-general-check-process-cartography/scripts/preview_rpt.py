@@ -257,6 +257,14 @@ LABELS = {
     "data": {"en": "data", "fr": "données"},
     "tool": {"en": "tool", "fr": "outil"},
     "connector": {"en": "AI access", "fr": "accès de l'IA"},
+    # Operations on the data (references/format-rpt-v1.md §5 and §6): on a task, what it does with
+    # each data source; on a tool of a data source, what the connector lets the AI do.
+    "crud": {"en": "operations (C create, R read, U update, D delete)",
+             "fr": "opérations (C créer, R lire, U modifier, D supprimer)"},
+    "enabled": {"en": "enabled", "fr": "activées"},
+    "available": {"en": "offered by the connector, not enabled",
+                  "fr": "proposées par le connecteur, pas activées"},
+    "unavailable": {"en": "not offered by the connector", "fr": "absentes du connecteur"},
     "sensitivity": {"en": "sensitivity", "fr": "sensibilité"},
     "handoffs": {"en": "handoffs", "fr": "passages de main"},
     "via": {"en": "through", "fr": "par"},

@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.23 (2026-11-03)"
+  version: "2.24 (2026-11-09)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -450,6 +450,22 @@ data of the largest number of manual, conversational or skilled tasks. The organ
 `catalogues/data-sources.yaml`. The first tool of a source is its reference tool: a task that
 cites a source without citing any of its tools in `tools` counts for it.
 
+**Operations on the data (`crud`).** A connector can reach a tool and still not let the AI do
+what the task needs: Claude reads the deals in HubSpot, but cannot update their stage. So the
+map says it in four letters, C create (sending a message is creating it), R read, U update,
+D delete:
+
+- on the task, what it does with each of its data sources: `crud: {'data:pipe': RU}`;
+- on a tool of a data source, what the connector lets the AI do there, sorted into three
+  states: `crud: {enabled: R, available: U, unavailable: D}`. `enabled`: the AI does it today;
+  `available`: the connector offers it, nobody has enabled it (an administrator does it in the
+  connector's settings); `unavailable`: the connector does not offer it (another connector, the
+  API or a skill would be needed). A letter in no state is "to be checked".
+
+The referential compares the two and lists, tool by tool, the rights to enable: « HubSpot:
+update, offered by the connector and not enabled, 7 tasks ». A blocker about the AI's access
+names the tool and the missing letters (`tool`, `crud`, section "Blockers").
+
 **Data sensitivity.** Each data source says what it contains (`sensitivity`): `public`,
 `personal` (what identifies a person), `client` (data and documents of a client), `hr`
 (headcount, arrivals and departures, positions), `internal_confidential` (non-public finances,
@@ -562,6 +578,10 @@ that it was found in a source. A blocker the person raises themselves is `basis:
   priorities), `provider` (a vendor or a provider), `other`.
 - `owner`: the id of the role of the map that can lift it, when there is one; a person or a team
   outside the map goes into `notes`, as a role ("the IT administrator").
+- A blocker about what the AI cannot do in a tool (`type: connector` or `access`) names the tool
+  and the missing operations: `tool: saas:hubspot`, `crud: U` for « the AI reads HubSpot but
+  cannot update the deals », `crud: R` for « the AI does not reach HubSpot ». Reading and
+  writing are two blockers, even on the same tool: they are not lifted by the same person.
 - Ids are local to the map: `BLK-1`, `BLK-2`…; the merge renumbers them in the register.
 - Write blockers in the list, never as a `blocker` text on the task. A starting map that still
   has `blocker` and `blocker_type` on its tasks remains readable: in the update, move each text
@@ -801,6 +821,16 @@ In quick mode, skip this step and start from the answers of step 1, typical week
    again in `data_sources`, complete, with what you observed: the merge updates the catalogue. A
    task that touches no business data (running a workshop, negotiating) has no `data`. A source
    you declare carries its sensitivity (`sensitivity`, section "The model").
+   Then the operations (`crud`, section "The model"). On each task, what it does with each
+   source of `data`, from its input and its output: reading the minutes is R, filling the deal
+   in the CRM is U, sending the follow-up e-mail is C. On each tool the AI reaches, what its
+   connector lets the AI do, from the tools of this connector in your list: a tool that reads or
+   searches gives R `enabled`, one that creates, sends, updates or deletes gives C, U or D
+   `enabled`; an operation the connector's documentation or settings show but your list lacks is
+   `available`, one it does not offer is `unavailable`. Write only what you saw: a letter you
+   could not check stays out of the three lists, and the question goes to step 4 when an M, C or
+   S task needs it. For an update, a connector whose actions changed since the starting map
+   (writing enabled) is written again with its new `crud`.
 7. **Link each task to the key results it serves** (`okrs`), when the organization has
    `catalogues/okrs.yaml`; without it, no task has `okrs` and step 4 asks no question about them.
    This catalogue gives the organization's objectives and their key results (KR), each with what
@@ -859,7 +889,10 @@ proposing a task. The answers offered, and what each one writes:
 
 The questions that follow are, in order of importance: a missing role, a process whose order is doubtful, an
 uncertain status or relevance, an unknown human fallback, a frequency or a duration, a tool for
-which you do not know whether the AI reaches it (a single question for all these tools). The
+which you do not know whether the AI reaches it (a single question for all these tools), and,
+for a tool it reaches, the operations its connector allows when an M, C or S task needs one you
+could not check (a single question: a table of the tools with the operations the tasks need, and
+the tool asks which are enabled, offered but not enabled, or absent). The
 relevance axes you could not estimate make a single question: your message shows a table of the
 tasks concerned, with the missing axis and your estimate when you have one, and the tool asks
 whether these estimates are right ("yes, keep them", or the person writes their corrections).
@@ -930,12 +963,13 @@ the map is never sent.
    without `data`, the active tasks without `measure.runs`, the M, C, S or J tasks without
    `measure.minutes`, the M, C or S tasks without `stakes`, the active processes without `next`,
    a measured duration that the effort rating contradicts, a blocker found in a source without `evidence`, a task that still writes
-   its own `blocker`), then the figures of each role and the "Relevance", "Blockers" and
-   "Connectors" lines.
+   its own `blocker`, an M, C or S task without `crud` on data the AI reaches), then the figures
+   of each role and the "Relevance", "Blockers", "Connectors" and "Rights to enable" lines.
    Fix the form yourself (quotes, ids, undeclared tool, value outside the list) and run it again
    until 0 errors. Handle each warning: file the element in the map of its hat, remove the data
    flagged, correct the automation, rate the missing relevance or ask for it (`null` if the
-   person does not know), write the data sources of an M, C or S task, ask for its measures and its
+   person does not know), write the data sources of an M, C or S task and what it does with each
+   (`crud`), ask for its measures and its
    stakes, ask what follows a process (`next`, `next: []` at the end of a chain), correct the effort rating a measure contradicts, ask who does an M or J task
    without `by`, write where and when a blocker was seen (`evidence`), or move the `blocker` of
    a task to the `blockers` list. If PyYAML is missing, run `pip install pyyaml`. Add `--format`
@@ -966,7 +1000,8 @@ the map is never sent.
 - the blockers that still hold tasks back, with their tasks and since when, and, for an update,
   those resolved or dropped since the starting map: the script's "Blockers" line;
 - the connectors to activate first, and those the AI already reaches: the script's "Connectors"
-  line;
+  line; then the rights to enable on the tools it reaches (an operation offered by the connector
+  but not enabled, to be checked, or absent): the script's "Rights to enable" line;
 - the colleagues named as doing work of a team, who will be asked for their own map, and the
   contractors;
 - the questions left open;

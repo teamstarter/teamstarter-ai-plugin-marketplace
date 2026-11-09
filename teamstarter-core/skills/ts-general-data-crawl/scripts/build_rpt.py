@@ -136,7 +136,7 @@ KEYS = {
     "task": ["id", "name", "role", "departments", "type", "state", "replaced_by", "aliases",
              "job", "trigger",
              "input", "output", "input_files", "output_files", "templates", "tools", "data",
-             "okrs", "method",
+             "crud", "okrs", "method",
              "by",
              "status", "target", "blocker",
              "blocker_type", "build", "frequency", "measure", "queue", "stakes", "relevance",
@@ -151,8 +151,10 @@ KEYS = {
                   "notes", "sources"],
     # A problem that keeps tasks from moving towards their target (blockers.yaml,
     # README_operations.md §1.14). `basis` is one value here: how the problem is known.
+    # `tool` and `crud`: an AI access blocker says the tool and the operations the AI lacks
+    # there (README_operations.md §1.7, `crud`).
     "blocker": ["id", "text", "type", "state", "tasks", "opened", "resolved", "resolution",
-                "owner", "source", "basis", "evidence", "notes", "sources"],
+                "owner", "source", "basis", "evidence", "tool", "crud", "notes", "sources"],
     # A zone of the company's OS (os-structure.yaml, README_operations.md §1.15): a folder, what
     # it holds, who keeps it, and the flows that feed it (`feeds`).
     "os_zone": ["id", "name", "path", "parent", "holds", "description", "owner", "feeds",
@@ -268,9 +270,10 @@ SUB_KEYS = {"entries": ["what", "from", "trigger", "volume"],
             # §1.17).
             "refresh": ["cycle", "by", "notes"],
             "generated_with": ["tool", "version", "date", "commit"],
-            # The tools of a data source: where the data is, how the AI reaches it. The `tools`
-            # of a task or a process are ids (texts): only the mappings are checked.
-            "tools": ["tool", "where", "connector", "notes"],
+            # The tools of a data source: where the data is, how the AI reaches it and what it
+            # may do there (`crud`, README_operations.md §1.7). The `tools` of a task or a
+            # process are ids (texts): only the mappings are checked.
+            "tools": ["tool", "where", "connector", "crud", "notes"],
             # Where the deliverable of a task goes: a fixed file updated at each run, or the
             # folder where each run's file goes, with its name pattern; where the files it reads
             # are; the container of the data map each place is (README_operations.md §1.12,
@@ -477,6 +480,18 @@ EFFORT_BY_MINUTES = ((30, 1), (120, 2))
 # "connector" of rpt_i18n.LABELS.
 CONNECTOR_ORDER = ("native", "mcp", "api", "export", "none", None)
 CONNECTED = {"native", "mcp", "api"}
+# The operations on a type of data (README_operations.md §1.7, `crud`): C create, R read, U
+# update, D delete. A task says those it does on each of its sources; a tool of a source says
+# those the AI may do there: enabled, offered by the connector but not enabled, not offered. A
+# link of a task also says `unknown` (a reached tool whose right is not written) and
+# `not_connected` (a tool the AI does not reach).
+CRUD = "CRUD"
+CRUD_STATES = ("enabled", "available", "unavailable")
+CRUD_LINK_STATES = CRUD_STATES + ("unknown", "not_connected")
+# The rights of a tool (tools.yaml) that give each operation, when a tool of a source has no
+# `crud`: sending a message creates it.
+RIGHT_CRUD = {"read": "R", "search": "R", "create": "C", "send": "C", "update": "U",
+              "delete": "D"}
 # A relevé is the state of the referential at its update date (README_operations.md §4): one
 # JSON file per date in releves/, written by the build. A v2 relevé keeps the facts the hours of a
 # task come from (frequency, ratings, measure): the hours of every v2 relevé are recomputed with
@@ -1103,6 +1118,7 @@ def check_data_source(d, tool_ids, idx=None):
             errors.append(tr("check.tool_twice", where=where, tool=tool))
         seen.add(tool)
         errors += check_enum(where, f"tools.connector ({tool})", e.get("connector"), "connector")
+        errors += check_tool_crud(e, where)
     errors += check_sensitivity(d, where) + check_basis("data_source", d, where)
     if d.get("os") is not None:
         if not isinstance(d["os"], dict):
@@ -1117,6 +1133,63 @@ def check_data_source(d, tool_ids, idx=None):
     if d.get("sensitivity") is None and not d.get("_borrowed"):
         warnings.append(tr("warn.sensitivity_unsaid", where=where))
     return errors, warnings
+
+
+def crud_letters(value):
+    """The letters of an operations value (README_operations.md §1.7, `crud`) in the order C R U
+    D, "" for an empty one, None when it is not made of these letters, each once."""
+    if value is None or value == "":
+        return ""
+    if not isinstance(value, str) or any(c not in CRUD for c in value) \
+            or len(set(value)) != len(value):
+        return None
+    return "".join(c for c in CRUD if c in value)
+
+
+def check_tool_crud(e, where):
+    """`crud` of a tool of a data source: `{enabled, available, unavailable}`, letters among C R
+    U D, each letter in one state at most; `enabled` only through a connector that reaches the
+    tool (README_operations.md §1.7)."""
+    crud, tool = e.get("crud"), e.get("tool")
+    if crud is None:
+        return []
+    if not isinstance(crud, dict) or any(k not in CRUD_STATES for k in crud):
+        return [tr("check.crud_tool_shape", where=where, tool=tool)]
+    errors, seen = [], {}
+    for state in CRUD_STATES:
+        letters = crud_letters(crud.get(state))
+        if letters is None:
+            errors.append(tr("check.crud_letters", where=f"{where} tools.crud.{state} ({tool})",
+                             value=repr(crud.get(state))))
+            continue
+        for c in letters:
+            if c in seen:
+                errors.append(tr("check.crud_letter_twice", where=where, tool=tool, letter=c,
+                                 first=seen[c], second=state))
+            seen.setdefault(c, state)
+    if crud_letters(crud.get("enabled")) and e.get("connector") not in CONNECTED:
+        errors.append(tr("check.crud_enabled_unreached", where=where, tool=tool,
+                         connector=e.get("connector")))
+    return errors
+
+
+def check_task_crud(t, where, idx, cited_only=True):
+    """`crud` of a task: for each source it cites in `data`, the operations it does on it
+    (README_operations.md §1.7). `cited_only` False: the letters only (an observation checked
+    without the referential, whose task's `data` is unknown)."""
+    crud = t.get("crud")
+    if crud is None:
+        return []
+    if not isinstance(crud, dict):
+        return [tr("check.crud_task_shape", where=where)]
+    cited = {resolve(idx, x) for x in t.get("data") or []}
+    errors = []
+    for key, value in crud.items():
+        if cited_only and resolve(idx, key) not in cited:
+            errors.append(tr("check.crud_not_in_data", where=where, data=key))
+        if not crud_letters(value):
+            errors.append(tr("check.crud_letters", where=f"{where} crud.{key}", value=repr(value)))
+    return errors
 
 
 def check_source_owners(ref, idx):
@@ -1234,6 +1307,7 @@ def check_task(t, idx, dept_ids, tool_ids, type_ids=()):
                if x not in tool_ids]
     errors += [e for x in t.get("data") or []
                for e in check_ref(where, "data", x, idx, expected=["data_source"])]
+    errors += check_task_crud(t, where, idx)
     errors += check_relevance(t, where)
     errors += check_enum(where, "blocker_type", t.get("blocker_type"), "blocker_type")
     errors += check_measure(t, where) + check_queue(t, where) + check_stakes(t, where) \
@@ -1264,13 +1338,30 @@ def check_blockers(ref, idx):
     (moved to blockers.yaml)."""
     errors, warnings, seen = [], [], {}
     for b in ref["blockers"]:
-        e, w = check_blocker(b, idx)
+        e, w = check_blocker(b, idx, {t.get("id") for t in ref.get("tools") or []})
         errors, warnings = errors + e, warnings + w
         key = re.sub(r"\W+", " ", str(b.get("text") or "").lower()).strip()
         if key and key in seen and b.get("state") not in ("resolved", "dropped"):
             warnings.append(tr("warn.blocker_twice", where=f"{b['_file']} {b.get('id')}",
                                other=seen[key]))
         seen.setdefault(key, b.get("id"))
+    # the same problem in other words (rpt_blockers.py): one warning per blocker to merge. The
+    # packaged skills ship build_rpt.py without rpt_blockers.py: a map alone needs no such check.
+    try:
+        import rpt_blockers
+    except ImportError:
+        rpt_blockers = None
+    twice = {w.split(": ", 1)[0] for w in warnings}
+    by_id = {b.get("id"): b for b in ref["blockers"]}
+    for root, merged in (rpt_blockers.groups(ref["blockers"], ref.get("tools") or [])
+                         if rpt_blockers else []):
+        for bid, _ in merged:
+            where = f"{by_id[bid]['_file']} {bid}"
+            if where not in twice:
+                warnings.append(tr("warn.blocker_alike", where=where, other=root))
+    warnings += [tr("warn.blocker_access_enabled", where=f"{b['_file']} {b.get('id')}",
+                    tool=b["tool"], crud=crud_letters(b["crud"]))
+                 for b in ref["blockers"] if access_enabled(b, ref, idx)]
     if os.path.abspath(ref.get("dir") or "") == os.path.abspath(DEFAULT_DIR):
         warnings += [tr("warn.task_blocker_field", where=f"{t['_file']} {t.get('id')}",
                         file=BLOCKERS_FILE)
@@ -1278,9 +1369,36 @@ def check_blockers(ref, idx):
     return errors, warnings
 
 
-def check_blocker(b, idx):
+def access_enabled(b, ref, idx):
+    """True for an open AI access blocker (`tool` and `crud`) whose missing operations are all
+    enabled, in the catalogue, on that tool for every source its tasks cite there: lifted, or the
+    catalogue is wrong (README_operations.md §1.14)."""
+    letters = crud_letters(b.get("crud"))
+    if b.get("state") not in ("open", "in_progress") or not b.get("tool") or not letters:
+        return False
+    sources = {d.get("id"): d for d in ref.get("data_sources") or []}
+    tools = {t.get("id"): t for t in ref.get("tools") or []}
+    states = []
+    for x in b.get("tasks") or []:
+        for value in (idx.get(x) or {}).get("data") or []:
+            d = sources.get(resolve(idx, value)) or {}
+            for e in d.get("tools") or []:
+                if isinstance(e, dict) and e.get("tool") == b["tool"]:
+                    ops = source_crud(e, tools)[0]
+                    states += [ops.get(c) for c in letters]
+    return bool(states) and all(s == "enabled" for s in states)
+
+
+def check_blocker(b, idx, tool_ids=None):
     where = f"{b['_file']} {b.get('id')}"
     errors = check_keys("blocker", b, where)
+    if b.get("tool") is not None and tool_ids is not None and b["tool"] not in tool_ids:
+        errors.append(tr("check.tool_unknown", where=where, tool=b["tool"]))
+    if b.get("crud") is not None:
+        if not crud_letters(b["crud"]):
+            errors.append(tr("check.crud_letters", where=f"{where} crud", value=repr(b["crud"])))
+        if not b.get("tool"):
+            errors.append(tr("check.crud_blocker_tool", where=where))
     errors += check_enum(where, "type", b.get("type"), "blocker_kind")
     errors += check_enum(where, "state", b.get("state"), "blocker_state")
     errors += check_enum(where, "source", b.get("source"), "blocker_source")
@@ -3102,15 +3220,18 @@ def enrich(ref):
             for step in p["_steps"]:
                 member.setdefault(step, []).append(p["id"])
     sources = {d["id"]: d for d in ref["data_sources"]}
+    tools = {x["id"]: x for x in ref["tools"]}
     for t in ref["tasks"]:
         t["_depts"] = t.get("departments") or roles.get(t["role"], {}).get("departments", [])
         t["_processes"] = member.get(t["id"], [])
         t["_score"] = relevance_score(t)
         t["_gain"] = task_gain(t)
-        t["_data_links"] = data_links(t, sources, idx)
+        t["_data_links"] = data_links(t, sources, idx, tools)
         t["_ai"] = ai_view(t, sources, ref.get("ai_policy"), idx)
     for d in ref["data_sources"]:
         d["_scope"] = source_scope(d, ref["tasks"], roles, idx)
+        d["_crud"] = {e["tool"]: dict(zip(("ops", "derived"), source_crud(e, tools)))
+                      for e in d.get("tools") or [] if isinstance(e, dict) and e.get("tool")}
     ref["_chains"] = link_chains(ref, idx)
     link_containers(ref, idx)
     link_files(ref, idx)
@@ -3818,39 +3939,122 @@ def ai_view(t, sources, policy, idx=None):
             "unclassified": unclassified}
 
 
-def data_links(t, sources, idx=None):
+def source_crud(entry, tools=None):
+    """({letter: state}, derived) of the AI on the data of one tool of a source
+    (README_operations.md §1.7, `crud`): the `crud` of the entry when written; otherwise, for a
+    tool the AI reaches, what the `rights` of the tool in tools.yaml give (read and search: R,
+    create and send: C, update: U, delete: D; the best state of a letter wins), `derived` True.
+    A letter neither says is left out."""
+    crud = entry.get("crud")
+    if isinstance(crud, dict) and crud:
+        out = {}
+        for state in CRUD_STATES:
+            for c in crud_letters(crud.get(state)) or "":
+                out.setdefault(c, state)
+        return out, False
+    if entry.get("connector") not in CONNECTED:
+        return {}, False
+    out = {}
+    for r in ((tools or {}).get(entry.get("tool")) or {}).get("rights") or []:
+        c = RIGHT_CRUD.get(r.get("action")) if isinstance(r, dict) else None
+        if c and r.get("state") in CRUD_STATES and (
+                c not in out or CRUD_STATES.index(r["state"]) < CRUD_STATES.index(out[c])):
+            out[c] = r["state"]
+    return out, bool(out)
+
+
+def link_state(letter, ops, connector):
+    """The state of one operation for the AI on a data link: written or derived, else `unknown`
+    for a tool the AI reaches, `not_connected` for one it does not reach."""
+    return ops.get(letter) or ("unknown" if connector in CONNECTED else "not_connected")
+
+
+def data_links(t, sources, idx=None, tools=None):
     """The tools in which a task reaches its data, each with its connector: for each data source
     the task cites, the tools of that source that the task cites too, or, when it cites none of
-    them, the reference tool of the source, the first of its list (README_operations.md §1.7)."""
+    them, the reference tool of the source, the first of its list (README_operations.md §1.7).
+    Each link also says the operations the task does on the data (`need`, from its `crud`, None
+    when not said), the state of each for the AI (`ops`) and those the AI lacks (`missing`)."""
     cited, links = set(t.get("tools") or []), []
+    crud = {resolve(idx, k) if idx else k: crud_letters(v)
+            for k, v in (t.get("crud") or {}).items()} if isinstance(t.get("crud"), dict) else {}
     for value in t.get("data") or []:
         d = sources.get(resolve(idx, value) if idx else value)
         entries = [e for e in (d or {}).get("tools") or [] if isinstance(e, dict) and e.get("tool")]
         for e in [e for e in entries if e["tool"] in cited] or entries[:1]:
-            links.append({"data": d["id"], "tool": e["tool"], "connector": e.get("connector")})
+            need = crud.get(d["id"]) or None
+            have, derived = source_crud(e, tools)
+            ops = {c: link_state(c, have, e.get("connector")) for c in need or ""}
+            links.append({"data": d["id"], "tool": e["tool"], "connector": e.get("connector"),
+                          "need": need, "ops": ops,
+                          "missing": [c for c in need or "" if ops[c] != "enabled"],
+                          "derived": derived})
     return links
+
+
+def ops_text(letters, unknown=False):
+    """The operations of a row in the order C R U D, `?` when some task does not say its own."""
+    return "".join(c for c in CRUD if c in letters) + ("?" if unknown else "")
 
 
 def connector_rows(ref):
     """One row per tool and access (reached by the AI or not): the data sources the active tasks
-    reach through it, those tasks, the M and S ones apart, and their estimated gain. Sorted by
-    M and S tasks, gain, tasks. Needs enrich()."""
+    reach through it, the operations they do there (`ops`, README_operations.md §1.7), those
+    tasks, the M and S ones apart, and their estimated gain. Sorted by M and S tasks, gain,
+    tasks. Needs enrich()."""
     rows = {}
     for t in active(ref["tasks"]):
         for link in t.get("_data_links") or []:
             key = (link["tool"], link["connector"] in CONNECTED)
             row = rows.setdefault(key, {"tool": link["tool"], "reached": key[1],
-                                        "connectors": set(), "data": set(), "tasks": {}})
+                                        "connectors": set(), "data": set(), "tasks": {},
+                                        "letters": set(), "unknown": False})
             row["connectors"].add(link["connector"])
             row["data"].add(link["data"])
             row["tasks"][t["id"]] = t
+            row["letters"].update(link.get("need") or "")
+            row["unknown"] = row["unknown"] or not link.get("need")
     for row in rows.values():
-        tasks = list(row["tasks"].values())
-        row["ms"] = sum(t["status"] in OPEN_STATUSES for t in tasks)
-        row["gains"] = [t["_gain"]["hours"] for t in tasks if t.get("_gain")]
-        row["gain"] = round(sum(row["gains"]), 1)
+        row["ops"] = ops_text(row.pop("letters"), row.pop("unknown"))
+        _row_gain(row)
     return sorted(rows.values(), key=lambda r: (-r["ms"], -r["gain"], -len(r["tasks"]),
                                                 r["tool"]))
+
+
+def _row_gain(row):
+    tasks = list(row["tasks"].values())
+    row["ms"] = sum(t["status"] in OPEN_STATUSES for t in tasks)
+    row["gains"] = [t["_gain"]["hours"] for t in tasks if t.get("_gain")]
+    row["gain"] = round(sum(row["gains"]), 1)
+
+
+# The rights to enable, quickest first: offered by the connector, to be checked, not offered.
+ACCESS_ORDER = ("available", "unknown", "unavailable")
+
+
+def access_rows(ref):
+    """The rights to enable on the tools the AI reaches (README_operations.md §1.7, `crud`): one
+    row per tool and state of the operations active tasks need there and the AI lacks (offered
+    by the connector but not enabled, to be checked, not offered), with these operations, the
+    data, the tasks, the M, C and S ones apart, and their estimated gain. Sorted like
+    connector_rows, then by state. Needs enrich()."""
+    rows = {}
+    for t in active(ref["tasks"]):
+        for link in t.get("_data_links") or []:
+            if link["connector"] not in CONNECTED:
+                continue
+            for c in link.get("missing") or []:
+                key = (link["tool"], link["ops"][c])
+                row = rows.setdefault(key, {"tool": key[0], "state": key[1], "letters": set(),
+                                            "data": set(), "tasks": {}})
+                row["letters"].add(c)
+                row["data"].add(link["data"])
+                row["tasks"][t["id"]] = t
+    for row in rows.values():
+        row["ops"] = ops_text(row.pop("letters"))
+        _row_gain(row)
+    return sorted(rows.values(), key=lambda r: (-r["ms"], -r["gain"], -len(r["tasks"]),
+                                                ACCESS_ORDER.index(r["state"]), r["tool"]))
 
 
 def counts(tasks):
@@ -4362,7 +4566,7 @@ def public(item):
                 "_teams", "_agents", "_access", "_cost", "_progress", "_maturity", "_used_by",
                 "_shared_by", "_decides", "_decisions", "_artifacts", "_freshness", "_os", "_scope",
                 "_writers", "_readers", "_owners", "_holders", "_candidates", "_age", "_fresh",
-                "_containers", "_files"):
+                "_containers", "_files", "_crud"):
         if key in item:
             out[key[1:]] = item[key]
     return out
@@ -5046,8 +5250,11 @@ def render_index(ref):
 OBSERVATIONS = "observations"
 OBSERVATION_FORMAT = "rpt-observation/v1"
 OBSERVABLE = ("status", "target", "frequency", "measure", "input", "output", "input_files",
-              "output_files", "templates", "tools", "data", "okrs", "method", "by", "blocker",
-              "blocker_type", "stakes", "job")
+              "output_files", "templates", "tools", "data", "crud", "okrs", "method", "by",
+              "blocker", "blocker_type", "stakes", "job")
+# What an observation can change on a tool of a data source: how the AI reaches it, and what
+# the connector lets it do there (README_operations.md §1.7).
+SOURCE_OBSERVABLE = ("connector", "crud")
 OBSERVATION_META = ["date", "observer", "surface", "source"]
 CHANGE_KEYS = ["task", "data", "blocker", "agent", "tool", "field", "before", "after", "basis",
                "evidence", "result", "note"]
@@ -5059,8 +5266,9 @@ AGENT_OBSERVABLE = ("state", "stage", "schedule", "tasks", "skills", "data", "pe
 NEW_AGENT_REQUIRED = ("id", "name", "kind", "state")
 # What an observation can change on a blocker of the register, and what a new blocker gives
 # (README_operations.md §1.14, §4.1).
-BLOCKER_OBSERVABLE = ("state", "resolution", "text", "type", "tasks", "owner")
-NEW_BLOCKER_KEYS = ("text", "type", "tasks", "state", "owner", "source", "evidence", "notes")
+BLOCKER_OBSERVABLE = ("state", "resolution", "text", "type", "tasks", "owner", "tool", "crud")
+NEW_BLOCKER_KEYS = ("text", "type", "tasks", "state", "owner", "source", "evidence", "notes",
+                    "tool", "crud")
 EVIDENCE_MAX = 300
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -5247,6 +5455,7 @@ def value_errors(t, where):
             + check_enum(where, "blocker_type", t.get("blocker_type"), "blocker_type")
             + check_measure(t, where) + check_queue(t, where) + check_stakes(t, where)
             + check_job(t, where)
+            + check_task_crud(t, where, None, cited_only=False)
             + check_files(t, where, None)
             + [tr("obs.text_list", where=where, key=k) for k in ("tools", "data", "by")
                if t.get(k) is not None and not (isinstance(t[k], list)
@@ -5357,17 +5566,28 @@ def check_agent_change(c, where, ctx, errors):
 
 
 def check_connector_change(c, where, ctx):
-    errors = [] if c.get("field") == "connector" else \
-        [tr("obs.connector_field", where=where)]
-    errors += check_enum(where, "after", c.get("after"), "connector")
+    """A change on a tool of a data source: its `connector`, or its `crud` (what the connector
+    lets the AI do there, README_operations.md §1.7)."""
+    field = c.get("field")
+    errors = [] if field in SOURCE_OBSERVABLE else [tr("obs.connector_field", where=where)]
+    if field != "crud":
+        errors += check_enum(where, "after", c.get("after"), "connector")
     if not c.get("tool"):
         errors.append(tr("obs.tool_expected", where=where))
+    entry = None
     if ctx:
         d = ctx["idx"].get(c["data"])
         if not d or d.get("id") not in {x["id"] for x in ctx["ref"]["data_sources"]}:
             return errors + [tr("obs.source_unknown", where=where, data=c["data"])]
-        if c.get("tool") and c["tool"] not in {e.get("tool") for e in d.get("tools") or []}:
+        entry = next((e for e in d.get("tools") or []
+                      if isinstance(e, dict) and e.get("tool") == c.get("tool")), None)
+        if c.get("tool") and not entry:
             errors.append(tr("obs.not_a_tool_of", where=where, tool=c["tool"], data=d["id"]))
+    if field == "crud":
+        # Without the referential, the connector is unknown: `enabled` is not checked against it.
+        connector = entry.get("connector") if entry else "native"
+        errors += check_tool_crud({"tool": c.get("tool"), "crud": c.get("after"),
+                                   "connector": connector}, where)
     return errors
 
 
@@ -5662,6 +5882,7 @@ def apply_blocker_change(ref, c, meta, source, only, files, changed, out, name, 
                  "tasks": list(after.get("tasks") or []), "opened": date,
                  "owner": after.get("owner"), "source": after.get("source") or "observation",
                  "basis": c.get("basis"), "evidence": after.get("evidence") or c.get("evidence"),
+                 "tool": after.get("tool"), "crud": after.get("crud"),
                  "notes": after.get("notes"), "sources": [source]}
         if entry["state"] in ("resolved", "dropped"):
             entry["resolved"] = date
@@ -5778,7 +5999,8 @@ def is_current(data, item_id, c):
     if "data" in c:
         d = next((x for x in data.get("data_sources") or [] if x.get("id") == item_id), None)
         e = next((x for x in (d or {}).get("tools") or [] if x.get("tool") == c.get("tool")), None)
-        return bool(e) and empty_none(e.get("connector")) == empty_none(c.get("after"))
+        field = c.get("field") if c.get("field") in SOURCE_OBSERVABLE else "connector"
+        return bool(e) and empty_none(e.get(field)) == empty_none(c.get("after"))
     t = next((x for x in data.get("tasks") or [] if x.get("id") == item_id), None)
     return bool(t) and same_value(c.get("field"), t.get(c.get("field")), c.get("after"))
 
@@ -5790,9 +6012,13 @@ def set_value(data, item_id, c, source):
         e = next((x for x in (d or {}).get("tools") or [] if x.get("tool") == c.get("tool")), None)
         if not e:
             return tr("apply.tool_absent", tool=c.get("tool"))
-        if empty_none(e.get("connector")) != empty_none(c.get("before")):
-            return tr("apply.stale", field="connector", value=repr(e.get("connector")))
-        e["connector"] = c.get("after")
+        field = c.get("field") if c.get("field") in SOURCE_OBSERVABLE else "connector"
+        if empty_none(e.get(field)) != empty_none(c.get("before")):
+            return tr("apply.stale", field=field, value=repr(e.get(field)))
+        if field == "crud" and empty_none(c.get("after")) is None:
+            e.pop("crud", None)
+        else:
+            e[field] = c.get("after")
         return None
     t = next((x for x in data.get("tasks") or [] if x.get("id") == item_id), None)
     if not t:
@@ -5907,14 +6133,14 @@ def md_sources(ref, lang=None):
     lines = [tr("md.sources_title", lang), ""] + tr("md.sources_intro", lang).split("\n") + \
         ["", tr("md.connectors_title", lang), ""] + \
         tr("md.connectors_intro", lang).split("\n") + \
-        ["", tr("md.connectors_header", lang), "|---|---|---|---|---|---|"]
+        ["", tr("md.connectors_header", lang), "|---|---|---|---|---|---|---|"]
     for row in [r for r in connector_rows(ref) if not r["reached"]]:
-        gain = tr("md.gain", lang, hours=fmt_hours(row["gain"], lang), count=len(row["gains"])) \
-            if row["gains"] else "—"
         lines.append(f"| {names.get(row['tool'], row['tool'])} (`{row['tool']}`) | "
                      f"{connector_labels(row['connectors'], lang)} | "
-                     f"{cell(sorted(names.get(d, d) for d in row['data']))} | {row['ms']} | "
-                     f"{len(row['tasks'])} | {gain} |")
+                     f"{cell(sorted(names.get(d, d) for d in row['data']))} | "
+                     f"{crud_cell(row['ops'], lang)} | {row['ms']} | "
+                     f"{len(row['tasks'])} | {md_gain(row, lang)} |")
+    lines += md_access(ref, names, lang)
     lines += md_rights(ref, names, lang)
     policy = ref.get("ai_policy") or {}
     per = {k: sum(1 for d in ref["data_sources"] if (d.get("_os") or {}).get("status") == k)
@@ -5938,6 +6164,34 @@ def md_sources(ref, lang=None):
                      f"{cell(tools) or '—'} | {c['total']} | {c['A']} | {c['S']} | {c['C']} | {c['M']} | "
                      f"{c['J']} |")
     return lines + [""]
+
+
+def md_gain(row, lang=None):
+    return tr("md.gain", lang, hours=fmt_hours(row["gain"], lang), count=len(row["gains"])) \
+        if row["gains"] else "—"
+
+
+def crud_cell(ops, lang=None):
+    """Operations as words, in the order C R U D: « read, update », `?` for « to be specified »."""
+    words = [label("crud", c, lang, c) for c in ops if c in CRUD]
+    if "?" in ops:
+        words.append(tr("md.crud_unsaid", lang))
+    return ", ".join(words) or "—"
+
+
+def md_access(ref, names, lang=None):
+    """The rights to enable on the tools the AI reaches (README_operations.md §1.7, `crud`)."""
+    rows = access_rows(ref)
+    if not rows:
+        return []
+    lines = ["", tr("md.access_title", lang), ""] + tr("md.access_intro", lang).split("\n") + \
+        ["", tr("md.access_header", lang), "|---|---|---|---|---|---|---|"]
+    for row in rows:
+        lines.append(f"| {names.get(row['tool'], row['tool'])} (`{row['tool']}`) | "
+                     f"{crud_cell(row['ops'], lang)} | {label('crud_state', row['state'], lang)} | "
+                     f"{cell(sorted(names.get(d, d) for d in row['data']))} | {row['ms']} | "
+                     f"{len(row['tasks'])} | {md_gain(row, lang)} |")
+    return lines
 
 
 def scope_cell(d, lang=None):

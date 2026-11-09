@@ -13,6 +13,10 @@
 # skill:tri-cv is a skill installed in Claude, which Claude follows by itself (RH-T1.4, S);
 # project:fiches-de-poste is a Claude project in which the person opens a conversation and
 # describes the position each time (RH-T1.1, C): a project is never a skill (format §6).
+# `crud` says what a task does with each of its data (C create, R read, U update, D delete), and
+# on a tool of a data source what the connector lets the AI do: Claude reads the spontaneous
+# applications in Gmail, the connector offers sending but the organization has not enabled it,
+# so RH-T1.6 lacks C (format §5 and §6).
 format: rpt/v1
 
 meta:
@@ -86,6 +90,8 @@ data_sources:
       - tool: saas:gmail
         where: candidatures spontanées reçues par e-mail
         connector: native
+        crud: {enabled: R, available: C}
+        notes: l'envoi est proposé par le connecteur, pas activé dans l'organisation
     basis: {sensitivity: declared}
     sources: [conversations (18 tris de CV avec Claude), réponses du 2026-09-24]
 
@@ -239,6 +245,7 @@ tasks:
     output: offre en ligne sur le site carrière et sur LinkedIn
     tools: ['saas:welcome-to-the-jungle']
     data: ['data:candidatures']
+    crud: {'data:candidatures': C}
     by: [Alex Martin]
     status: M
     target: A
@@ -256,6 +263,7 @@ tasks:
     output: candidature classée à rencontrer, à discuter ou non retenue
     tools: ['saas:claude', 'skill:tri-cv']
     data: ['data:candidatures']
+    crud: {'data:candidatures': RU}
     by: [Claude, Alex Martin]
     status: S
     target: A
@@ -285,7 +293,9 @@ tasks:
     state: active
     input: candidature spontanée
     output: réponse envoyée, CV gardé ou non
+    tools: ['saas:gmail']
     data: ['data:candidatures']
+    crud: {'data:candidatures': CR}
     by: [Alex Martin]
     status: M
     frequency: environ 5 par mois
@@ -302,6 +312,7 @@ tasks:
     output: entretien planifié dans l'agenda du manager
     tools: ['saas:google-calendar']
     data: ['data:agendas', 'data:candidatures']
+    crud: {'data:agendas': C, 'data:candidatures': R}
     by: [Alex Martin]
     status: M
     target: A

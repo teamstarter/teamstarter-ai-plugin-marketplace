@@ -74,6 +74,7 @@ the others are pending.
 | `frequency` | a text: `every Monday`, `about 8 per month` | What the person says about the rhythm |
 | `tools` | the complete list of tool ids (`skill:…`, `project:…`, `saas:…`) | A skill, a project, an agent or a software used to do the task; a Claude project, a custom GPT or a Gem is `project:…`, never `skill:…` (README_operations.md §1.21) |
 | `data` | the complete list of sources (`data:…`) | A data source read or written for the task |
+| `crud` | what the task does with each of its sources, the whole mapping: `{'data:pipe': RU}`, letters among C create (sending counts as creating), R read, U update, D delete | The session read, created, updated or deleted this data for the task; each key is a source of `data` |
 | `method` | a URL, or a tool id (`skill:…`, `project:…`) | The written method followed, or written during the session |
 | `okrs` | the complete list of key results served (`O1.3.KR1`, at most two) | The session's deliverable directly moves the measure of a KR of `okrs.yaml` (README_operations.md §1.13); a link that is only indirect is not written |
 | `output_files` | the complete list of locations (below) | Where the deliverable was stored |
@@ -139,6 +140,23 @@ separate file (`…-data-pipe-et-prospects.yaml`):
     evidence: The session read the pipeline with the HubSpot connector.
 ```
 
+What the connector lets the AI do on that data (`field: crud`, README_operations.md §1.7), the
+whole mapping after the change:
+
+```yaml
+  - data: data:pipe-et-prospects
+    tool: saas:hubspot
+    field: crud
+    before: {enabled: R}
+    after: {enabled: R, available: U}   # enabled, available (offered, not enabled), unavailable
+    basis: observed
+    evidence: The session read the deals; updating the stage was refused, the write right is not enabled in the connector.
+```
+
+Write only what the session saw: an operation that worked is `enabled`; one the connector
+refused for lack of a right an administrator can grant is `available`; one the connector does not
+offer is `unavailable`. `enabled` needs a `connector` the AI reaches (`native`, `mcp`, `api`).
+
 **A task missing from the referential**, in a file named after its role (`…-csm-r6.yaml`):
 
 ```yaml
@@ -172,7 +190,9 @@ observation proposes two kinds of change on it.
 ```
 
 `after` takes `text`, `type` and `tasks` (required), and optionally `state` (`open` by default),
-`owner`, `source`, `evidence` and `notes`. At the merge, `build_rpt.py --apply-observation` gives
+`owner`, `source`, `evidence`, `notes`, and, for what the AI cannot do in a tool, `tool` and
+`crud` (the operations it lacks there: `{tool: saas:hubspot, crud: U}` for « the AI reads
+HubSpot but cannot update the deals »; reading and writing are two blockers). At the merge, `build_rpt.py --apply-observation` gives
 it the next free id, `opened` = `meta.date`, and `source: observation`. If the same problem is
 already open on the same tasks in the register, the change is closed without a duplicate.
 
@@ -199,7 +219,8 @@ after it.
     evidence: The person says the scheduled skill has run every Monday since this week.
 ```
 
-The fields a change can touch: `state`, `resolution`, `text`, `type`, `tasks`, `owner`.
+The fields a change can touch: `state`, `resolution`, `text`, `type`, `tasks`, `owner`,
+`tool`, `crud`.
 
 | `state` after | When | Also propose |
 |---|---|---|

@@ -12,17 +12,19 @@
 
 Calls build_rpt.py (the tool of the RPT referential, copied into this folder) with the
 departments, tools and data sources of the organization's catalogues (--catalogues), completed
-by the generic ones of ../references/ (departments, common data types), then adds nine checks
+by the generic ones of ../references/ (departments, common data types), then adds ten checks
 specific to a map about to be sent: the skill and version that produced it (`meta.detector`),
 one code per map (one map per hat), the declared automation
 of each process against the statuses of its steps, the relevance of each task, the data sources
-of manual, conversational or skilled tasks, the measures (runs per month of every active task,
+of manual, conversational or skilled tasks and what they do with the data the AI reaches
+(`crud`), the measures (runs per month of every active task,
 minutes of the M, C, S and J tasks) and the stakes, the order of the processes (`next`, or
 `next: []` at the end of a chain), the blockers (where an inferred one was seen, a task that
 still writes its own `blocker`), and possible personal or confidential
 data (preview_rpt.py), blocker texts and evidence included. build_rpt.py checks the form of the
 `blockers` list (fields, values, dates, tasks of the map), as for the referential's register.
-The figures end with the blockers still open and the connectors to activate first. With
+The figures end with the blockers still open, the connectors to activate first and the rights
+to enable on the tools the AI reaches. With
 `--since` (`--depuis` is accepted too), the map is the update of a map already sent: the script
 flags each element of the starting map that disappeared, and sums up what changed. Each file is
 checked on its own. Exit code 1 if an error remains in one of them; warnings are fixed before
@@ -77,6 +79,15 @@ MESSAGES = {
         "fr": "{count} tâche(s) M, C ou S sans `data` ({ids}) : écrire les sources de données "
               "qu'elles lisent ou écrivent, identifiants de catalogues/data-sources.yaml ou "
               "sources déclarées dans `data_sources` (SKILL.md, « The model »)"},
+    "validate.crud": {
+        "en": "{count} M, C or S task(s) do not say what they do with data the AI reaches "
+              "(`crud`) ({ids}): for each source of `data` in a tool with `connector` native, mcp "
+              "or api, write the operations, C create, R read, U update, D delete (SKILL.md, step "
+              "3, point 6)",
+        "fr": "{count} tâche(s) M, C ou S ne disent pas ce qu'elles font des données que l'IA "
+              "atteint (`crud`) ({ids}) : pour chaque source de `data` dans un outil dont "
+              "`connector` vaut native, mcp ou api, écrire les opérations, C créer, R lire, "
+              "U modifier, D supprimer (SKILL.md, étape 3, point 6)"},
     "validate.runs": {
         "en": "{count} active task(s) without `measure.runs` ({ids}): ask how many times a month "
               "it runs, A and J tasks included; an A task gives the runs alone, without minutes "
@@ -149,6 +160,12 @@ MESSAGES = {
     "validate.connectors": {
         "en": "Connectors to activate first: {todo} · already reachable by the AI: {done}",
         "fr": "Connecteurs à activer en premier : {todo} · déjà accessibles à l'IA : {done}"},
+    "validate.access_item": {
+        "en": "{name} ({ops}: {state}, {count} task(s))",
+        "fr": "{name} ({ops} : {state}, {count} tâche(s))"},
+    "validate.access": {
+        "en": "Rights to enable on the tools the AI reaches: {todo}",
+        "fr": "Droits à activer sur les outils que l'IA atteint : {todo}"},
     # The blockers of the map (references/format-rpt-v1.md §11; README_operations.md §1.14).
     "validate.blocker_source": {
         "en": "{id}: inferred blocker without `source`: write where it was found (slack, email, "
@@ -273,6 +290,7 @@ def check(path, reformat, starts=()):
             data = yaml.safe_load(f) or {}
         warnings += detector_warnings(data) + code_warnings(data) + automation_warnings(ref)
         warnings += relevance_warnings(ref, build_rpt.RELEVANCE_AXES) + data_warnings(ref)
+        warnings += crud_warnings(ref, build_rpt)
         warnings += measure_warnings(ref) + chain_warnings(ref) + blocker_warnings(ref)
         warnings += unused_tool_warnings(data) + reference_warnings(data)
         warnings += [tr("validate.data_alert", where=where, label=label, excerpt=excerpt)
@@ -391,6 +409,20 @@ def data_warnings(ref):
     if not missing:
         return []
     return [tr("validate.data", count=len(missing), ids=", ".join(missing))]
+
+
+def crud_warnings(ref, build_rpt):
+    """The manual, conversational or skilled tasks that cite data the AI reaches without saying
+    what they do with it (`crud`): without the operations, the map cannot say which right is
+    missing, reading or writing (README_operations.md §1.7)."""
+    build_rpt.enrich(ref)
+    missing = [t["id"] for t in ref["tasks"] if t.get("state") != "retired"
+               and t.get("status") in OPEN_STATUSES
+               and any(link["connector"] in build_rpt.CONNECTED and not link["need"]
+                       for link in t.get("_data_links") or [])]
+    if not missing:
+        return []
+    return [tr("validate.crud", count=len(missing), ids=", ".join(missing))]
 
 
 def measure_warnings(ref):
@@ -566,7 +598,8 @@ def figures(ref, build_rpt):
     lines.append(tr("validate.processes", alone=", ".join(alone) or tr("validate.none"),
                     proposed=", ".join(proposed) or tr("validate.none")))
     lines.append(relevance_line(ref, build_rpt))
-    return lines + [x for x in (blockers_line(ref),) if x] + [connectors_line(ref, build_rpt)]
+    return lines + [x for x in (blockers_line(ref), connectors_line(ref, build_rpt),
+                                access_line(ref, build_rpt)) if x]
 
 
 def connectors_line(ref, build_rpt):
@@ -581,6 +614,17 @@ def connectors_line(ref, build_rpt):
     done = [names.get(r["tool"], r["tool"]) for r in rows if r["reached"]]
     return tr("validate.connectors", todo=", ".join(todo) or tr("validate.none"),
               done=", ".join(done) or tr("validate.none"))
+
+
+def access_line(ref, build_rpt):
+    """The operations the active tasks need in a tool the AI reaches and the AI cannot do there
+    yet (README_operations.md §1.7, `crud`); nothing when there is none."""
+    names = {t.get("id"): t.get("name") or t.get("id") for t in ref["tools"]}
+    todo = [tr("validate.access_item", name=names.get(r["tool"], r["tool"]),
+               ops=build_rpt.crud_cell(r["ops"]), state=build_rpt.label("crud_state", r["state"]),
+               count=len(r["tasks"]))
+            for r in build_rpt.access_rows(ref)]
+    return tr("validate.access", todo=", ".join(todo)) if todo else ""
 
 
 def relevance_line(ref, build_rpt):
