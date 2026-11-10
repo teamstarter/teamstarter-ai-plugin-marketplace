@@ -18,8 +18,8 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, ou reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Reprends mon brouillon », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun | « Où en sont mes projets ? », « Mes brouillons » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, prompt de création récupéré automatiquement, écriture du skill, test, points de blocage | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
-| `ts-general-deposer-skill` | Déposer sur son projet chaque version d'un skill rattaché à un projet | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (une réponse proposée à chaque question, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
+| `ts-general-deposer-skill` | Enregistrer dans Teamstarter chaque version d'un skill, en fichier `.skill` | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Le blocage est levé » ; proposé seul quand un skill de projet échoue |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation de la boîte à idées : à prendre, déjà lancées ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill » |
@@ -35,15 +35,16 @@ projets et idées proches, création du brouillon, questions de structuration, f
 l'a activé, puis proposition du projet. Vous pouvez vous arrêter à chaque étape et reprendre plus
 tard.
 
-**Créer un skill** passe par un projet de création de skill, dont le titre est la tâche à
-automatiser et dont les questions sont posées avec leur libellé exact : il est créé et proposé,
-puis, une fois validé par
-l'organisation, Claude récupère de lui-même le prompt de création généré par Teamstarter, écrit le
-skill (avec le skill `skill-creator` d'Anthropic), dépose automatiquement chaque version sur le
-projet, coche les étapes « Créer mon agent IA » et « Tester l'agent en conditions réelles » avec
-votre accord, et déclare les points de blocage. Le skill porte l'id de son projet dans ses métadonnées ; chacune de ses utilisations est
-ensuite déclarée à Teamstarter ; les statistiques sont dans la carte « Utilisation du skill » de
-la page de gestion du projet.
+**Créer un skill** se fait en conversation, en parlant toujours de votre skill : Claude regarde
+si une idée ou un skill proche existe déjà, présente les étapes, comprend la tâche (étapes,
+sources de données, découpage en plusieurs skills), crée le skill dans Teamstarter, vous soumet
+une à une ses réponses proposées aux questions de structuration, fait la fiche et l'audit,
+l'envoie en validation ou passe directement à la création quand votre organisation ne modère
+pas, construit et teste le skill en suivant le prompt de création de Teamstarter, l'enregistre
+dans Teamstarter, vous le présente dans un schéma SVG (entrées, étapes, sorties) et propose une
+première exécution. Il ne vous demande jamais de confirmer votre identité, et applique vos
+corrections sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
+statistiques sont dans la carte « Utilisation du skill » de sa page.
 
 **Remonter les blocages** : sur un projet en réalisation ou mis en place, de n'importe quel type,
 dès qu'un problème que vous ne pouvez pas lever seul empêche d'avancer, Claude propose de le
@@ -77,8 +78,8 @@ tient le référentiel la fusionne ensuite, hors du plugin.
 - Pour créer un projet, l'accès en écriture, que l'administrateur de votre organisation doit
   avoir ouvert. En lecture seule, la liste des projets fonctionne, et la création produit une
   fiche en Markdown à recopier dans l'app.
-- Pour que le prompt de création et le dépôt du skill se fassent sans clic : « Toujours
-  autoriser » les outils `get-skill-creation-instructions` et `upload-project-skill` du
+- Pour que la création d'un skill se fasse sans clic : « Toujours autoriser » les outils
+  `run-query`, `run-mutation`, `get-skill-creation-instructions` et `upload-project-skill` du
   connecteur quand l'outil IA le demande (claude.ai, Cowork), ou une règle dans `/permissions`
   (Claude Code).
 - Pour les skills RPT : RPT mis en place dans l'organisation (`ts-general-rpt-setup`, puis le
@@ -105,41 +106,52 @@ tient le référentiel la fusionne ensuite, hors du plugin.
 - **Lecture** dans votre organisation Teamstarter : types de projet, objectifs, projets, idées,
   questions et sections de vos projets, blocages de vos projets et leurs commentaires, et les noms
   des collaborateurs, pour retrouver un co-porteur ou vous identifier.
-- **Écriture**, seulement après votre validation dans la conversation : création et mise à jour
-  de vos projets, réponses aux questions de structuration, lignes de dépense, co-porteurs (qui
-  reçoivent une notification de Teamstarter), statut du projet, validation des étapes « Créer mon
-  agent IA » et « Tester l'agent en conditions réelles », blocages du projet (déclaration,
+- **Écriture**, après votre validation dans la conversation : création et mise à jour de vos
+  projets, réponses aux questions de structuration, lignes de dépense, co-porteurs (qui
+  reçoivent une notification de Teamstarter), statut du projet, blocages (déclaration,
   commentaire, résolution). La proposition d'un projet demande une confirmation explicite.
   Lister ses projets n'écrit rien.
-- **Dépôt du skill**, sans validation à chaque fois : à chaque écriture ou modification du
-  `SKILL.md` d'un skill qui porte l'id d'un projet Teamstarter, `ts-general-deposer-skill` dépose
-  ce fichier sur le projet, au nom de la personne du connecteur, qui doit être porteuse du
-  projet. Chaque dépôt crée pour les admins de l'organisation une tâche « partager ce fichier » ;
-  un fichier inchangé n'est pas redéposé. Le dépôt est annoncé dans la réponse.
+- **Création d'un skill**, sans validation à chaque fois, parce que ces écritures font partie de
+  la création : le skill est créé dans Teamstarter, chaque réponse que vous avez validée est
+  écrite, la fiche et l'audit sont faits, le skill est envoyé en validation (ou passe
+  directement en réalisation quand l'organisation ne modère pas), et les étapes « Créer mon
+  agent IA » et « Tester l'agent en conditions réelles » sont cochées.
+- **Enregistrement du skill**, sans validation à chaque fois : à chaque écriture ou modification
+  d'un skill qui porte son id Teamstarter, `ts-general-deposer-skill` l'empaquette en
+  `<nom-du-skill>.skill` (archive zip du dossier du skill) et le dépose, au nom de la personne du
+  connecteur, qui doit être porteuse du skill. Chaque dépôt est une nouvelle version et crée pour
+  les admins de l'organisation une tâche « partager ce fichier » ; un skill inchangé n'est pas
+  redéposé.
 - **Déclaration d'utilisation**, sans validation à chaque fois : à la fin de chaque exécution d'un
   skill qui porte l'id d'un projet Teamstarter, `ts-general-declarer-execution-skill` envoie à
   Teamstarter l'id du projet, l'heure, la durée, les tokens (estimés quand l'outil ne les affiche
   pas) et le résultat ; la personne enregistrée est celle du connecteur. La déclaration est
   annoncée dans la réponse. Rien n'est déclaré pour un autre skill.
 - **Scripts locaux**, sans accès réseau :
-  - `skills/ts-general-creer-projet/scripts/tiptap.py` convertit du Markdown simple en document
-    tiptap, le format des sections de fiche de Teamstarter. Sans Python, Claude construit ce
-    document lui-même ;
+  - `scripts/tiptap.py` (dans `ts-general-creer-projet` et `ts-general-creer-skill`) convertit
+    du Markdown simple en document tiptap, le format des sections de fiche de Teamstarter. Sans
+    Python, Claude construit ce document lui-même ;
+  - `ts-general-deposer-skill` empaquette le skill en `.skill` avec un court script Python
+    (bibliothèque standard) ;
+  - `ts-general-creer-skill/scripts/schema_svg.py` dessine le schéma SVG du skill (entrées,
+    étapes, sorties) à partir d'un fichier JSON (bibliothèque standard) ;
   - dans les skills RPT, `scripts/build_rpt.py` et `validate_rpt.py` vérifient une carte, une
     observation ou un `rpt-config.yaml`, `preview_rpt.py` produit l'aperçu de ce qui sera envoyé
     et signale les données personnelles, `check_datamap.py` vérifie la carte des données,
     `rpt_i18n.py` porte leurs messages. Ils demandent Python 3 et PyYAML.
 - **Fichiers locaux** : sans connecteur ou en lecture seule, la création livre un fichier
   `fiche-projet-<titre>.md` dans la conversation ; la création d'un skill livre le dossier du
-  skill et son zip, prêts à installer.
+  skill et son fichier `.skill`, prêts à installer.
 - Le plugin ne garde rien de son côté : aucune mémoire, aucun cache. Les skills de projet
   écrivent dans Teamstarter ; les skills RPT, dans les dossiers de l'organisation que nomme son
   `rpt-config.yaml`.
 
 ## Garde-fous
 
-- Rien n'est écrit dans Teamstarter sans votre accord, sauf le dépôt de chaque version d'un skill
-  de projet et la déclaration de ses utilisations, annoncés à chaque fois.
+- Rien n'est écrit dans Teamstarter sans votre accord, sauf ce qui fait partie de la création
+  d'un skill (création, fiche, audit, envoi en validation, enregistrement de chaque version,
+  étapes cochées) et la déclaration de ses utilisations. Aucune réponse de structuration n'est
+  écrite sans votre validation.
 - Rien n'est inventé : date, lieu, montant, prestataire, co-porteur sont demandés, ou notés « à
   préciser ».
 - Une réponse ou une section n'est jamais réécrite sans vous le dire.

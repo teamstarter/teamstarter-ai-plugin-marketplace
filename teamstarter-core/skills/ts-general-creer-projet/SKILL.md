@@ -29,8 +29,9 @@ Ne pas utiliser pour lister ses projets ou voir leur statut (`ts-general-lister-
 un projet déjà proposé ou en réalisation.
 
 L'utilisateur veut créer un skill, un agent ou un assistant IA : c'est `ts-general-creer-skill`
-qui mène, et qui suit ce skill pour créer et proposer le projet `PROCESS_AUTOMATION_WITH_AI`.
-Après la proposition (étape 7), lui rendre la main.
+qui mène toute la création, avec ses propres règles (création, fiche, audit et envoi en
+validation sans les validations de ce skill). Ne pas utiliser ce skill pour un projet
+`PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` : passer la main à `ts-general-creer-skill`.
 
 ## Sortie attendue
 
@@ -122,9 +123,8 @@ l'utilisateur a décrit. Puis lire le fichier du type s'il existe :
 | `PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL` | `references/type-automatisation-ia.md` |
 | autres | aucune : le parcours commun suffit, les questions se lisent sur le projet créé |
 
-Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` est un **projet de création de skill** : les
-règles de `references/type-automatisation-ia.md` (vocabulaire, tâche au lieu du titre, questions
-posées mot pour mot) valent pour toutes les étapes qui suivent.
+Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` est un **skill** : passer la main à
+`ts-general-creer-skill`, qui applique les règles de `references/type-automatisation-ia.md`.
 
 **Objectif.**
 ```graphql
@@ -193,8 +193,7 @@ Dire à l'utilisateur l'id du projet créé : c'est avec lui qu'il le retrouvera
 
 Suivre `references/questions-structuration.md` : lire les questions du projet, demander à
 l'utilisateur s'il répond lui-même ou si Claude propose, **valider section par section** avant
-d'écrire, écrire par lots de 7. Projet de création de skill : chaque question est posée avec son
-libellé exact (`type-automatisation-ia.md`, règle 3).
+d'écrire, écrire par lots de 7.
 
 - `team` = `"1"` (co-porteurs) : demander leurs noms, retrouver chacun par
   `user(where: {"fullname": {"iLike": "%<nom>%"}}) { id fullname }`, faire confirmer, puis

@@ -36,7 +36,7 @@ projet reprendre, ou rien.
 ```
 [0] Connecteur (lecture suffit)
 [1] Brouillons de l'utilisateur (scopeForMe)
-[2] Identité de l'utilisateur, si les autres statuts sont demandés   ←── confirmation
+[2] Identité de l'utilisateur, si les autres statuts sont demandés   ←── sans rien lui demander
 [3] Projets proposés, publiés, en réalisation, mis en place
 [4] Présenter par groupe, avec l'étape suivante
 [5] Proposer de reprendre un brouillon → ts-general-creer-projet
@@ -73,9 +73,10 @@ Si l'utilisateur ne demandait que ses brouillons, passer à l'étape 4.
 
 Les projets proposés ou publiés sont visibles par toute l'organisation : pour ne garder que
 ceux de l'utilisateur, il faut son id. Le retrouver comme le dit `references/regles-api.md`
-(« Qui est l'utilisateur du connecteur »), et **le faire confirmer** avant de filtrer.
+(« Qui est l'utilisateur du connecteur »), **sans jamais lui demander de confirmer son
+identité**.
 
-Sans confirmation : n'afficher que les brouillons (étape 1) et les projets en attente de
+Id introuvable : n'afficher que les brouillons (étape 1) et les projets en attente de
 modération, que la liste ne montre qu'à leurs auteurs et porteurs (sauf pour un accès
 administrateur).
 
@@ -91,7 +92,7 @@ query($moderation: SequelizeJSON, $published: SequelizeJSON, $realization: Seque
   done: project(where: $done, order: "reverse:updatedAt", limit: 50) { id title status projectTypeId deliveredAt openBlockersCount updatedAt }
 }
 ```
-variables, avec `<moi>` l'id confirmé :
+variables, avec `<moi>` l'id retrouvé :
 ```json
 {
   "moderation":  {"d_organizerIds": {"contains": [<moi>]}, "statusGroup": {"in": ["moderation"]}},
@@ -128,14 +129,15 @@ Un tableau par groupe non vide, dans cet ordre, avec le libellé de l'app :
 
 Colonnes : titre, `#id`, type, mis à jour le (date seule), étape suivante.
 
-Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` pas encore proposé (structuration, rédaction)
-se nomme **« Projet de création de skill »**, jamais « brouillon », et son titre s'affiche comme
-la **tâche** à automatiser (« Tâche : Rédiger les comptes rendus de réunion client »).
+Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` se nomme **« skill »**, jamais « projet »
+ni « brouillon » (« Skill en structuration », « Skill en attente de validation », « Skill
+validé »), et son titre s'affiche comme la **tâche** à automatiser (« Tâche : Rédiger les
+comptes rendus de réunion client »).
 
 Une organisation peut
 renommer un libellé dans son app : en cas de doute, ajouter le statut technique entre
-parenthèses. Ne jamais écrire « tu n'as aucun projet » d'après une liste vide quand l'identité
-n'a pas été confirmée : dire ce qui n'a pas pu être lu.
+parenthèses. Ne jamais écrire « tu n'as aucun projet » d'après une liste vide quand l'id de
+l'utilisateur n'a pas été retrouvé : dire ce qui n'a pas pu être lu.
 
 Donner le lien de chaque projet quand l'adresse de l'app est connue
 (`<adresse de l'app>/<tag de l'organisation>/project/<id>`).
@@ -156,7 +158,8 @@ en réalisation (`CASHEDOUT`), crée le skill, en dépose une nouvelle version o
 ## Garde-fous
 
 - **Lecture seule** : ce skill n'appelle jamais `run-mutation`.
-- **Ne pas filtrer sur un id non confirmé** par l'utilisateur.
+- **Ne filtrer que sur l'id retrouvé** comme le dit `references/regles-api.md`, jamais sur un
+  id deviné ; ne jamais demander à l'utilisateur de confirmer son identité.
 - **Ne pas présenter une liste partielle comme complète** : liste plafonnée, identité inconnue,
   accès sans le droit de voir un statut — le dire.
 

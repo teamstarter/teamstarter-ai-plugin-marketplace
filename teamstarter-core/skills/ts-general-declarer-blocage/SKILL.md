@@ -9,7 +9,7 @@ description: >-
   d'enregistrer un blocage, le rédige (titre, catégorie, ce qui bloque, ce qui a été essayé,
   contournement, qui peut débloquer), le fait valider puis le déclare sur le projet. Lit aussi
   les blocages d'un projet, les commente, les marque résolus. Déclenche dès que l'utilisateur
-  dit "je suis bloqué", "mon projet est bloqué", "déclarer un blocage", "remonter un problème",
+  dit "je suis bloqué", "mon skill est bloqué", "mon projet est bloqué", "déclarer un blocage", "remonter un problème",
   "le blocage est levé", "quels sont les blocages de mon projet", ou quand l'exécution d'un
   skill qui porte teamstarter-project-id échoue sur un tel problème. Jamais sans accord.
 ---
@@ -76,7 +76,7 @@ empêche le projet d'avancer ou le skill de servir.
    `metadata.teamstarter-project-id` (ou l'ancienne forme `teamstarter_project_id`). C'est le
    projet, et aucun autre.
 2. L'utilisateur nomme le projet ou en donne l'id.
-3. Sinon, ses projets en réalisation : identité confirmée comme le dit
+3. Sinon, ses projets en réalisation : son id retrouvé sans rien lui demander, comme le dit
    `references/regles-api.md` (« Qui est l'utilisateur du connecteur »), puis
 
 ```graphql
@@ -94,9 +94,11 @@ Le problème vient d'arriver (un skill a échoué, l'utilisateur dit qu'il est b
 une phrase, puis proposer, une seule fois par problème :
 
 > « L'accès au dossier Drive *Comptes rendus* est refusé : le skill ne peut pas tourner tant que
-> ce n'est pas réglé. Je le déclare comme blocage sur ton projet *Rédiger les comptes rendus de
-> réunion client* (#41207) ? »
+> ce n'est pas réglé. Je le déclare comme blocage de ton skill *Rédiger les comptes rendus de
+> réunion client* ? »
 
+- Un projet `PROCESS_AUTOMATION_WITH_AI` ou `AI_SKILL` est, pour l'utilisateur, **son skill** :
+  dire « ton skill *X* », jamais « ton projet », dans la proposition comme dans la suite.
 - L'utilisateur demande lui-même à déclarer un blocage : passer directement à l'étape 2.
 - Il refuse : ne pas reproposer pour le même problème dans la conversation.
 - Il préfère d'abord essayer autre chose : l'aider, et reproposer seulement si le problème reste.
@@ -234,7 +236,8 @@ variables : `{"b": {"id": <id du blocage>, "isResolved": true}}` ; `false` le ro
 
 - **Jamais de déclaration, de commentaire ni de résolution sans l'accord de l'utilisateur** sur
   le texte exact.
-- **Un seul projet** : celui de la métadonnée du skill, ou celui que l'utilisateur a confirmé.
+- **Un seul projet** : celui de la métadonnée du skill, ou celui que l'utilisateur a nommé ou
+  choisi.
 - **Pas de doublon** : lire les blocages ouverts avant de déclarer.
 - **Rien de confidentiel** dans un blocage ou un commentaire.
 - Proposer une fois par problème ; un refus vaut pour la conversation.
@@ -259,8 +262,8 @@ Drive répond « accès refusé » sur le dossier des comptes rendus. L'exécuti
 échec (`ts-general-declarer-execution-skill`), puis :
 
 > « Le dossier Drive *Comptes rendus clients* n'est pas partagé avec toi : le skill ne peut pas
-> l'écrire. Je le déclare comme blocage sur ton projet *Rédiger les comptes rendus de réunion
-> client* (#41207) ? »
+> l'écrire. Je le déclare comme blocage de ton skill *Rédiger les comptes rendus de réunion
+> client* ? »
 
 Après accord, aucun blocage ouvert sur le même problème, texte validé :
 

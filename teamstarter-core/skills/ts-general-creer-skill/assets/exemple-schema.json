@@ -1,0 +1,20 @@
+{
+  "name": "cr-reunion-client",
+  "title": "Comptes rendus de réunion client",
+  "description": "Rédige le compte rendu d'une réunion client à partir des notes prises pendant la réunion, puis le range dans le dossier du client et prépare l'e-mail de suivi.",
+  "inputs": [
+    {"label": "Notes de réunion", "detail": "collées dans la conversation par l'utilisateur", "step": 1},
+    {"label": "Fiche du client", "detail": "HubSpot, connecteur HubSpot", "step": 2},
+    {"label": "Modèle de compte rendu", "detail": "Google Drive, dossier Modèles", "step": 3}
+  ],
+  "steps": [
+    {"label": "Lire les notes", "detail": "repère participants, décisions, actions et échéances"},
+    {"label": "Compléter avec la fiche client", "detail": "contexte du compte, interlocuteurs"},
+    {"label": "Rédiger le compte rendu", "detail": "suit le modèle, une section par sujet"},
+    {"label": "Ranger et préparer le suivi", "detail": "dossier du client, brouillon d'e-mail"}
+  ],
+  "outputs": [
+    {"label": "Compte rendu", "detail": "Google Docs, dossier Clients/<client>", "step": 4},
+    {"label": "Brouillon d'e-mail de suivi", "detail": "Gmail, à relire avant envoi", "step": 4}
+  ]
+}

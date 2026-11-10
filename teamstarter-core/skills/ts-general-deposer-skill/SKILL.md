@@ -1,147 +1,164 @@
 ---
 name: ts-general-deposer-skill
 description: >-
-  Dépose automatiquement dans Teamstarter chaque nouvelle version d'un skill rattaché à un projet
-  Teamstarter : dès qu'un SKILL.md qui porte la métadonnée teamstarter-project-id est écrit ou
-  modifié (par ts-general-creer-skill, par skill-creator ou à la main), appelle le tool
-  upload-project-skill du connecteur MCP Teamstarter avec l'id du projet et le contenu du
-  fichier, pour que le projet montre la dernière version de son skill. Déclencher
-  automatiquement, sans le demander à l'utilisateur, à la fin de chaque écriture ou modification
-  d'un tel SKILL.md, ou quand l'utilisateur dit "dépose mon skill", "mets à jour mon skill dans
-  Teamstarter", "envoie la nouvelle version de mon skill". Ne rien déposer pour un SKILL.md sans
-  cette métadonnée, pour un fichier inchangé depuis son dernier dépôt, quand le skill est
-  seulement exécuté ou lu, ni sans connecteur en écriture.
+  Enregistre automatiquement dans Teamstarter chaque nouvelle version d'un skill rattaché à
+  Teamstarter : dès qu'un skill dont le SKILL.md porte la métadonnée teamstarter-project-id est
+  écrit ou modifié (par ts-general-creer-skill, par skill-creator ou à la main), l'empaquette en
+  fichier .skill (archive zip du dossier du skill) et appelle le tool upload-project-skill du
+  connecteur MCP Teamstarter, pour que Teamstarter montre la dernière version du skill.
+  Déclencher automatiquement, sans le demander à l'utilisateur, à la fin de chaque écriture ou
+  modification d'un tel skill, ou quand l'utilisateur dit "enregistre mon skill dans
+  Teamstarter", "dépose mon skill", "envoie la nouvelle version de mon skill". Ne rien
+  enregistrer pour un skill sans cette métadonnée, pour un skill inchangé depuis son dernier
+  dépôt, quand le skill est seulement exécuté ou lu, ni sans connecteur en écriture.
 ---
 
-# Déposer automatiquement chaque version d'un skill dans Teamstarter
+# Enregistrer chaque version d'un skill dans Teamstarter
 
 ## Quand utiliser ce skill
 
-Un skill créé par un projet Teamstarter (skill `ts-general-creer-skill`) porte l'id de son projet
-dans ses métadonnées. Le projet garde le fichier du skill : sa page `/manage` montre le dernier
-déposé, le propose au partage avec toute l'organisation, et `project.skillFileId` le nomme. Pour
-que le projet montre toujours la version en cours, **chaque version est déposée dès qu'elle est
-écrite**, sans le demander : c'est ce que fait ce skill, par un appel au tool
-`upload-project-skill`, au nom de la personne qui a branché le connecteur.
+Un skill créé avec Teamstarter (skill `ts-general-creer-skill`) porte son id Teamstarter dans
+ses métadonnées. Teamstarter garde le fichier du skill : la page du skill le montre, le propose
+au partage avec toute l'organisation, et en garde les versions. Pour que Teamstarter montre
+toujours la version en cours, **chaque version est enregistrée dès qu'elle est écrite**, sans le
+demander : c'est ce que fait ce skill, par un appel au tool `upload-project-skill`, au nom de la
+personne qui a branché le connecteur.
 
 Ne pas utiliser pour autre chose : ce skill n'écrit rien d'autre dans Teamstarter. Déclarer une
 exécution du skill, c'est `ts-general-declarer-execution-skill`.
 
-## Sortie attendue
+## Ce que l'utilisateur lit
 
-Un appel `upload-project-skill` par version, et une ligne dans la réponse :
-« Version déposée sur le projet Teamstarter <id> (20/10 à 14 h 20). » ou la raison pour laquelle
-elle ne l'est pas.
+- **Première version, ou dépôt demandé par l'utilisateur** : une ligne, « Skill enregistré dans
+  Teamstarter. »
+- **Version qui suit une correction demandée par l'utilisateur** : rien. La correction se voit
+  dans le skill ; l'enregistrement ne s'annonce pas.
+- **Échec** : une ligne avec la raison (« Skill non enregistré dans Teamstarter : <raison>. »).
+- Jamais le mot « projet » ni l'id : pour l'utilisateur, c'est son skill.
 
 ## Quand déclencher
 
-À la fin de chaque écriture ou modification d'un `SKILL.md` dont l'en-tête porte l'id d'un
-projet :
+À la fin de chaque écriture ou modification d'un skill dont l'en-tête du `SKILL.md` porte l'id :
 
 ```markdown
 ---
 name: <nom-du-skill>
 description: <…>
 metadata:
-  teamstarter-project-id: "<id du projet>"
+  teamstarter-project-id: "<id>"
 ---
 ```
 
 - Lire aussi l'ancienne forme, à la racine de l'en-tête : `teamstarter_project_id: <id>`.
-- **Une modification = un dépôt**, une fois la modification terminée : plusieurs retouches du
-  fichier dans la même réponse font un seul dépôt, avant la réponse finale. Trois corrections
-  demandées l'une après l'autre font trois dépôts.
-- **La première version aussi** : dès que le `SKILL.md` est écrit pour la première fois, avant de
-  le montrer à l'utilisateur.
-- **Sans le demander à l'utilisateur** : le dépôt fait partie de l'écriture du skill. Le dire
-  après coup, en une ligne.
-- Une modification d'un autre fichier du skill (`references/`, `scripts/`) sans modification du
-  `SKILL.md` : ne rien déposer. Seul le `SKILL.md` est déposé.
+- **Une modification = un dépôt**, une fois la modification terminée : plusieurs retouches dans
+  la même réponse font un seul dépôt, avant la réponse finale. Trois corrections demandées l'une
+  après l'autre font trois dépôts.
+- **La première version aussi**, dès qu'elle est écrite et testée.
+- **Tout le dossier du skill** est déposé : une modification de `references/`, `scripts/` ou
+  `assets/` fait aussi une nouvelle version.
+- **Sans le demander à l'utilisateur** : le dépôt fait partie de l'écriture du skill.
 
 ## Quand ne pas déclencher
 
-- Le `SKILL.md` n'a pas d'id de projet : ce n'est pas un skill de projet Teamstarter. Ne rien
-  faire, ne rien dire.
+- Le `SKILL.md` n'a pas d'id : ce n'est pas un skill Teamstarter. Ne rien faire, ne rien dire.
 - L'id n'est pas un entier : ne rien déposer, et le signaler (l'en-tête est à corriger).
-- **Le contenu n'a pas changé** depuis le dernier dépôt fait dans la conversation : ne rien
-  déposer. Chaque dépôt crée pour les admins de l'organisation une tâche « partager ce fichier » ;
-  un fichier identique en créerait une de plus pour rien.
-- **Le skill est seulement exécuté, lu, résumé ou discuté** : pas de dépôt. Une exécution se
-  déclare avec `ts-general-declarer-execution-skill`.
+- **Rien n'a changé** depuis le dernier dépôt fait dans la conversation : ne rien déposer.
+  Chaque dépôt crée une version de plus et, pour les admins de l'organisation, une tâche
+  « partager ce fichier ».
+- **Le skill est seulement exécuté, lu, résumé ou discuté** : pas de dépôt.
 - L'en-tête est illisible (YAML cassé) : le corriger d'abord, puis déposer.
 - Jamais « pour essayer le tool ».
 - **Pas de connecteur Teamstarter, ou un connecteur sans le tool `upload-project-skill`** (accès
-  en lecture seule, ou plateforme qui ne l'expose pas encore) : ne pas passer par `run-mutation`,
-  et le dire une fois dans la conversation : « Version non déposée : le connecteur Teamstarter ne
-  permet pas de déposer un skill. Dépose le `SKILL.md` dans la section Fichiers de la page
-  `/manage` du projet. » Plusieurs connecteurs : celui de l'organisation du projet.
+  en lecture seule) : ne pas passer par `run-mutation`, et le dire une fois : « Skill non
+  enregistré dans Teamstarter : le connecteur ne le permet pas. Dépose le fichier
+  `<nom-du-skill>.skill` sur la page de ton skill dans Teamstarter. » Plusieurs connecteurs :
+  celui de l'organisation du skill.
 
 ## L'appel
 
-1. Lire le `SKILL.md` tel qu'il est enregistré, après la modification.
-2. L'encoder en base64 : le tool ne prend pas de chemin. Avec un outil d'exécution de code,
-   `base64 -w0 SKILL.md` ou
-   `python3 -c "import base64,sys;print(base64.b64encode(open(sys.argv[1],'rb').read()).decode())" SKILL.md` ;
-   sans, encoder soi-même le contenu exact du fichier (UTF-8).
-3. Appeler :
+1. **Empaqueter** le dossier du skill en `<nom-du-skill>.skill` : une archive zip qui contient
+   `<nom-du-skill>/SKILL.md` et les autres fichiers du skill, `<nom-du-skill>` étant le `name`
+   de l'en-tête. Depuis le dossier qui contient le dossier du skill :
+
+```bash
+python3 - <nom-du-skill> <<'EOF'
+import base64, pathlib, sys, zipfile
+name = sys.argv[1]
+out = pathlib.Path(f"{name}.skill")
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+    for path in sorted(pathlib.Path(name).rglob("*")):
+        if path.is_file() and "__pycache__" not in path.parts and path.name != ".DS_Store":
+            archive.write(path, path.as_posix())
+print(base64.b64encode(out.read_bytes()).decode())
+EOF
+```
+
+   Le script écrit le fichier `.skill` et affiche son contenu en base64 : le tool ne prend pas
+   de chemin. Sans outil d'exécution de code, le skill ne peut pas être empaqueté : donner le
+   dossier à l'utilisateur et le geste manuel (« Quand ne pas déclencher », dernier point).
+2. **Appeler** :
 
 ```
 upload-project-skill {
-  "projectId": <id du projet, entier>,
-  "fileName": "SKILL.md",
-  "contentBase64": "<contenu du SKILL.md en base64>"
+  "projectId": <id, entier>,
+  "fileName": "<nom-du-skill>.skill",
+  "contentBase64": "<le .skill en base64>"
 }
 ```
 
 | Argument | Valeur |
 |---|---|
-| `projectId` | l'id lu dans l'en-tête du `SKILL.md` déposé, jamais un autre |
-| `fileName` | `SKILL.md` |
-| `contentBase64` | le fichier entier, 1 Mo au plus une fois décodé |
+| `projectId` | l'id lu dans l'en-tête du `SKILL.md`, jamais un autre |
+| `fileName` | `<nom-du-skill>.skill`, **le même à chaque dépôt** : chaque dépôt sous ce nom est la version suivante ; un autre nom ferait un second skill |
+| `contentBase64` | l'archive entière, 1 Mo au plus une fois décodée |
+| `version` | à omettre : Teamstarter prend la dernière plus un |
 
 ## Ce que répond Teamstarter
 
-- **Succès** : la réponse donne `project.skillFileId`, égal à l'id du `projectFile` créé ; c'est
-  désormais le skill du projet. Les dépôts précédents restent dans les fichiers du projet.
+- **Succès** : `project.skillFileId` nomme la version déposée ; la précédente est gardée, mais
+  n'est plus listée sur la page du skill.
 - **« Only the organizers of the project can manage its files. »** : le compte du connecteur
-  n'est pas porteur du projet (un admin non porteur est refusé aussi). Le dire, et proposer de
+  n'est pas porteur du skill (un admin non porteur est refusé aussi). Le dire, et proposer de
   demander à un porteur de déposer, ou de se faire ajouter comme porteur.
-- **Fichier trop gros** (plus de 1 Mo) : le dire ; le `SKILL.md` est à raccourcir, le détail
-  déplacé dans `references/`.
-- **Autre refus** (projet d'une autre organisation, projet qui n'est pas un projet
-  d'automatisation avec l'IA, accès qui ne peut pas écrire) : ne pas réessayer, ne pas
-  contourner ; rapporter la raison en une ligne : « Version non déposée : <raison>. »
+- **Nom de fichier, archive ou `name` refusés** (le fichier ne s'appelle pas
+  `<nom-du-skill>.skill`, l'archive n'est pas un zip, ou son `SKILL.md` a un autre `name`) :
+  refaire l'archive comme au point 1 et redéposer une fois.
+- **Fichier trop gros** (plus de 1 Mo) : le dire ; les fichiers lourds du skill sont à réduire.
+- **Autre refus** (autre organisation, type qui n'est pas un skill, accès qui ne peut pas
+  écrire) : ne pas réessayer, ne pas contourner ; le dire en une ligne.
 
 ## Garde-fous
 
-- N'écrit que le dépôt du `SKILL.md`, jamais par `run-mutation`.
+- N'écrit que le dépôt du skill, jamais par `run-mutation`.
 - Ne modifie pas le skill.
-- Ne dépose jamais sur un autre projet que celui de l'en-tête, ni un fichier inchangé.
+- Ne dépose jamais sur un autre id que celui de l'en-tête, ni un skill inchangé.
 
 ## Tags de sécurité
 
 `écriture` : un dépôt de fichier par version du skill, sans validation à chaque fois (le dépôt
-fait partie de l'écriture du skill), annoncé à l'utilisateur.
+fait partie de l'écriture du skill). Produit un fichier local (le `.skill`).
 
 ## Exemple
 
 L'utilisateur demande d'ajouter une étape à son skill `cr-reunion-client`, dont l'en-tête porte
-`metadata: { teamstarter-project-id: "41207" }`. Le `SKILL.md` est modifié et enregistré, puis :
+`metadata: { teamstarter-project-id: "41207" }`. Le `SKILL.md` est modifié et enregistré, le
+dossier empaqueté en `cr-reunion-client.skill`, puis :
 
 ```
 upload-project-skill {
   "projectId": 41207,
-  "fileName": "SKILL.md",
-  "contentBase64": "LS0tCm5hbWU6IGNyLXJldW5pb24tY2xpZW50Ci4uLg=="
+  "fileName": "cr-reunion-client.skill",
+  "contentBase64": "UEsDBBQAAAAIAA…"
 }
 ```
 
-Ligne finale : « Version déposée sur le projet Teamstarter 41207 (20/10 à 14 h 20). »
+La réponse montre le skill modifié, sans ligne sur l'enregistrement : la modification suivait
+une demande de l'utilisateur.
 
 ## Ressources
 
-- Skills voisins : `ts-general-creer-skill` (créer le skill et suivre son projet),
-  `ts-general-declarer-execution-skill` (déclarer chaque exécution du skill).
+- Skills voisins : `ts-general-creer-skill` (créer le skill), `ts-general-declarer-execution-skill`
+  (déclarer chaque exécution du skill).
 
 ## Convention de nommage
 

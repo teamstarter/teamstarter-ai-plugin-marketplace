@@ -74,16 +74,19 @@ Syntaxe : `"where": {"statusGroup": {"in": ["structuration", "writing"]}}`.
 ## Qui est l'utilisateur du connecteur
 
 Le connecteur agit au nom de la personne qui l'a autorisé, mais aucune requête ne renvoie son
-identifiant. Le retrouver dans cet ordre, une fois par conversation, et le garder :
+identifiant. Le retrouver **sans rien lui demander**, dans cet ordre, une fois par conversation,
+et le garder :
 
 1. `userIdea(limit: 1) { userId }` : cette liste est forcée sur la personne du connecteur. Vide
    si l'IA ne lui a jamais suggéré d'idée.
-2. Sinon, demander son adresse email Teamstarter, puis
-   `user(where: {"email": "<email>"}) { id fullname organizationId }` (filtre sur l'email lu
-   dans le code, pas encore joué sur un accès collaborateur : s'il ne répond rien, chercher par
-   `fullname` avec `{"iLike": "%<nom>%"}`).
-3. **Faire confirmer** : « Je travaille pour <fullname> (#<id>), c'est bien toi ? ». Sans
-   confirmation, ne rien filtrer sur cet id.
+2. Sinon, l'`authorId` d'un projet que le connecteur vient de créer (`projectCreate` le
+   renvoie) : l'auteur est toujours la personne du connecteur.
+3. Sinon, travailler sans : `scopeForMe: true` donne ses projets en structuration et en
+   rédaction ; pour un autre projet, le chercher par le titre que l'utilisateur donne.
+
+**Ne jamais demander à l'utilisateur de confirmer son identité**, ni son email pour la
+retrouver. `notification` ne convient pas : sur un accès admin, elle renvoie aussi des
+notifications adressées à d'autres personnes.
 
 Utile pour `authorId` et `d_organizerIds`, qui s'interrogent ainsi :
 `"where": {"d_organizerIds": {"contains": [<id>]}}`.

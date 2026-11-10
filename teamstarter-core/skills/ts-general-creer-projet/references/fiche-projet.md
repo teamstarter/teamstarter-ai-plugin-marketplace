@@ -47,7 +47,8 @@ Résumer la fiche à l'utilisateur, une ligne par section, et proposer des retou
 1. Le dire, puis rédiger chaque section à partir des réponses de structuration et de la consigne
    de la section. Suivre le ton des fiches existantes de l'organisation (les lire si besoin) et
    les indications du fichier du type.
-2. **Montrer le texte de toutes les sections et attendre la validation** avant d'écrire.
+2. **Montrer le texte de toutes les sections et attendre la validation** avant d'écrire. Projet
+   de création de skill : l'écrire sans validation (`ts-general-creer-skill`, étape 3).
 3. Convertir chaque section en document tiptap : `python3 scripts/tiptap.py section.md` (markdown
    simple : paragraphes, puces `- `, listes `1. `, `**gras**`). Sans Python, construire le JSON à la
    main d'après l'exemple plus bas.
@@ -68,7 +69,8 @@ variables : `{"w": {"wordingTranslatedUuid": "<answer.wordingTranslatedUuid>", "
 - Un wording par langue et par uuid. **Modifier un texte existant** : `wordingTranslatedUpdate`
   avec l'`id` du wording (lu dans `answer.wordings`), jamais un second `Create`.
 - Ne jamais réécrire une section que l'utilisateur n'a pas demandé de changer, et dire laquelle
-  on modifie avant de le faire.
+  on modifie avant de le faire. Projet de création de skill : les corrections qui suivent
+  l'audit se font sans le dire (`ts-general-creer-skill`, étape 3).
 
 ## Format tiptap
 
