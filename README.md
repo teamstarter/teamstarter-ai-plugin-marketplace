@@ -89,6 +89,8 @@ moins possible.
   (sauf quand vous modifiez un skill existant).
 1. **Comprendre la tâche.** Ses étapes, ses sources de données, comment vous la faites
    aujourd'hui, et si le processus se découpe en plusieurs tâches, donc en plusieurs skills.
+   Chaque question vient avec des réponses proposées, par l'outil de question de l'outil IA :
+   vous cliquez, ou répondez autrement.
 2. **La structurer dans Teamstarter.** L'IA crée le skill dans Teamstarter sans vous le
    demander, prépare une réponse à chaque question de structuration et vous les soumet **une à
    une**, avec leur libellé exact : vous validez, ou répondez autrement. Les questions sont

@@ -66,10 +66,14 @@ de Teamstarter ne dit pas.
    proche existe, celles de l'étape 1, la validation de chaque réponse de structuration (et les
    noms des co-porteurs), le choix de l'objectif s'il y en a plusieurs, ce que l'audit ne
    permet pas de trancher seul, et les propositions des étapes 6 et 7.
-7. **Les questions à choix passent par l'outil de question** de l'outil IA (`ask_user`,
-   `AskUserQuestion` dans Claude Code et Cowork) : une question par appel, la réponse proposée
-   en premier choix, la réponse libre toujours possible. Sans cet outil : la même question en
-   une ligne, avec la proposition.
+7. **Toute question passe par l'outil de question** de l'outil IA (`ask_user`,
+   `AskUserQuestion` dans Claude Code et Cowork), à toutes les étapes, l'étape 1 comprise :
+   **jamais une question, ni une liste de questions, écrite dans le texte de la réponse**.
+   Chaque question a des réponses proposées (2 à 4), la plus probable en premier ; la réponse
+   libre reste toujours possible. Ce qu'une question ouverte demande (les étapes du processus,
+   un exemple) se propose : écrire la proposition dans la conversation, puis l'outil de
+   question pour la valider ou la corriger. Sans cet outil : une seule question par message,
+   avec ses réponses proposées numérotées.
 
 ## Vue d'ensemble
 
@@ -160,8 +164,27 @@ variables : `{"i": {"projectTypeId": {"in": [<ids>]}}, "p": {"projectTypeId": {"
 ## Étape 1 — Comprendre la tâche
 
 Comprendre la tâche assez pour répondre à toutes les questions de structuration et pour
-construire le skill. Conversation libre, quelques questions à la fois, en partant de ce que
-l'utilisateur a déjà dit (et de l'idée de départ, le cas échéant) :
+construire le skill, en partant de ce que l'utilisateur a déjà dit (et de l'idée de départ, le
+cas échéant).
+
+**Comment poser les questions** (règle 7) :
+
+- **Toujours avec l'outil de question**, jamais en liste dans le texte. Une question par appel ;
+  des questions courtes à choix sur le même sujet (« Pour qui ? », « À quelle fréquence ? »)
+  peuvent partir dans le même appel quand l'outil en accepte plusieurs, quatre au plus.
+- **Ne demander que ce qui manque** : ce que la demande, l'idée de départ ou les connecteurs
+  disent déjà ne se redemande pas.
+- **Toujours des réponses proposées**, tirées du contexte, la plus probable en premier :
+  « Pour qui est le résultat ? » → « Pour moi » / « Pour mon équipe » / « Pour la direction » ;
+  « À quelle fréquence ? » → « Chaque semaine » / « Chaque mois » / « À la demande » ; « D'où
+  viennent les données ? » → les outils dont un connecteur est branché, puis « Ailleurs ».
+- **Une question ouverte devient une proposition à valider** : écrire dans la conversation ce
+  que Claude comprend (les étapes du processus, les mesures d'un rapport, le livrable), puis
+  l'outil de question : « C'est bien ça ? » → « Oui » / « À corriger » (la réponse libre dit
+  quoi).
+- Une réponse qui ouvre une nouvelle question : la poser de la même façon, à la suite.
+
+**Ce qu'il faut savoir :**
 
 - **La tâche** : ce qu'elle produit, pour qui, ce qui la déclenche, combien de temps elle prend
   et combien de fois par mois.
