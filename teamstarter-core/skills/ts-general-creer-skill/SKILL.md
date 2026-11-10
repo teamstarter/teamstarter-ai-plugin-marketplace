@@ -439,9 +439,20 @@ upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "c
 
 - Toujours le même nom de fichier : chaque dépôt est la version suivante du skill.
 - Seuls les porteurs déposent : un refus « Only the organizers… » se dit à l'utilisateur.
-- Puis cocher « Créer mon agent IA », sans le demander ni le dire : l'action `create-my-agent`
-  de `project { projectDeliveryActions { id type doneAt } }`, avec
-  `setProjectWorkflowActionStatus(actionId: <id>, status: "done")`.
+- **Vérifier le dépôt** : relire `project(where: {"id": <id>}) { skillFileId skillName }`. Le
+  skill est enregistré quand `skillName` est le `name` du skill. Sinon, il ne l'est pas, quoi
+  qu'ait répondu l'appel.
+- **Un dépôt impossible ou refusé se dit tout de suite**, en une phrase avec la raison, avant la
+  présentation de l'étape 6 et pas à la fin d'un récapitulatif ; puis donner le fichier
+  `<nom-du-skill>.skill` et le geste (page du skill dans Teamstarter, section Fichiers, déposer
+  le fichier). Les cas sont dans `ts-general-deposer-skill` (archive trop grosse pour être
+  recopiée sans risque, outil absent, refus).
+- **Cocher « Créer mon agent IA » seulement quand le skill est enregistré** (`skillName`
+  renseigné), sans le demander ni le dire : l'action `create-my-agent` de
+  `project { projectDeliveryActions { id type doneAt } }`, avec
+  `setProjectWorkflowActionStatus(actionId: <id>, status: "done")`. Dépôt fait à la main par
+  l'utilisateur : relire `skillName` quand il dit l'avoir fait, puis cocher. Ne jamais écrire
+  que le skill est enregistré ou validé dans Teamstarter tant que `skillName` est vide.
 
 ## Étape 6 — Présenter le skill
 
@@ -466,9 +477,18 @@ produit, pour que l'utilisateur puisse le reprendre :
    Sans Python : écrire le SVG à la main sur le même modèle (fond blanc, trois colonnes
    « Entrées », « Étapes » numérotées et « Sorties », une flèche de chaque entrée vers son étape
    et de chaque étape vers ses sorties).
-3. **Afficher le SVG** : en artifact SVG ou en image quand l'outil IA le permet (claude.ai,
-   Cowork), sinon en donnant le fichier. Au-dessus, une phrase : le nom du skill et ce qu'il
-   fait. Pas de tableau en plus : le schéma porte les entrées, les étapes et les sorties.
+3. **Afficher le schéma dans la conversation**, dans la réponse elle-même, pas seulement en
+   fichier à ouvrir. Dans cet ordre :
+   - l'outil de l'outil IA qui affiche un visuel dans la réponse (dans claude.ai et Cowork,
+     l'outil de visualisation, par exemple `show_widget`) : lui passer le contenu du fichier
+     `<nom-du-skill>-schema.svg`, tel quel ;
+   - sinon, une image dans la réponse, si l'outil IA affiche les images markdown :
+     `![Schéma du skill](data:image/svg+xml;base64,<le SVG en base64>)` ;
+   - sinon seulement, le fichier (artifact SVG ou fichier joint), en disant de l'ouvrir.
+
+   Au-dessus, une phrase : le nom du skill et ce qu'il fait. Pas de tableau en plus : le
+   schéma porte les entrées, les étapes et les sorties. Le fichier `.svg` peut être joint en
+   plus, jamais à la place quand le schéma peut s'afficher dans la réponse.
 4. Donner le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork :
    Personnaliser → Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
 
@@ -488,7 +508,7 @@ L'outil de question : « On le lance une première fois sur un cas réel ? » �
   échec sur un problème que l'utilisateur ne peut pas lever seul : `ts-general-declarer-blocage`.
 - Puis : « Le résultat te convient ? » → « Oui » / « Non, à corriger ».
   - **Oui** : cocher « Tester l'agent en conditions réelles » (action `test-agent`), sans le
-    dire. Donner le lien de la page du skill
+    dire. Seulement après ce « Oui », jamais en même temps que « Créer mon agent IA ». Donner le lien de la page du skill
     (`<adresse de l'app>/<tag de l'organisation>/project/<id>/manage`) et la suite qui se fait
     dans Teamstarter : le faire valider par son ambassadeur, le partager à ses collègues.
   - **Non** : demander ce qui ne va pas, corriger (étape 5) en silence, proposer de relancer.

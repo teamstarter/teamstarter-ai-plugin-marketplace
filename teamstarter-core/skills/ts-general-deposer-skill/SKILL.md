@@ -96,6 +96,14 @@ EOF
    Le script écrit le fichier `.skill` et affiche son contenu en base64 : le tool ne prend pas
    de chemin. Sans outil d'exécution de code, le skill ne peut pas être empaqueté : donner le
    dossier à l'utilisateur et le geste manuel (« Quand ne pas déclencher », dernier point).
+
+   **Taille.** Le base64 se recopie d'un seul tenant dans l'appel, caractère pour caractère,
+   depuis la sortie du script. Jusqu'à 16 000 caractères (archive d'environ 12 Ko), le faire.
+   Au-delà, la recopie est trop risquée : une erreur rend l'archive illisible, et une erreur dans
+   un autre fichier que le `SKILL.md` peut être enregistrée sans être vue. Ne pas tenter ; dire
+   tout de suite, en une phrase : « Ton skill fait <taille> : je ne peux pas l'envoyer sans
+   risque par le connecteur. Dépose `<nom-du-skill>.skill` sur la page de ton skill dans
+   Teamstarter (section Fichiers). », et donner le fichier.
 2. **Appeler** :
 
 ```
@@ -116,7 +124,9 @@ upload-project-skill {
 ## Ce que répond Teamstarter
 
 - **Succès** : `project.skillFileId` nomme la version déposée ; la précédente est gardée, mais
-  n'est plus listée sur la page du skill.
+  n'est plus listée sur la page du skill. Le vérifier en relisant
+  `project(where: {"id": <id>}) { skillFileId skillName }` : `skillName` est le `name` du skill.
+  Sans cette relecture, ne pas dire que le skill est enregistré.
 - **« Only the organizers of the project can manage its files. »** : le compte du connecteur
   n'est pas porteur du skill (un admin non porteur est refusé aussi). Le dire, et proposer de
   demander à un porteur de déposer, ou de se faire ajouter comme porteur.

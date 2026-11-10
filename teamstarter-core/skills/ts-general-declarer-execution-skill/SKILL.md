@@ -69,8 +69,9 @@ metadata:
 
 ## L'appel
 
-Avant la première étape du skill : générer un `executionId` (UUID v4) et noter l'heure de début.
-Après la dernière étape, avant la réponse finale :
+Avant la première étape du skill : générer un `executionId` (UUID v4) et **lire l'heure sur une
+horloge**, avec un outil d'exécution de code : `date -u +%Y-%m-%dT%H:%M:%SZ` et `date +%s%3N`
+(millisecondes). Après la dernière étape, relire `date +%s%3N`, puis, avant la réponse finale :
 
 ```
 report-skill-execution {
@@ -87,9 +88,9 @@ report-skill-execution {
 | Argument | Valeur |
 |---|---|
 | `projectId` | l'id lu dans l'en-tête du `SKILL.md` exécuté, jamais un autre |
-| `inputTokens`, `outputTokens` | les tokens de l'exécution quand l'outil les affiche ; sinon une estimation : nombre de caractères lus par l'exécution (skill, messages, résultats d'outils) divisé par 4 pour l'entrée, caractères produits divisés par 4 pour la sortie. Dire dans la ligne finale qu'ils sont estimés |
-| `durationMs` | de la première étape à la dernière, d'après l'heure notée au début ; `0` sans horloge, en le disant |
-| `executedAt` | l'heure de début ; omise, Teamstarter prend l'heure de réception |
+| `inputTokens`, `outputTokens` | les tokens de l'exécution quand l'outil les affiche ; sinon **une estimation, jamais 0** pour une exécution qui a eu lieu : entrée = caractères lus par l'exécution (le `SKILL.md` et ses références, `wc -c` sur les fichiers lus, plus les messages de l'utilisateur et les résultats d'outils) divisés par 4 ; sortie = caractères produits (réponses, fichiers écrits) divisés par 4. Dire dans la ligne finale qu'ils sont estimés |
+| `durationMs` | la différence des deux lectures de `date +%s%3N`. **Jamais une estimation ni un chiffre rond** (« 20 minutes ») ; sans horloge, `0`, en le disant |
+| `executedAt` | l'heure lue au début avec `date -u`. **Jamais une heure devinée** : une heure inventée peut tomber dans le futur (« Dernière exécution : dans 2 minutes »). Sans horloge, l'omettre : Teamstarter prend l'heure de réception |
 | `outcome` | `success` si le skill a livré ce qu'il devait ; `failure` sur une erreur, une interruption, un résultat non livré |
 | `executionId` | le même pour toute nouvelle tentative de la même déclaration : Teamstarter n'écrit rien de plus et répond `created: false`. 255 caractères au plus : un UUID convient |
 
