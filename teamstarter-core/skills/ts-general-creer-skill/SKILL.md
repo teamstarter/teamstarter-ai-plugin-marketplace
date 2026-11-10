@@ -5,7 +5,8 @@ description: >-
   avec Claude, via le connecteur MCP Teamstarter. Regarde si une idée ou un skill proche existe
   déjà dans Teamstarter, présente les étapes, comprend la tâche (étapes, sources de données,
   découpage en plusieurs skills), crée le skill dans Teamstarter sans le demander, propose une
-  réponse à chaque question de structuration et la fait valider une à une, fait la fiche et
+  réponse à chaque question de structuration que l'étape 1 n'a pas couverte et la fait valider,
+  fait la fiche et
   l'audit, l'envoie en validation ou le publie sans demander quand l'organisation
   ne modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter,
   l'enregistre dans Teamstarter, le présente (entrées, sorties, étapes) et propose une première
@@ -192,7 +193,9 @@ cas échéant).
   quoi).
 - Une réponse qui ouvre une nouvelle question : la poser de la même façon, à la suite.
 
-**Ce qu'il faut savoir :**
+**Ce qu'il faut savoir** — de quoi répondre aux questions de structuration du type
+(`references/type-automatisation-ia.md`, « Les 16 questions ») : ce que l'utilisateur dit ou
+valide ici n'est plus demandé à l'étape 2.
 
 - **La tâche** : ce qu'elle produit, pour qui, ce qui la déclenche, combien de temps elle prend
   et combien de fois par mois.
@@ -251,7 +254,15 @@ grouper par section dans l'ordre : chaque section est une étape de la structura
 proposition de réponse pour **toutes** les questions restantes, obligatoires et facultatives, à
 partir de l'étape 1, sans demander à l'utilisateur s'il veut répondre lui-même.
 
-Puis, **une question à la fois**, avec l'outil de question :
+**Ce qui est déjà dit ne se repose pas.** Pour chaque question, regarder si l'utilisateur y a
+déjà répondu : dans sa demande, à l'étape 1, ou en validant une proposition (« C'est bien ça ? »
+→ « Oui »). Si oui, **écrire la réponse directement**, sans reposer la question, sans la faire
+valider et sans le dire : la durée et la fréquence demandées à l'étape 1, les étapes du
+processus qu'il a validées, le livrable qu'il a décrit. Seule une réponse qui ajoute ce que
+l'utilisateur n'a ni dit ni validé passe par l'outil de question. Une étape de la structuration
+dont toutes les réponses sont déjà connues s'écrit en silence, sans être nommée.
+
+Puis, pour les questions qui restent, **une à la fois**, avec l'outil de question :
 
 - en-tête : `Étape 2/5` (l'étape de la structuration) ;
 - question : le libellé exact de Teamstarter (`questionWordings.value`), avec « skill » à la
@@ -278,7 +289,7 @@ Après chaque réponse :
   dire une fois qu'ils reçoivent une notification de Teamstarter.
 - Le type n'a ni dépenses ni campagne.
 
-Quand toutes les questions sont validées (contrôle de fin de
+Quand toutes les questions ont leur réponse (contrôle de fin de
 `references/questions-structuration.md`), passer à l'étape 3 sans l'annoncer.
 
 ## Étape 3 — Fiche et audit, sans rien demander
@@ -536,7 +547,8 @@ category, description})`.
   audit et ses corrections, envoi en validation ou publication, enregistrement de chaque
   version, étapes « Créer mon agent IA » et « Tester l'agent » cochées. Toute autre écriture (co-porteurs, blocage) suit l'accord de
   l'utilisateur.
-- **Aucune réponse de structuration écrite sans sa validation** par l'utilisateur.
+- **Aucune réponse de structuration écrite que l'utilisateur n'a ni donnée ni validée**, et
+  aucune question reposée quand il y a déjà répondu.
 - **Ne rien inventer** : date, montant, nom, outil viennent de l'utilisateur ou d'une
   proposition qu'il a validée.
 - **Ne pas construire le skill avant `CASHEDOUT`.**
