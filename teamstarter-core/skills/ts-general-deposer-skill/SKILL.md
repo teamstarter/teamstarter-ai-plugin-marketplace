@@ -3,9 +3,9 @@ name: ts-general-deposer-skill
 description: >-
   Enregistre automatiquement dans Teamstarter chaque nouvelle version d'un skill rattaché à
   Teamstarter : dès qu'un skill dont le SKILL.md porte la métadonnée teamstarter-project-id est
-  écrit ou modifié (par ts-general-creer-skill, par skill-creator ou à la main), l'empaquette en
-  fichier .skill (archive zip du dossier du skill) et appelle le tool upload-project-skill du
-  connecteur MCP Teamstarter, pour que Teamstarter montre la dernière version du skill.
+  écrit ou modifié (par ts-general-creer-skill, par skill-creator ou à la main), envoie ses
+  fichiers en texte (ou son archive .skill) par le tool upload-project-skill du connecteur MCP
+  Teamstarter, pour que Teamstarter montre la dernière version du skill.
   Déclencher automatiquement, sans le demander à l'utilisateur, à la fin de chaque écriture ou
   modification d'un tel skill, ou quand l'utilisateur dit "enregistre mon skill dans
   Teamstarter", "dépose mon skill", "envoie la nouvelle version de mon skill". Ne rien
@@ -76,6 +76,33 @@ metadata:
 
 ## L'appel
 
+Deux formes, selon ce que le connecteur propose : regarder le schéma de l'outil
+`upload-project-skill`.
+
+**A. L'outil a l'argument `files` : l'utiliser, toujours.** Les fichiers du skill y passent en
+texte, et Teamstarter fabrique lui-même l'archive `.skill`. Rien à empaqueter, rien à encoder,
+pas de limite de recopie :
+
+```
+upload-project-skill {
+  "projectId": <id, entier>,
+  "fileName": "<nom-du-skill>.skill",
+  "files": [
+    { "path": "SKILL.md", "content": "<le texte entier du SKILL.md>" },
+    { "path": "references/<fichier>.md", "content": "<son texte entier>" }
+  ]
+}
+```
+
+- Un élément par fichier du dossier du skill : `path` relatif à ce dossier, `content` son texte
+  exact, tel qu'il est enregistré (le relire avant l'appel). Pas de `__pycache__` ni de
+  `.DS_Store`.
+- Le `SKILL.md` est obligatoire ; 200 fichiers et 4 Mo de texte au plus.
+- Un fichier qui n'est pas du texte (une image) ne passe pas en `files` : pour un tel skill, la
+  forme B.
+
+**B. Sinon (connecteur sans `files`, ou fichier binaire) : l'archive en base64.**
+
 1. **Empaqueter** le dossier du skill en `<nom-du-skill>.skill` : une archive zip qui contient
    `<nom-du-skill>/SKILL.md` et les autres fichiers du skill, `<nom-du-skill>` étant le `name`
    de l'en-tête. Depuis le dossier qui contient le dossier du skill :
@@ -117,9 +144,12 @@ upload-project-skill {
 | Argument | Valeur |
 |---|---|
 | `projectId` | l'id lu dans l'en-tête du `SKILL.md`, jamais un autre |
-| `fileName` | `<nom-du-skill>.skill`, **le même à chaque dépôt** : chaque dépôt sous ce nom est la version suivante ; un autre nom ferait un second skill |
-| `contentBase64` | l'archive entière, 1 Mo au plus une fois décodée |
+| `fileName` | `<nom-du-skill>.skill`, **le même à chaque dépôt**, dans les deux formes : chaque dépôt sous ce nom est la version suivante ; un autre nom ferait un second skill |
+| `files` (forme A) | les fichiers du skill en texte |
+| `contentBase64` (forme B) | l'archive entière, 1 Mo au plus une fois décodée |
 | `version` | à omettre : Teamstarter prend la dernière plus un |
+
+Jamais `files` et `contentBase64` dans le même appel : l'outil refuse.
 
 ## Ce que répond Teamstarter
 
@@ -132,7 +162,9 @@ upload-project-skill {
   demander à un porteur de déposer, ou de se faire ajouter comme porteur.
 - **Nom de fichier, archive ou `name` refusés** (le fichier ne s'appelle pas
   `<nom-du-skill>.skill`, l'archive n'est pas un zip, ou son `SKILL.md` a un autre `name`) :
-  refaire l'archive comme au point 1 et redéposer une fois.
+  corriger (le nom, ou l'archive comme au point 1 de la forme B) et redéposer une fois.
+- **`files` refusé** (pas de `SKILL.md`, chemin avec `..` ou `/` au début, chemin en double) :
+  la réponse nomme le fichier ; corriger la liste et redéposer une fois.
 - **Fichier trop gros** (plus de 1 Mo) : le dire ; les fichiers lourds du skill sont à réduire.
 - **Autre refus** (autre organisation, type qui n'est pas un skill, accès qui ne peut pas
   écrire) : ne pas réessayer, ne pas contourner ; le dire en une ligne.

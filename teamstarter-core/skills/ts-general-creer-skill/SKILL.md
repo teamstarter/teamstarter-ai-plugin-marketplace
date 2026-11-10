@@ -429,13 +429,17 @@ disponible, ne rien faire.
 faire seul (sur un exemple de l'étape 1, à blanc) maintenant ; ceux qui demandent l'utilisateur
 ou ses vraies données, à l'étape 7. Un test qui échoue : corriger et retester, sans le dire.
 
-**Enregistrer dans Teamstarter**, sans le demander, comme le dit `ts-general-deposer-skill` :
-empaqueter le dossier en `<nom-du-skill>.skill` (une archive zip qui contient
-`<nom-du-skill>/SKILL.md` et les autres fichiers), l'encoder en base64, puis
+**Enregistrer dans Teamstarter**, sans le demander, comme le dit `ts-general-deposer-skill`.
+Quand l'outil a l'argument `files`, envoyer les fichiers du skill en texte, Teamstarter
+fabrique l'archive :
 
 ```
-upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "contentBase64": "<…>" }
+upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "files": [{ "path": "SKILL.md", "content": "…" }, …] }
 ```
+
+Sinon, empaqueter le dossier en `<nom-du-skill>.skill` (une archive zip qui contient
+`<nom-du-skill>/SKILL.md` et les autres fichiers), l'encoder en base64 et le passer en
+`contentBase64`, dans la limite de taille de `ts-general-deposer-skill`.
 
 - Toujours le même nom de fichier : chaque dépôt est la version suivante du skill.
 - Seuls les porteurs déposent : un refus « Only the organizers… » se dit à l'utilisateur.
