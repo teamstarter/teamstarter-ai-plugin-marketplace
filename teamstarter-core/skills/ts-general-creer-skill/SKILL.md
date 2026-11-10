@@ -439,9 +439,20 @@ upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "c
 
 - Toujours le même nom de fichier : chaque dépôt est la version suivante du skill.
 - Seuls les porteurs déposent : un refus « Only the organizers… » se dit à l'utilisateur.
-- Puis cocher « Créer mon agent IA », sans le demander ni le dire : l'action `create-my-agent`
-  de `project { projectDeliveryActions { id type doneAt } }`, avec
-  `setProjectWorkflowActionStatus(actionId: <id>, status: "done")`.
+- **Vérifier le dépôt** : relire `project(where: {"id": <id>}) { skillFileId skillName }`. Le
+  skill est enregistré quand `skillName` est le `name` du skill. Sinon, il ne l'est pas, quoi
+  qu'ait répondu l'appel.
+- **Un dépôt impossible ou refusé se dit tout de suite**, en une phrase avec la raison, avant la
+  présentation de l'étape 6 et pas à la fin d'un récapitulatif ; puis donner le fichier
+  `<nom-du-skill>.skill` et le geste (page du skill dans Teamstarter, section Fichiers, déposer
+  le fichier). Les cas sont dans `ts-general-deposer-skill` (archive trop grosse pour être
+  recopiée sans risque, outil absent, refus).
+- **Cocher « Créer mon agent IA » seulement quand le skill est enregistré** (`skillName`
+  renseigné), sans le demander ni le dire : l'action `create-my-agent` de
+  `project { projectDeliveryActions { id type doneAt } }`, avec
+  `setProjectWorkflowActionStatus(actionId: <id>, status: "done")`. Dépôt fait à la main par
+  l'utilisateur : relire `skillName` quand il dit l'avoir fait, puis cocher. Ne jamais écrire
+  que le skill est enregistré ou validé dans Teamstarter tant que `skillName` est vide.
 
 ## Étape 6 — Présenter le skill
 
@@ -497,7 +508,7 @@ L'outil de question : « On le lance une première fois sur un cas réel ? » �
   échec sur un problème que l'utilisateur ne peut pas lever seul : `ts-general-declarer-blocage`.
 - Puis : « Le résultat te convient ? » → « Oui » / « Non, à corriger ».
   - **Oui** : cocher « Tester l'agent en conditions réelles » (action `test-agent`), sans le
-    dire. Donner le lien de la page du skill
+    dire. Seulement après ce « Oui », jamais en même temps que « Créer mon agent IA ». Donner le lien de la page du skill
     (`<adresse de l'app>/<tag de l'organisation>/project/<id>/manage`) et la suite qui se fait
     dans Teamstarter : le faire valider par son ambassadeur, le partager à ses collègues.
   - **Non** : demander ce qui ne va pas, corriger (étape 5) en silence, proposer de relancer.
