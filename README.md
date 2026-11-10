@@ -103,8 +103,9 @@ moins possible.
    Teamstarter en fichier `.skill`, puis chaque nouvelle version, y compris celles faites plus
    tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`) ; l'étape « Créer mon
    agent IA » est cochée.
-6. **Présentation.** Le nom du skill, ce qu'il prend (entrées), ce qu'il produit (sorties) et
-   ses étapes, avec le fichier pour l'installer. Vous pouvez tout changer.
+6. **Présentation**, par un schéma SVG : le nom du skill, ce qu'il prend (entrées), ses étapes
+   numérotées et ce qu'il produit (sorties), avec le fichier pour l'installer. Vous pouvez tout
+   changer.
 7. **Première exécution**, sur un cas réel. Si le résultat vous convient, l'étape « Tester l'agent
    en conditions réelles » est cochée.
 

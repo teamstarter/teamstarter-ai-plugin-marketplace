@@ -388,20 +388,37 @@ upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "c
 
 ## Étape 6 — Présenter le skill
 
-Montrer le skill pour que l'utilisateur puisse le reprendre :
+Présenter le skill par **un schéma SVG** de ce qu'il prend, de ses étapes et de ce qu'il
+produit, pour que l'utilisateur puisse le reprendre :
 
-- **son nom** et ce qu'il fait, en une phrase ;
-- **ce qu'il prend** (entrées) : un tableau, une ligne par entrée — quoi, d'où (outil,
-  connecteur, fichier, message de l'utilisateur), sous quelle forme ;
-- **ce qu'il produit** (sorties) : un tableau — quoi, où, sous quelle forme ;
-- **ses étapes** : un schéma dans l'ordre (diagramme, ou visuel quand l'outil IA en affiche),
-  sinon une liste numérotée, une ligne par étape avec ce qu'elle lit et ce qu'elle produit ;
-- le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork : Personnaliser →
-  Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
+1. Écrire `<nom-du-skill>-schema.json`, à côté du dossier du skill (pas dedans : il n'est pas
+   déposé), d'après ce que le `SKILL.md` construit fait vraiment, au format de
+   `assets/exemple-schema.json` :
+   - `name` (le `name` de l'en-tête), `title` (la tâche), `description` (ce que fait le skill,
+     en une phrase) ;
+   - `inputs`, ce qu'il prend : `label` (quoi), `detail` (d'où et sous quelle forme : outil,
+     connecteur, fichier, message de l'utilisateur), `step` (le numéro de l'étape qui le lit) ;
+   - `steps`, ses étapes dans l'ordre : `label` (ce qu'elle fait, un verbe à l'infinitif),
+     `detail` (ce qu'elle lit ou produit, une ligne) ;
+   - `outputs`, ce qu'il produit : `label`, `detail` (où, sous quelle forme), `step` (l'étape
+     qui le produit).
+
+   Des libellés de 5 mots au plus, des détails d'une ligne, 8 étapes au plus (regrouper
+   au-delà). Pas de donnée réelle : un client, un montant, une personne restent génériques.
+2. `python3 scripts/schema_svg.py <nom-du-skill>-schema.json --out <nom-du-skill>-schema.svg`.
+   Sans Python : écrire le SVG à la main sur le même modèle (fond blanc, trois colonnes
+   « Entrées », « Étapes » numérotées et « Sorties », une flèche de chaque entrée vers son étape
+   et de chaque étape vers ses sorties).
+3. **Afficher le SVG** : en artifact SVG ou en image quand l'outil IA le permet (claude.ai,
+   Cowork), sinon en donnant le fichier. Au-dessus, une phrase : le nom du skill et ce qu'il
+   fait. Pas de tableau en plus : le schéma porte les entrées, les étapes et les sorties.
+4. Donner le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork :
+   Personnaliser → Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
 
 Puis l'outil de question : « Ce skill te convient ? » → « Oui, on l'essaie » / « Changer les
 entrées ou les sorties » / « Changer les étapes ». Un changement : le faire (étape 5 : modifier,
-retester, empaqueter, enregistrer), puis présenter de nouveau, sans dire ce qui a changé.
+retester, empaqueter, enregistrer), refaire le schéma sous les mêmes noms de fichier, puis le
+montrer de nouveau, sans dire ce qui a changé.
 
 ## Étape 7 — Première exécution
 
@@ -500,7 +517,8 @@ category, description})`.
 
 `écriture` : crée et structure un skill dans Teamstarter, l'envoie en validation, enregistre ses
 versions, coche ses étapes de réalisation ; chaque réponse de structuration est validée par
-l'utilisateur ; co-porteurs et blocages après accord. Produit un fichier local (le `.skill`).
+l'utilisateur ; co-porteurs et blocages après accord. Produit des fichiers locaux (le `.skill`,
+le schéma `-schema.svg` et son `-schema.json`).
 
 ## Fallback
 
@@ -519,6 +537,7 @@ l'utilisateur ; co-porteurs et blocages après accord. Produit un fichier local 
 - `references/type-automatisation-ia.md` — les questions du type, la correspondance réponses →
   fiche.
 - `references/fiche-projet.md` et `scripts/tiptap.py` — générer ou rédiger la fiche.
+- `scripts/schema_svg.py` et `assets/exemple-schema.json` — le schéma SVG du skill (étape 6).
 - Skills voisins : `ts-general-deposer-skill` (enregistrer chaque version),
   `ts-general-declarer-execution-skill` (compter les exécutions), `ts-general-declarer-blocage`
   (blocages), `ts-general-lister-idees-automatisation` (partir d'une idée),

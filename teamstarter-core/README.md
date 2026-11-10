@@ -41,9 +41,9 @@ sources de données, découpage en plusieurs skills), crée le skill dans Teamst
 une à une ses réponses proposées aux questions de structuration, fait la fiche et l'audit,
 l'envoie en validation ou passe directement à la création quand votre organisation ne modère
 pas, construit et teste le skill en suivant le prompt de création de Teamstarter, l'enregistre
-dans Teamstarter, vous le présente (entrées, sorties, étapes) et propose une première
-exécution. Il ne vous demande jamais de confirmer votre identité, et applique vos corrections
-sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
+dans Teamstarter, vous le présente dans un schéma SVG (entrées, étapes, sorties) et propose une
+première exécution. Il ne vous demande jamais de confirmer votre identité, et applique vos
+corrections sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
 statistiques sont dans la carte « Utilisation du skill » de sa page.
 
 **Remonter les blocages** : sur un projet en réalisation ou mis en place, de n'importe quel type,
@@ -133,6 +133,8 @@ tient le référentiel la fusionne ensuite, hors du plugin.
     Python, Claude construit ce document lui-même ;
   - `ts-general-deposer-skill` empaquette le skill en `.skill` avec un court script Python
     (bibliothèque standard) ;
+  - `ts-general-creer-skill/scripts/schema_svg.py` dessine le schéma SVG du skill (entrées,
+    étapes, sorties) à partir d'un fichier JSON (bibliothèque standard) ;
   - dans les skills RPT, `scripts/build_rpt.py` et `validate_rpt.py` vérifient une carte, une
     observation ou un `rpt-config.yaml`, `preview_rpt.py` produit l'aperçu de ce qui sera envoyé
     et signale les données personnelles, `check_datamap.py` vérifie la carte des données,
