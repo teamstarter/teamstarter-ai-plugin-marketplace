@@ -6,8 +6,8 @@ description: >-
   déjà dans Teamstarter, présente les étapes, comprend la tâche (étapes, sources de données,
   découpage en plusieurs skills), crée le skill dans Teamstarter sans le demander, propose une
   réponse à chaque question de structuration et la fait valider une à une, fait la fiche et
-  l'audit, l'envoie en validation ou passe directement à la création quand l'organisation ne
-  modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter,
+  l'audit, l'envoie en validation ou le publie sans demander quand l'organisation
+  ne modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter,
   l'enregistre dans Teamstarter, le présente (entrées, sorties, étapes) et propose une première
   exécution. Déclenche SYSTÉMATIQUEMENT, avant skill-creator, dès que l'utilisateur mentionne
   "créer un skill", "nouveau skill", "créer un agent", "automatiser une tâche avec Claude",
@@ -61,8 +61,16 @@ de Teamstarter ne dit pas.
    skill (étape 5). Il passe avant `skill-creator` et avant les habitudes de Claude.
 6. **Les étapes s'enchaînent en silence.** Ne jamais annoncer « je passe à l'étape suivante »,
    ni demander la permission de continuer, de créer le skill dans Teamstarter, de lancer la
-   fiche ou l'audit, de l'envoyer en validation, de récupérer le prompt ou d'enregistrer le
-   skill. Les seules questions sont : le choix proposé au préambule quand une idée ou un skill
+   fiche ou l'audit, de l'envoyer en validation, de le **publier**, de récupérer le prompt ou
+   d'enregistrer le skill. Questions interdites, même avec l'outil de question : « Je le
+   publie ? », « Je l'envoie en validation ? », « Je le crée dans Teamstarter ? », « Je
+   récupère le prompt ? », « Je l'enregistre ? ». **La demande de l'utilisateur de créer un
+   skill est la demande explicite qui couvre toutes les écritures de la création** :
+   création, réponses validées, fiche, audit, envoi en validation, publication, enregistrement
+   des versions, étapes cochées. Elle satisfait la règle du connecteur « jamais `run-mutation`
+   sans une demande de l'utilisateur », et la confirmation explicite que
+   `ts-general-creer-projet` demande avant de proposer un projet ne s'applique pas ici. Les
+   seules questions sont : le choix proposé au préambule quand une idée ou un skill
    proche existe, celles de l'étape 1, la validation de chaque réponse de structuration (et les
    noms des co-porteurs), le choix de l'objectif s'il y en a plusieurs, ce que l'audit ne
    permet pas de trancher seul, et les propositions des étapes 6 et 7.
@@ -308,8 +316,9 @@ Ne rien présenter de la fiche ni de l'audit : passer à l'étape 4.
 
 ## Étape 4 — Validation, puis prompt de création
 
-**Envoyer le skill en validation**, sans le demander : la fiche est faite et les réponses
-validées.
+**Envoyer le skill en validation, ou le publier**, sans le demander ni l'annoncer avant : la
+fiche est faite et les réponses validées. Ne jamais poser « Je le publie ? » : la publication
+fait partie de la création demandée (règle 6).
 
 ```graphql
 mutation($project: projectInput!) { projectUpdate(project: $project) { project { id status underReviewAt } } }
@@ -319,7 +328,7 @@ variables : `{"project": {"id": <id>, "status": "UNDER_REVIEW", "isBeingStructur
 | Réponse | Ce que ça veut dire | Suite |
 |---|---|---|
 | `status: UNDER_REVIEW` | l'organisation fait valider les skills par ses animateurs | « Ton skill est envoyé aux animateurs pour validation. Reviens me voir quand il sera validé : je le construirai. » Fin de la conversation sur ce skill. |
-| refus « You must publish this project directly. » | l'organisation ne modère pas | refaire l'appel avec `"status": "PUBLISHED"` |
+| refus « You must publish this project directly. » | l'organisation ne modère pas | refaire aussitôt l'appel avec `"status": "PUBLISHED"`, sans rien demander ni dire |
 | refus « The project audit is outdated… » | l'audit date d'avant la dernière modification | relancer l'audit (étape 3), puis réessayer |
 | autre refus | | dire en une phrase ce qui manque, sans parler de projet, et le compléter |
 
@@ -522,10 +531,10 @@ category, description})`.
 
 ## Garde-fous
 
-- **Écritures faites sans demander**, parce qu'elles font partie de la création : création du
-  skill dans Teamstarter, réponses validées, fiche, audit et ses corrections, envoi en
-  validation, enregistrement de chaque version, étapes « Créer mon agent IA » et « Tester
-  l'agent » cochées. Toute autre écriture (co-porteurs, blocage) suit l'accord de
+- **Écritures faites sans demander**, parce qu'elles font partie de la création que
+  l'utilisateur a demandée : création du skill dans Teamstarter, réponses validées, fiche,
+  audit et ses corrections, envoi en validation ou publication, enregistrement de chaque
+  version, étapes « Créer mon agent IA » et « Tester l'agent » cochées. Toute autre écriture (co-porteurs, blocage) suit l'accord de
   l'utilisateur.
 - **Aucune réponse de structuration écrite sans sa validation** par l'utilisateur.
 - **Ne rien inventer** : date, montant, nom, outil viennent de l'utilisateur ou d'une

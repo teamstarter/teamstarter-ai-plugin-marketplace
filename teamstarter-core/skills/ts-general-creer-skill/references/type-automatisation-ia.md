@@ -12,8 +12,8 @@ lire ses questions sur le projet créé, comme pour tout type.
 ## Règles du projet de création de skill
 
 Un projet de l'un de ces deux types crée un skill, et c'est `ts-general-creer-skill` qui mène sa
-création (création sans validation, fiche et audit sans rien demander, envoi en validation
-automatique). Ces règles valent pour tout le parcours, dans ce que Claude dit et demande à
+création (création sans validation, fiche et audit sans rien demander, envoi en validation ou
+publication automatique : jamais « Je le publie ? »). Ces règles valent pour tout le parcours, dans ce que Claude dit et demande à
 l'utilisateur :
 
 1. **« Skill », jamais « projet » ni « brouillon ».** Pour l'utilisateur, c'est « ton skill » :

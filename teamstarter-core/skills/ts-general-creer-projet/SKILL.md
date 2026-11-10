@@ -274,7 +274,8 @@ Une ligne : l'organisation relit les projets → `UNDER_REVIEW`. Aucune : demand
 l'utilisateur si son bouton dans l'app dit « Soumettre le projet » (relecture) ou « Publier le
 projet » (publication directe), et écrire `UNDER_REVIEW` dans le doute.
 
-**Validation 4.** Afficher le récapitulatif (titre, type, objectif et mode, description, date et
+**Validation 4** (pas pour un skill : `ts-general-creer-skill` envoie en validation ou publie
+sans le demander). Afficher le récapitulatif (titre, type, objectif et mode, description, date et
 lieu le cas échéant, budget et lignes, complétion, audit) et **ce qui va se passer** (« Le
 projet part en relecture chez les animateurs » ou « Le projet sera visible par toute
 l'organisation »). Attendre une confirmation explicite.

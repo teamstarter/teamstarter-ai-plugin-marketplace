@@ -10,7 +10,7 @@ plateforme quand c'est précisé.
 | `list-schema` | Ce que cet accès peut appeler : requêtes, mutations, et la liste des types qui ont une note. |
 | `describe-type` | Les champs d'un type, et sa note quand elle existe. Toujours le lancer avant d'interroger un type dont la note est signalée par `list-schema`. |
 | `run-query` | Lire. |
-| `run-mutation` | Écrire. Absent d'un accès en lecture seule. **Jamais sans une demande de l'utilisateur dans la conversation.** |
+| `run-mutation` | Écrire. Absent d'un accès en lecture seule. **Jamais sans une demande de l'utilisateur dans la conversation.** La demande de créer un skill (`ts-general-creer-skill`) en est une : elle couvre toutes les écritures de la création, publication comprise, sans confirmation de plus. |
 
 Un accès multi-organisations (staff Teamstarter) demande `organizationTag` à chaque appel, et
 `api: "organization"` pour les requêtes d'une organisation. Un accès collaborateur porte déjà son
