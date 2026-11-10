@@ -22,7 +22,7 @@ dans ChatGPT et dans l'app.
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type, de l'idée jusqu'à sa proposition ; reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Monte un projet pour notre séminaire de juin », « Reprends mon brouillon », « Génère la fiche de mon projet », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun, et choisir lequel reprendre | « Où en sont mes projets ? », « Mes brouillons », « Qu'est-ce qu'il me reste à faire sur Teamstarter ? » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (une réponse proposée à chaque question, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée-moi un agent qui… », « Crée le skill de mon projet », « Reprends mon skill », « Modifie mon skill », « Mon skill est bloqué » |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (ce que vous avez déjà dit est repris tel quel ; une réponse proposée pour le reste, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée-moi un agent qui… », « Crée le skill de mon projet », « Reprends mon skill », « Modifie mon skill », « Mon skill est bloqué » |
 | `ts-general-deposer-skill` | Enregistrer dans Teamstarter chaque version d'un skill, en fichier `.skill` | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), rédigé, validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Déclare un blocage », « Le blocage est levé », « Quels sont les blocages de mon projet ? » ; proposé seul quand un skill de projet échoue |
@@ -92,9 +92,10 @@ moins possible.
    Chaque question vient avec des réponses proposées, par l'outil de question de l'outil IA :
    vous cliquez, ou répondez autrement.
 2. **La structurer dans Teamstarter.** L'IA crée le skill dans Teamstarter sans vous le
-   demander, prépare une réponse à chaque question de structuration et vous les soumet **une à
-   une**, avec leur libellé exact : vous validez, ou répondez autrement. Les questions sont
-   regroupées en étapes de la structuration.
+   demander et écrit directement les réponses que vous avez déjà données à l'étape 1. Pour les
+   autres questions de structuration, elle prépare une réponse et vous les soumet **une à une**,
+   avec leur libellé exact : vous validez, ou répondez autrement. Les questions sont regroupées
+   en étapes de la structuration.
 3. **Fiche et audit**, faits par l'IA sans rien vous demander, sauf une information que l'audit
    réclame et qu'elle n'a pas.
 4. **Validation.** Si votre organisation fait valider les skills par ses animateurs, le skill

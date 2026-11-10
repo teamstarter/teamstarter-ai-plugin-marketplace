@@ -12,8 +12,8 @@ lire ses questions sur le projet créé, comme pour tout type.
 ## Règles du projet de création de skill
 
 Un projet de l'un de ces deux types crée un skill, et c'est `ts-general-creer-skill` qui mène sa
-création (création sans validation, fiche et audit sans rien demander, envoi en validation
-automatique). Ces règles valent pour tout le parcours, dans ce que Claude dit et demande à
+création (création sans validation, fiche et audit sans rien demander, envoi en validation ou
+publication automatique : jamais « Je le publie ? »). Ces règles valent pour tout le parcours, dans ce que Claude dit et demande à
 l'utilisateur :
 
 1. **« Skill », jamais « projet » ni « brouillon ».** Pour l'utilisateur, c'est « ton skill » :
@@ -26,7 +26,9 @@ l'utilisateur :
    de question de l'outil IA. Chaque question a son libellé exact (`questionWordings.value` du
    projet), avec « skill » à la place de « projet », sans autre reformulation. Claude propose une
    réponse à chaque question, obligatoire ou non, à partir de ce qu'il sait de la tâche ; elle
-   est le premier choix (« Valider ») ; l'utilisateur valide ou répond autrement. Une proposition
+   est le premier choix (« Valider ») ; l'utilisateur valide ou répond autrement. Une question à
+   laquelle l'utilisateur a déjà répondu, ou dont il a déjà validé la réponse, plus tôt dans la
+   conversation, n'est ni reposée ni revalidée : sa réponse s'écrit directement. Une proposition
    trop longue pour un choix s'écrit dans la conversation juste avant la question. La réponse de
    l'utilisateur s'écrit telle qu'il l'a donnée.
 4. **Des étapes de la structuration, jamais des « sections ».** Chaque section de questions est

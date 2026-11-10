@@ -18,7 +18,7 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type (événement, automatisation avec l'IA, autre) jusqu'à sa proposition, ou reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Reprends mon brouillon », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun | « Où en sont mes projets ? », « Mes brouillons » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (une réponse proposée à chaque question, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (ce que vous avez déjà dit est repris tel quel ; une réponse proposée pour le reste, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée le skill de mon projet », « Reprends mon skill », « Mon skill est bloqué » |
 | `ts-general-deposer-skill` | Enregistrer dans Teamstarter chaque version d'un skill, en fichier `.skill` | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Le blocage est levé » ; proposé seul quand un skill de projet échoue |
@@ -37,10 +37,10 @@ tard.
 
 **Créer un skill** se fait en conversation, en parlant toujours de votre skill : Claude regarde
 si une idée ou un skill proche existe déjà, présente les étapes, comprend la tâche (étapes,
-sources de données, découpage en plusieurs skills), crée le skill dans Teamstarter, vous soumet
-une à une ses réponses proposées aux questions de structuration, fait la fiche et l'audit,
-l'envoie en validation ou passe directement à la création quand votre organisation ne modère
-pas, construit et teste le skill en suivant le prompt de création de Teamstarter, l'enregistre
+sources de données, découpage en plusieurs skills), crée le skill dans Teamstarter, reprend
+ce que vous avez déjà dit et vous soumet une à une ses réponses proposées aux autres questions
+de structuration, fait la fiche et l'audit, l'envoie en validation ou le publie quand votre
+organisation ne modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter, l'enregistre
 dans Teamstarter, vous le présente dans un schéma SVG (entrées, étapes, sorties) et propose une
 première exécution. Il ne vous demande jamais de confirmer votre identité, et applique vos
 corrections sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
@@ -151,7 +151,7 @@ tient le référentiel la fusionne ensuite, hors du plugin.
 - Rien n'est écrit dans Teamstarter sans votre accord, sauf ce qui fait partie de la création
   d'un skill (création, fiche, audit, envoi en validation, enregistrement de chaque version,
   étapes cochées) et la déclaration de ses utilisations. Aucune réponse de structuration n'est
-  écrite sans votre validation.
+  écrite que vous n'ayez donnée ou validée, et aucune question ne vous est reposée.
 - Rien n'est inventé : date, lieu, montant, prestataire, co-porteur sont demandés, ou notés « à
   préciser ».
 - Une réponse ou une section n'est jamais réécrite sans vous le dire.
