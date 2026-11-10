@@ -1,216 +1,353 @@
 ---
 name: ts-general-creer-skill
 description: >-
-  Point d'entrée quand l'utilisateur veut créer un skill, un agent IA, ou automatiser une tâche
-  avec Claude : porte la création dans un projet Teamstarter « Automatisation de processus avec
-  l'IA » via le connecteur MCP Teamstarter. Crée et propose le projet (ts-general-creer-projet),
-  attend sa validation, puis, une fois le projet en réalisation, récupère automatiquement le
-  prompt de création, fait écrire le skill par skill-creator avec l'id du projet dans ses
-  métadonnées, le dépose automatiquement dans Teamstarter à chaque version, valide l'étape
-  « Créer mon agent IA », fait tester le skill, déclare les blocages et lit son usage. Déclenche
-  SYSTÉMATIQUEMENT, avant skill-creator, dès que l'utilisateur mentionne "créer un skill",
-  "nouveau skill", "créer un agent", "automatiser une tâche avec Claude", "crée le skill de mon
-  projet", "reprendre mon skill", "modifier mon skill", "nouvelle version de mon skill", "mon
-  skill est bloqué", "usage de mon skill". Pour seulement lister ses projets :
-  ts-general-lister-projets.
+  Point d'entrée quand l'utilisateur veut créer un skill, un agent IA ou automatiser une tâche
+  avec Claude, via le connecteur MCP Teamstarter. Regarde si une idée ou un skill proche existe
+  déjà dans Teamstarter, présente les étapes, comprend la tâche (étapes, sources de données,
+  découpage en plusieurs skills), crée le skill dans Teamstarter sans le demander, propose une
+  réponse à chaque question de structuration et la fait valider une à une, fait la fiche et
+  l'audit, l'envoie en validation ou passe directement à la création quand l'organisation ne
+  modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter,
+  l'enregistre dans Teamstarter, le présente (entrées, sorties, étapes) et propose une première
+  exécution. Déclenche SYSTÉMATIQUEMENT, avant skill-creator, dès que l'utilisateur mentionne
+  "créer un skill", "nouveau skill", "créer un agent", "automatiser une tâche avec Claude",
+  "crée le skill de", "reprendre mon skill", "modifier mon skill", "usage de mon skill".
 ---
 
-# Créer un skill par un projet Teamstarter
+# Créer un skill avec Teamstarter
 
 ## Quand utiliser ce skill
 
 Un collaborateur veut un skill (un agent, un assistant) qui fait une tâche de son travail. Dans
-son organisation, un skill est porté par un projet Teamstarter de type « Automatisation de
-processus avec l'IA » (`PROCESS_AUTOMATION_WITH_AI`) : le projet décrit la tâche, passe par la
-validation de l'organisation, puis la page de gestion du projet (`/manage`) suit la construction
-de l'agent, son test, son usage et ses blocages.
+son organisation, chaque skill est enregistré dans Teamstarter : sa tâche y est structurée, il
+y est validé, son fichier y est déposé, ses exécutions y sont comptées. Techniquement, c'est un
+projet Teamstarter de type « Automatisation de processus avec l'IA » ; pour l'utilisateur, c'est
+**son skill**.
 
-Ce skill est le **point d'entrée** : il passe avant `skill-creator` et lui confie l'écriture du
-skill une fois le projet validé. Il sert aussi à reprendre un skill commencé, à en déposer une
-nouvelle version, ou à déclarer un blocage.
+Ce skill mène toute la création, de la première question à la première exécution, en demandant
+le moins possible : l'utilisateur décrit sa tâche, valide les réponses de structuration une à
+une, puis regarde le skill créé et l'essaie. Il sert aussi à reprendre un skill commencé, à
+modifier un skill existant, à lire son utilisation ou à déclarer un blocage.
 
-Ne pas utiliser pour un projet d'un autre type (`ts-general-creer-projet`), ni pour seulement
-voir ses projets (`ts-general-lister-projets`).
+Il passe avant `skill-creator` : `skill-creator` ne sert qu'à l'étape 5, pour ce que le prompt
+de Teamstarter ne dit pas.
 
-## Sortie attendue
+## Règles de la conversation (obligatoires)
 
-- un projet `PROCESS_AUTOMATION_WITH_AI` proposé, puis en réalisation (`CASHEDOUT`) ;
-- un skill dont le `SKILL.md` porte l'id du projet dans ses métadonnées, déposé dans Teamstarter
-  à chaque version sans validation, et livré à l'utilisateur en zip prêt à installer ;
-- les étapes « Créer mon agent IA » et « Tester l'agent en conditions réelles » validées ;
-- un point de blocage sur le projet pour chaque problème qui empêche de créer ou d'utiliser le
-  skill.
+1. **Ne jamais demander à l'utilisateur de confirmer son identité.** Le retrouver sans rien lui
+   demander (« Qui est l'utilisateur du connecteur », `references/regles-api.md`) ; sans
+   résultat, travailler sans son id.
+2. **Parler de skill, jamais de projet.** Dans tout ce que l'utilisateur lit, y compris le
+   libellé des questions de structuration :
+
+   | Dans Teamstarter | À dire |
+   |---|---|
+   | le projet, ton projet, le projet de création de skill, le brouillon | ton skill |
+   | le titre du projet | la tâche |
+   | la fiche du projet | la fiche de ton skill |
+   | projet en relecture, validé, en réalisation | skill en attente de validation, validé |
+   | la page `/manage` du projet | la page de ton skill dans Teamstarter |
+
+   Un libellé de Teamstarter qui contient « projet » se montre avec « skill » à la place, et
+   n'est pas modifié autrement.
+3. **Les étapes de la structuration, jamais les « sections ».** Les questions de structuration
+   sont regroupées par Teamstarter en sections : chacune est une **étape de la structuration**
+   (« Étape 2/5 de la structuration : Impact de l'IA »). Le mot « section » n'apparaît jamais.
+4. **Les mises à jour sont silencieuses.** Après un retour de l'utilisateur, appliquer la
+   correction et continuer, sans dire « j'ai mis à jour », « j'ai corrigé », « nouvelle
+   version », ni annoncer un nouveau dépôt. Montrer le résultat quand il faut le revoir, sans
+   commentaire sur ce qui a changé.
+5. **Suivre le prompt de création de Teamstarter** pour la construction et pour les tests du
+   skill (étape 5). Il passe avant `skill-creator` et avant les habitudes de Claude.
+6. **Les étapes s'enchaînent en silence.** Ne jamais annoncer « je passe à l'étape suivante »,
+   ni demander la permission de continuer, de créer le skill dans Teamstarter, de lancer la
+   fiche ou l'audit, de l'envoyer en validation, de récupérer le prompt ou d'enregistrer le
+   skill. Les seules questions sont : le choix proposé au préambule quand une idée ou un skill
+   proche existe, celles de l'étape 1, la validation de chaque réponse de structuration (et les
+   noms des co-porteurs), le choix de l'objectif s'il y en a plusieurs, ce que l'audit ne
+   permet pas de trancher seul, et les propositions des étapes 6 et 7.
+7. **Les questions à choix passent par l'outil de question** de l'outil IA (`ask_user`,
+   `AskUserQuestion` dans Claude Code et Cowork) : une question par appel, la réponse proposée
+   en premier choix, la réponse libre toujours possible. Sans cet outil : la même question en
+   une ligne, avec la proposition.
 
 ## Vue d'ensemble
 
 ```
-[0] Connecteur et capacités
-[1] Nouveau skill ou reprise ─────────── reprise : aller à l'étape indiquée par l'état du projet
-[2] Créer et proposer le projet           ←── validations de ts-general-creer-projet
-[3] Attendre la validation : le projet doit être en CASHEDOUT
-[4] Prompt de création du skill          ←── automatique, dès que le projet est en CASHEDOUT
-[5] Écrire le skill (skill-creator)
-[6] Déposer le skill dans Teamstarter      ←── automatique, à chaque version (ts-general-deposer-skill)
-[7] Valider l'étape « Créer mon agent IA »
-[8] Tester, valider « Tester l'agent en conditions réelles »
-[U] Utilisation du skill, à tout moment après [6]
-[B] Point de blocage, à tout moment après [3] (ts-general-declarer-blocage)   ←── validation
+[P] Préambule : idée ou skill existant ? Présenter les étapes     (rien trouvé : en silence)
+[1] Comprendre la tâche                ←── questions à l'utilisateur
+[2] Structurer le skill dans Teamstarter  ←── création sans demander ; chaque réponse validée
+[3] Fiche et audit                     ←── sans rien demander
+[4] Validation, puis prompt de création   ←── sans modération : directement le prompt
+[5] Construire, tester, enregistrer le skill   ←── en suivant le prompt
+[6] Présenter le skill : entrées, sorties, étapes   ←── changements possibles
+[7] Proposer une première exécution
+[U] Utilisation du skill · [B] Blocage · [R] Reprise
 ```
-
-Chaque étape peut être la dernière de la conversation : l'état est dans Teamstarter, et le skill
-repart de là (« reprends mon skill », « où en est mon skill »).
 
 Lire `references/regles-api.md` avant le premier appel.
 
 ---
 
-## Étape 0 — Connecteur et capacités
+## Préambule
 
-1. Trouver le connecteur Teamstarter (plusieurs : demander lequel). `list-schema` ; sans
-   `run-mutation`, l'accès est en lecture seule → Fallback.
-2. Noter ce que l'accès expose. Les trois tools de skill sont des tools du connecteur, listés à
-   côté de `list-schema` ; la mutation est dans la réponse de `list-schema`.
+1. **Connecteur, en silence.** Trouver le connecteur Teamstarter (plusieurs : celui de
+   l'organisation de l'utilisateur ; doute réel : demander lequel). `list-schema`. Sans
+   `run-mutation`, l'accès est en lecture seule → Fallback. Noter les capacités :
 
 | Capacité | Sert à | Absente |
 |---|---|---|
-| tool `get-skill-creation-instructions` | lire le prompt de création, sans demander (étape 4) | l'utilisateur copie le prompt depuis `/manage` |
-| tool `upload-project-skill` | déposer chaque version, sans demander (étape 6, `ts-general-deposer-skill`) | l'utilisateur dépose le fichier dans `/manage` |
-| tool `report-skill-execution` | déclarer chaque utilisation (skill `ts-general-declarer-execution-skill`) | les utilisations ne sont pas comptées |
-| mutation `setProjectWorkflowActionStatus` | valider une étape de `/manage` (étapes 7 et 8) | l'utilisateur coche l'étape dans `/manage` |
-| mutation `projectBlockerCreate` | déclarer un blocage | l'utilisateur le déclare dans `/manage` |
-| query `projectSkillUsage` | lire l'utilisation du skill (étape U) | l'utilisateur ouvre la carte « Utilisation du skill » de `/manage` |
+| `projectCreate`, `projectUpdate`, `AIprojectQuestionAnswerCreate` | créer et structurer le skill | Fallback |
+| `projectGenerateSheet`, `projectEvaluateLimits` | fiche et audit (étape 3) | fiche rédigée par Claude ; pas d'audit |
+| tool `get-skill-creation-instructions` | prompt de création (étape 4) | l'utilisateur copie le prompt depuis la page de son skill (« Copier le prompt ») |
+| tool `upload-project-skill` | enregistrer le skill (étape 5) | l'utilisateur dépose le fichier `.skill` sur la page de son skill |
+| tool `report-skill-execution` | compter les exécutions | les exécutions ne sont pas comptées |
+| mutation `setProjectWorkflowActionStatus` | cocher « Créer mon agent IA » et « Tester l'agent » | l'utilisateur les coche sur la page de son skill |
 
-Dire en une phrase ce qui se fera dans l'app faute de capacité, une seule fois. Ne jamais
-contourner un tool absent par `run-mutation` sur une mutation que `list-schema` ne montre pas.
+   Une capacité absente : le dire une seule fois, en une phrase, au moment où elle manque.
 
-## Étape 1 — Nouveau skill ou reprise
+2. **Une reprise ou une modification ?** L'utilisateur ouvre un `SKILL.md` qui porte
+   `metadata.teamstarter-project-id`, nomme un skill existant, ou demande de le modifier :
+   aller à « Reprise » (R). Une **modification** d'un skill existant ne présente pas les étapes
+   et ne dit rien de plus : faire la modification (étape 5, puis 6).
 
-- **Le skill existe déjà** (l'utilisateur ouvre un `SKILL.md`, ou parle de « mon skill ») : lire
-  `metadata.teamstarter-project-id` dans l'en-tête du `SKILL.md` ; c'est le projet.
-- **Sinon**, retrouver ses projets d'automatisation : identité confirmée comme le dit
-  `references/regles-api.md`, puis
+3. **Une idée ou un skill existe-t-il déjà ?** Dès que la tâche est connue (dans la demande,
+   sinon pendant l'étape 1, avant de créer quoi que ce soit) :
 
 ```graphql
-query($where: SequelizeJSON) {
-  project(where: $where, order: "reverse:updatedAt", limit: 20) {
-    id title status decisionMode updatedAt
-    projectType { tag }
-    skillFileId
-    projectDeliveryActions { id type doneAt skippedAt }
+query($t: SequelizeJSON) { projectType(where: $t) { id tag isDisabled } }
+```
+variables : `{"t": {"tag": {"in": ["PROCESS_AUTOMATION_WITH_AI", "AI_SKILL"]}}}`
+
+```graphql
+query($i: SequelizeJSON, $p: SequelizeJSON) {
+  idea(where: $i, isLaunched: false, limit: 50) {
+    id createdAt isAnonymized titleWordings { value language } descriptionWordings { value language } author { fullname }
   }
+  skills: project(where: $p, order: "reverse:updatedAt", limit: 50) { id title status skillFileId d_organizerIds }
+  mine: project(where: $p, scopeForMe: true, order: "reverse:updatedAt", limit: 20) { id title status }
 }
 ```
-variables : `{"where": {"d_organizerIds": {"contains": [<moi>]}}}`, garder `projectType.tag` =
-`PROCESS_AUTOMATION_WITH_AI`, ou `AI_SKILL` (l'autre type de projet d'agent IA, que les tools de
-skill acceptent aussi). `skillFileId` nomme le dernier skill déposé ; vide, aucun ne l'est.
-Un projet de création de skill pas encore proposé, sans identité confirmée : `scopeForMe: true` avec
-`{"statusGroup": {"in": ["structuration", "writing"]}}`.
+variables : `{"i": {"projectTypeId": {"in": [<ids>]}}, "p": {"projectTypeId": {"in": [<ids>]}}}`
 
-Proposer de reprendre un projet ou d'en créer un. L'utilisateur a nommé le projet (« crée le
-skill de mon projet X »), ou un seul projet est en `CASHEDOUT` sans skill déposé : le reprendre
-sans poser la question. L'utilisateur part d'une idée de la boîte à idées (skill
-`ts-general-lister-idees-automatisation`) : garder son id pour l'étape 2. Pour reprendre, aller
-à la première étape non faite :
+   Comparer les titres et descriptions à la tâche (même action, même livrable). Écarter les
+   statuts `CANCELLED`, `ENDED`, `DELETED`.
 
-| État relu | Reprendre à |
-|---|---|
-| `EMPTY` ou `DRAFT` | étape 2 (`ts-general-creer-projet` reprend le projet de création de skill) |
-| `UNDER_REVIEW`, ou `PUBLISHED` (vote, financement) | étape 3 : en attente |
-| `CASHEDOUT`, `skillFileId` vide | étape 4, aussitôt |
-| `CASHEDOUT`, `skillFileId` renseigné, `create-my-agent` sans `doneAt` | étape 7 |
-| `CASHEDOUT`, `create-my-agent` fait, `test-agent` sans `doneAt` | étape 8 |
-| `CASHEDOUT` ou `DELIVERED`, tout fait | nouvelle version (étapes 5 et 6), utilisation (U) ou blocage (B), selon la demande |
-| `CAMPAIGN_FAILED`, `CANCELLED`, `ENDED` | le dire ; un nouveau skill passe par un nouveau projet |
+   | Trouvé | Question (outil de question) |
+   |---|---|
+   | rien | aucune : continuer en silence |
+   | une idée proche | « L'idée *X* (de <auteur>) décrit cette tâche. » → « Partir de cette idée » / « Créer un nouveau skill » |
+   | un skill de l'utilisateur (dans `mine`, ou `d_organizerIds` contient son id) | « Tu as déjà commencé le skill *X*. » → « Reprendre ce skill » / « Créer un nouveau skill » |
+   | le skill d'un collègue, déjà créé (`skillFileId` renseigné) | « <Porteur> a déjà un skill *X* pour cette tâche. » → « Créer quand même » / « Voir ce skill » (lien de sa page) |
+   | le skill d'un collègue en cours | même question, sans « Voir ce skill » |
 
-Dire en une phrase où en est le skill avant de continuer (« Ton projet *X* est validé et le skill
-est déposé ; il reste à le tester. »).
+   Partir d'une idée : garder son id (`sourceIdeaId`, étape 2) et son texte pour l'étape 1.
+   Reprendre : aller à « Reprise ».
 
-## Étape 2 — Créer et proposer le projet
+4. **Présenter les étapes**, pour une nouvelle création seulement :
 
-Suivre le skill `ts-general-creer-projet`, étapes 0 à 7, avec ces différences :
+> Voici comment on va créer ton skill :
+> 1. Comprendre ta tâche : ses étapes, ses données, comment tu la fais aujourd'hui.
+> 2. La structurer dans Teamstarter : je te propose une réponse à chaque question, tu valides.
+> 3. Préparer la fiche de ton skill et son audit : je m'en occupe.
+> 4. La validation par les animateurs, si ton organisation la demande.
+> 5. Construire le skill, le tester et l'enregistrer dans Teamstarter.
+> 6. Te le présenter : ce qu'il prend, ce qu'il produit, ses étapes. Tu peux tout changer.
+> 7. Le lancer une première fois.
 
-- **Type imposé** : `PROCESS_AUTOMATION_WITH_AI`. Ne pas proposer d'autre type. Absent ou
-  `isDisabled` dans l'organisation : le dire, et proposer de créer le skill sans projet
-  (Fallback).
-- Lire la référence du type « Automatisation de processus avec l'IA » de `ts-general-creer-projet`
-  pour les questions et la fiche.
-- **Vocabulaire** : le projet est « ton projet de création de skill », jamais un « brouillon » ;
-  son titre est « la tâche » à automatiser (un verbe à l'infinitif et son objet, 3 à 8 mots),
-  demandée par « Quelle tâche veux-tu automatiser ? » et affichée sous l'étiquette « Tâche ».
-- **Questions mot pour mot** : chaque question de structuration est posée avec son libellé exact
-  dans Teamstarter, entre guillemets, sans reformulation. Ce que l'utilisateur a déjà dit de la
-  tâche (étapes, outils, livrable, durée, fréquence) se montre sous la question
-  (« Proposition : … ») ; il répond ou valide, et sa réponse s'écrit telle qu'il l'a donnée.
-- **Depuis une idée** : passer son id à `ts-general-creer-projet` (sa création depuis une idée,
-  `sourceIdeaId`) ; le projet est relié à l'idée, qui affiche alors le projet lancé.
-- Les validations restent celles de `ts-general-creer-projet` ; la proposition (son étape 7)
-  demande une confirmation explicite.
+   Puis enchaîner sur l'étape 1, dans le même message.
 
-`ts-general-creer-projet` absent de la conversation : le dire (il fait partie du même plugin) et
-s'arrêter.
+## Étape 1 — Comprendre la tâche
 
-## Étape 3 — Attendre la validation du projet
+Comprendre la tâche assez pour répondre à toutes les questions de structuration et pour
+construire le skill. Conversation libre, quelques questions à la fois, en partant de ce que
+l'utilisateur a déjà dit (et de l'idée de départ, le cas échéant) :
+
+- **La tâche** : ce qu'elle produit, pour qui, ce qui la déclenche, combien de temps elle prend
+  et combien de fois par mois.
+- **Les étapes du processus**, dans l'ordre, telles qu'il les fait aujourd'hui ; demander un
+  exemple récent quand c'est flou.
+- **Les sources de données** : d'où viennent les informations à chaque étape (outil, fichier,
+  boîte mail, CRM, dossier partagé), sous quelle forme, et où va le livrable. Vérifier quels
+  connecteurs de l'outil IA y donnent accès ; une source inaccessible est notée pour l'étape 5.
+- **Le savoir-faire** : les règles, bonnes pratiques et pièges ; qui d'autre fait la tâche ou
+  s'y connaît.
+- **Le découpage** : si le processus enchaîne des tâches distinctes (déclencheurs, livrables ou
+  personnes différents), proposer de les séparer, avec l'outil de question : « Un skill pour
+  tout le processus » / « Un skill par tâche » (en nommant les tâches). Un skill par tâche :
+  créer d'abord celui que l'utilisateur choisit, et garder la liste des autres pour la fin
+  (étape 7).
+
+Pas de donnée sensible gardée pour la suite : un nom de client, un montant, une donnée
+personnelle deviennent un terme générique dans les réponses.
+
+Quand ces points sont couverts, passer à l'étape 2 sans l'annoncer.
+
+## Étape 2 — Structurer le skill dans Teamstarter
+
+**Créer, sans le demander.** Les mutations sont celles de `references/questions-structuration.md`
+et de `references/type-automatisation-ia.md` ; ce qui suit remplace leurs validations.
+
+1. **Type** : `PROCESS_AUTOMATION_WITH_AI` (sinon `AI_SKILL`), non `isDisabled`. Aucun des deux
+   → Fallback.
+2. **Objectif** : `objective(limit: 50) { id status mode titleWordings { value } projectTypes { id } }`,
+   garder les `OPEN`. D'abord ceux dont `projectTypes` contient le type ; sinon ceux sans
+   `projectTypes`. Un seul : le prendre. Plusieurs : outil de question « Dans quel objectif
+   s'inscrit ton skill ? », leurs titres en choix. `decisionMode` : `SIMPLE_MODERATION` →
+   `MODERATION`, `CALLFORPROJECTS` et `CROWDSOURCING` → `VOTE`, `CROWDFUNDING` → `CONTRIBUTE`.
+3. **Tâche** (le titre) : un verbe à l'infinitif et son objet, 3 à 8 mots ; **description** de
+   120 caractères au plus. Tirées de l'étape 1.
+4. Créer, puis compléter (`projectCreate` ignore `decisionMode` et `isBeingStructured`, et
+   échoue sur une description trop longue) :
 
 ```graphql
-query($where: SequelizeJSON) { project(where: $where) { id title status decisionMode underReviewAt cashedoutAt } }
+mutation($project: projectInput!) { projectCreate(project: $project) { id title status organizationId authorId } }
 ```
-variables : `{"where": {"id": <id>}}`
+variables : `{"project": {"title": "<tâche>", "projectTypeId": <id>, "objectiveId": <id>, "language": "fr", "status": "DRAFT", "isParticipatingEnabled": true}}`
+(+ `"sourceIdeaId": <id>` si l'on part d'une idée)
 
-| `status` | Ce qui se passe | À dire |
+```graphql
+mutation($project: projectInput!) { projectUpdate(project: $project) { project { id shortDescription decisionMode isBeingStructured } } }
+```
+variables : `{"project": {"id": <id>, "shortDescription": "…", "decisionMode": "<mode>", "isBeingStructured": true}}`
+
+   Garder l'id et `authorId` : c'est l'id de l'utilisateur.
+5. Ne rien annoncer : le message suivant est la première question.
+
+**Les questions.** Lire les questions du projet (`references/questions-structuration.md`), les
+grouper par section dans l'ordre : chaque section est une étape de la structuration. Ignorer
+`isEnabled: false` et les questions déjà répondues (pré-remplies à la création). Préparer une
+proposition de réponse pour **toutes** les questions restantes, obligatoires et facultatives, à
+partir de l'étape 1, sans demander à l'utilisateur s'il veut répondre lui-même.
+
+Puis, **une question à la fois**, avec l'outil de question :
+
+- en-tête : `Étape 2/5` (l'étape de la structuration) ;
+- question : le libellé exact de Teamstarter (`questionWordings.value`), avec « skill » à la
+  place de « projet » ;
+- premier choix : « Valider », la proposition en description ; d'autres choix seulement quand la
+  question en a (options d'un choix, score de 1 à 5, seul ou en équipe), la proposition en
+  premier ; la réponse libre reste possible ;
+- **proposition trop longue** pour un choix (plusieurs lignes, une liste d'étapes) : l'écrire
+  dans la conversation juste avant, puis l'outil de question avec « Valider la proposition
+  ci-dessus » en premier choix.
+
+À la première question d'une nouvelle étape de la structuration, la nommer en une ligne avant
+l'outil de question (« Étape 2/5 de la structuration : Impact de l'IA »).
+
+Après chaque réponse :
+
+- **Écrire la réponse aussitôt**, sans le dire (`AIprojectQuestionAnswerCreate`, ou `Update`
+  avec l'id de la réponse ; formats et codages de `references/questions-structuration.md`). Une
+  réponse libre s'écrit telle que l'utilisateur l'a donnée.
+- Une réponse libre qui contient une donnée sensible : reposer la question avec la version
+  générique en premier choix.
+- `team` = « En équipe » : demander les noms des co-porteurs, les retrouver
+  (`user(where: {"fullname": {"iLike": "%<nom>%"}})`), les ajouter (`projectOrganizerCreate`), et
+  dire une fois qu'ils reçoivent une notification de Teamstarter.
+- Le type n'a ni dépenses ni campagne.
+
+Quand toutes les questions sont validées (contrôle de fin de
+`references/questions-structuration.md`), passer à l'étape 3 sans l'annoncer.
+
+## Étape 3 — Fiche et audit, sans rien demander
+
+1. **Fiche.** `projectGenerateSheet`, poller (`references/fiche-projet.md`, partie A) ; remettre
+   la tâche comme titre si le job l'a changée. Sans le job : rédiger la fiche
+   (`references/fiche-projet.md`, partie B, et la correspondance réponses → sections de
+   `references/type-automatisation-ia.md`) et l'écrire **sans la faire valider**.
+2. **Fin de la structuration** : `projectUpdate` avec `isBeingStructured: false` et
+   `structuredAt`.
+3. **Audit** (si `projectEvaluateLimits` est exposé) : lancer, puis poller toutes les 60 à 90
+   secondes (`references/regles-api.md`, « Jobs IA ») :
+
+```graphql
+mutation($id: Int!) { projectEvaluateLimits(projectId: $id) { jobId } }
+```
+
+```graphql
+query($where: SequelizeJSON, $pw: SequelizeJSON) {
+  projectLimitEvaluation(where: $where) { limitId status confidence explanation improvements }
+  project(where: $pw) { id aiMetadata { statusEvaluation isEvaluationOutdated } }
+}
+```
+variables : `{"where": {"projectId": <id>, "aiJobId": <jobId>}, "pw": {"id": <id>}}` ; terminé
+quand `statusEvaluation` vaut `successful` (aucune ligne : aucune règle de l'organisation ne
+s'applique). Pour chaque point `warning` :
+   - ce qui se corrige avec ce que l'on sait déjà : corriger la réponse en silence ;
+   - ce qui demande une information de l'utilisateur : une question avec l'outil de question,
+     l'amélioration suggérée en proposition.
+
+   Après une correction : régénérer la fiche, relancer l'audit une fois. Deux audits au plus ;
+   ensuite, continuer.
+
+Ne rien présenter de la fiche ni de l'audit : passer à l'étape 4.
+
+## Étape 4 — Validation, puis prompt de création
+
+**Envoyer le skill en validation**, sans le demander : la fiche est faite et les réponses
+validées.
+
+```graphql
+mutation($project: projectInput!) { projectUpdate(project: $project) { project { id status underReviewAt } } }
+```
+variables : `{"project": {"id": <id>, "status": "UNDER_REVIEW", "isBeingStructured": false}}`
+
+| Réponse | Ce que ça veut dire | Suite |
 |---|---|---|
-| `UNDER_REVIEW` | l'organisation relit les projets : un animateur doit le valider | « Ton projet attend la validation des animateurs. Reviens me voir quand il est validé : je reprendrai à la création du skill. » Ne pas écrire le skill avant. |
-| `CASHEDOUT` | le projet est validé et en réalisation (sans relecture, il y passe dès la proposition) | « Ton projet est validé : je récupère le prompt de création et j'écris le skill. » puis l'étape 4, sans attendre de réponse |
-| `PUBLISHED` | le projet est soumis au vote ou en financement | attendre la fin de la campagne, comme pour `UNDER_REVIEW` |
-| `DRAFT` après une proposition | les animateurs l'ont renvoyé avec un retour | lire les commentaires du projet, et reprendre avec `ts-general-creer-projet` pour en tenir compte |
+| `status: UNDER_REVIEW` | l'organisation fait valider les skills par ses animateurs | « Ton skill est envoyé aux animateurs pour validation. Reviens me voir quand il sera validé : je le construirai. » Fin de la conversation sur ce skill. |
+| refus « You must publish this project directly. » | l'organisation ne modère pas | refaire l'appel avec `"status": "PUBLISHED"` |
+| refus « The project audit is outdated… » | l'audit date d'avant la dernière modification | relancer l'audit (étape 3), puis réessayer |
+| autre refus | | dire en une phrase ce qui manque, sans parler de projet, et le compléter |
 
-Rien ne prévient Claude quand le statut change : c'est quand l'utilisateur revient que le statut
-est relu.
+Après `PUBLISHED`, relire `status` :
 
-## Étape 4 — Prompt de création du skill
+- `CASHEDOUT` : le skill est validé (un objectif en modération passe directement en
+  réalisation). **Récupérer aussitôt le prompt**, sans rien dire.
+- `PUBLISHED` : l'objectif est un vote ou un financement : « Ton skill est soumis au vote de ton
+  organisation. Reviens me voir quand il sera retenu : je le construirai. »
 
-Le prompt de création est généré par Teamstarter depuis le projet : le contexte IA de
-l'organisation, la tâche, les réponses de structuration, la fiche. C'est la spécification du
-skill.
+**Le prompt de création** : tool `get-skill-creation-instructions`, `{"projectId": <id>}`. La
+réponse est le prompt, en markdown : la spécification du skill.
 
-**Automatique** : dès que le projet est relu en `CASHEDOUT` sans skill déposé (étape 1 ou 3), ou
-que l'utilisateur demande le skill d'un projet ou une nouvelle version écrite depuis le prompt,
-appeler le tool sans demander « je récupère le prompt ? ». C'est une lecture : elle n'écrit rien
-dans Teamstarter. Dire en une ligne que le prompt est récupéré, puis enchaîner sur l'étape 5.
+- Refus « structuration incomplète » : il liste les questions obligatoires sans réponse ; les
+  poser comme à l'étape 2, puis rappeler le tool.
+- Refus d'accès : le prompt est réservé à l'auteur, aux porteurs et aux admins.
+- Sans le tool : demander à l'utilisateur de copier le prompt depuis la page de son skill dans
+  Teamstarter (« Créer mon agent IA », « Copier le prompt »).
 
-- **Tool `get-skill-creation-instructions`** : `{"projectId": <id>}`. La réponse est le prompt
-  lui-même, en markdown ; il demande déjà au skill la métadonnée `teamstarter-project-id`.
-  - Un refus « structuration incomplète » liste les questions obligatoires sans réponse : y
-    répondre avec `ts-general-creer-projet` (étape 4), puis rappeler le tool.
-  - Le prompt est réservé à l'auteur, aux porteurs et aux admins du projet : un autre compte
-    reçoit un refus. Le dire, et demander à un porteur de reprendre.
-- **Sans le tool** : demander à l'utilisateur d'ouvrir `<adresse de l'app>/<tag de
-  l'organisation>/project/<id>/manage`, l'étape « Créer mon agent IA », bouton « Copier le
-  prompt », et de le coller dans la conversation.
+Ne pas résumer le prompt à l'utilisateur : il se suit, à l'étape 5.
 
-Ne pas résumer le prompt à l'utilisateur à la place de s'en servir : il se suit.
+## Étape 5 — Construire, tester, enregistrer le skill
 
-## Étape 5 — Écrire le skill
+**Suivre le prompt de Teamstarter**, dans cet ordre :
 
-Passer la main à `skill-creator` (skill d'Anthropic) avec le prompt de l'étape 4 comme
-spécification, et ces règles en plus :
+1. Sa section « Instructions IA » d'abord : elle dit ce qu'est un agent IA dans l'organisation
+   et comment le construire et le tester. Chacune de ses instructions s'applique.
+2. Le contexte de l'organisation et les informations sur la tâche, avec la règle de priorité
+   des sources du prompt.
+3. Sa checklist finale, point par point, avant l'enregistrement.
 
-1. **En-tête du `SKILL.md`**, au format de la spécification Agent Skills : `name` (minuscules,
-   chiffres, tirets, 64 caractères au plus, égal au nom du dossier), `description` (1024
-   caractères au plus, avec les phrases qui déclenchent le skill), et l'id du projet dans
-   `metadata` :
+`skill-creator` (skill d'Anthropic) sert pour ce que le prompt ne dit pas ; ses tests et
+évaluations seulement si le prompt n'en définit pas. Sans `skill-creator` : écrire le skill
+directement.
+
+En plus du prompt :
+
+- **En-tête du `SKILL.md`** : `name` (minuscules, chiffres, tirets, 64 caractères au plus, égal
+  au nom du dossier), `description` (1024 caractères au plus, avec les phrases qui le
+  déclenchent), et l'id dans `metadata`, en chaîne :
 
 ```markdown
 ---
 name: <nom-du-skill>
 description: <ce que fait le skill et quand le déclencher>
 metadata:
-  teamstarter-project-id: "<id du projet>"
+  teamstarter-project-id: "<id>"
 ---
 ```
 
-   La valeur est une chaîne. C'est elle qui relie le skill à son projet : le dépôt, la
-   déclaration des utilisations et les blocages s'en servent.
-2. **Deux dernières sections du `SKILL.md`**, à recopier telles quelles :
+- **Deux dernières sections du `SKILL.md`**, telles quelles :
 
 ```markdown
 ## Après chaque exécution
@@ -218,87 +355,107 @@ metadata:
 Déclarer l'exécution à Teamstarter avec le skill `ts-general-declarer-execution-skill` du plugin
 Teamstarter. Si l'exécution a échoué sur un problème que l'utilisateur ne peut pas lever seul
 (accès refusé, outil indisponible, donnée manquante, règle de sécurité), proposer de le déclarer
-comme blocage du projet avec le skill `ts-general-declarer-blocage`. Si ces skills ne sont pas
+comme blocage avec le skill `ts-general-declarer-blocage`. Si ces skills ne sont pas
 disponibles, ne rien faire.
 
 ## Après chaque modification de ce fichier
 
-Quand ce `SKILL.md` est modifié (pas quand le skill s'exécute), déposer la nouvelle version sur
-le projet Teamstarter avec le skill `ts-general-deposer-skill` du plugin Teamstarter. S'il n'est
-pas disponible, ne rien faire.
+Quand ce skill est modifié (pas quand il s'exécute), enregistrer la nouvelle version dans
+Teamstarter avec le skill `ts-general-deposer-skill` du plugin Teamstarter. S'il n'est pas
+disponible, ne rien faire.
 ```
 
-   Les deux skills se déclenchent aussi sur la métadonnée, mais ces lignes garantissent qu'ils
-   sont appelés quand le skill tourne chez un collègue, ou quand il est modifié dans une autre
-   conversation, avec `skill-creator` ou à la main.
-3. **Rien de confidentiel** dans le skill : ni donnée personnelle, ni nom de client, ni clé
-   d'API ou mot de passe. Un accès à un service passe par un connecteur.
-4. `skill-creator` absent : écrire le skill directement, au même format.
+- **Rien de confidentiel** : ni donnée personnelle, ni nom de client, ni clé d'API ou mot de
+  passe. Un accès à un service passe par un connecteur.
 
-Enregistrer le `SKILL.md`, le déposer aussitôt (étape 6), puis le montrer en entier et demander
-s'il convient. Chaque correction demandée fait une nouvelle version, déposée de même.
+**Tester** comme le prompt le demande, avant de présenter le skill : les tests que Claude peut
+faire seul (sur un exemple de l'étape 1, à blanc) maintenant ; ceux qui demandent l'utilisateur
+ou ses vraies données, à l'étape 7. Un test qui échoue : corriger et retester, sans le dire.
 
-Livrer aussi le skill prêt à installer : un zip dont le dossier du skill est la racine
-(`<nom-du-skill>.zip` contenant `<nom-du-skill>/SKILL.md`), à téléverser dans claude.ai ou Cowork
-(Personnaliser → Skills), ou le dossier à copier dans `~/.claude/skills/` pour Claude Code.
+**Enregistrer dans Teamstarter**, sans le demander, comme le dit `ts-general-deposer-skill` :
+empaqueter le dossier en `<nom-du-skill>.skill` (une archive zip qui contient
+`<nom-du-skill>/SKILL.md` et les autres fichiers), l'encoder en base64, puis
 
-## Étape 6 — Déposer le skill dans Teamstarter
+```
+upload-project-skill { "projectId": <id>, "fileName": "<nom-du-skill>.skill", "contentBase64": "<…>" }
+```
 
-**Automatique**, sans validation : à la première écriture du `SKILL.md`, puis à chaque
-modification, suivre le skill `ts-general-deposer-skill` : un appel au tool
-`upload-project-skill`, `{"projectId": <id>, "fileName": "SKILL.md", "contentBase64": "<le
-SKILL.md en base64>"}`, le fichier encodé soi-même (le tool ne prend pas de chemin), 1 Mo au plus
-une fois décodé. Le dépôt fait partie de
-l'écriture du skill ; il s'annonce en une ligne (« Version déposée sur le projet Teamstarter
-41207 (20/10 à 14 h 20). »).
+- Toujours le même nom de fichier : chaque dépôt est la version suivante du skill.
+- Seuls les porteurs déposent : un refus « Only the organizers… » se dit à l'utilisateur.
+- Puis cocher « Créer mon agent IA », sans le demander ni le dire : l'action `create-my-agent`
+  de `project { projectDeliveryActions { id type doneAt } }`, avec
+  `setProjectWorkflowActionStatus(actionId: <id>, status: "done")`.
 
-- Un fichier par appel : le `SKILL.md`, celui qui porte la métadonnée. Un nouveau dépôt s'ajoute
-  aux précédents ; le projet montre le dernier comme son skill (`project.skillFileId`).
-- Pas de dépôt d'un fichier inchangé : chaque dépôt crée une tâche « partager ce fichier » pour
-  les admins.
-- Seuls les porteurs du projet déposent : un autre compte, admin compris, reçoit « Only the
-  organizers of the project can manage its files. ». Le dire, et demander à un porteur de
-  déposer, ou de se faire ajouter comme porteur.
-- `ts-general-deposer-skill` absent de la conversation : faire le même appel directement.
-- **Sans le tool** : demander à l'utilisateur de déposer le `SKILL.md` dans la section Fichiers
-  de la page `/manage` du projet.
+## Étape 6 — Présenter le skill
 
-## Étape 7 — Valider l'étape « Créer mon agent IA »
+Montrer le skill pour que l'utilisateur puisse le reprendre :
 
-Le skill est écrit et déposé : proposer de cocher l'étape, et attendre l'accord.
+- **son nom** et ce qu'il fait, en une phrase ;
+- **ce qu'il prend** (entrées) : un tableau, une ligne par entrée — quoi, d'où (outil,
+  connecteur, fichier, message de l'utilisateur), sous quelle forme ;
+- **ce qu'il produit** (sorties) : un tableau — quoi, où, sous quelle forme ;
+- **ses étapes** : un schéma dans l'ordre (diagramme, ou visuel quand l'outil IA en affiche),
+  sinon une liste numérotée, une ligne par étape avec ce qu'elle lit et ce qu'elle produit ;
+- le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork : Personnaliser →
+  Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
+
+Puis l'outil de question : « Ce skill te convient ? » → « Oui, on l'essaie » / « Changer les
+entrées ou les sorties » / « Changer les étapes ». Un changement : le faire (étape 5 : modifier,
+retester, empaqueter, enregistrer), puis présenter de nouveau, sans dire ce qui a changé.
+
+## Étape 7 — Première exécution
+
+L'outil de question : « On le lance une première fois sur un cas réel ? » → « Oui, maintenant »
+/ « Plus tard ».
+
+- **Oui** : demander l'entrée réelle si elle manque, exécuter le skill en suivant son
+  `SKILL.md` (pas besoin de l'installer pour cette première fois), avec les tests du prompt qui
+  demandent l'utilisateur. L'exécution est déclarée par `ts-general-declarer-execution-skill`. Un
+  échec sur un problème que l'utilisateur ne peut pas lever seul : `ts-general-declarer-blocage`.
+- Puis : « Le résultat te convient ? » → « Oui » / « Non, à corriger ».
+  - **Oui** : cocher « Tester l'agent en conditions réelles » (action `test-agent`), sans le
+    dire. Donner le lien de la page du skill
+    (`<adresse de l'app>/<tag de l'organisation>/project/<id>/manage`) et la suite qui se fait
+    dans Teamstarter : le faire valider par son ambassadeur, le partager à ses collègues.
+  - **Non** : demander ce qui ne va pas, corriger (étape 5) en silence, proposer de relancer.
+- **Plus tard** : donner le lien de la page du skill.
+
+Un découpage en plusieurs skills (étape 1) : proposer de créer le suivant.
+
+## Reprise (R)
+
+Retrouver le skill : `metadata.teamstarter-project-id` du `SKILL.md` ouvert ; sinon la tâche que
+l'utilisateur nomme, parmi `mine` et `skills` du préambule (`d_organizerIds` contient son id,
+retrouvé sans le lui demander). Lire :
 
 ```graphql
-query($where: SequelizeJSON) { project(where: $where) { id projectDeliveryActions { id type doneAt skippedAt } } }
+query($where: SequelizeJSON) {
+  project(where: $where) {
+    id title status isBeingStructured underReviewAt d_factoryCompletionRate d_draftCompletionRate skillFileId
+    projectDeliveryActions { id type doneAt skippedAt }
+  }
+}
 ```
-variables : `{"where": {"id": <id>}}` → l'action de `type` `create-my-agent`.
+variables : `{"where": {"id": <id>}}`
 
-```graphql
-mutation($actionId: Int!, $status: String!) { setProjectWorkflowActionStatus(actionId: $actionId, status: $status) { id doneAt skippedAt } }
-```
-variables : `{"actionId": <id de l'action>, "status": "done"}`
+| État | Reprendre à |
+|---|---|
+| `EMPTY`, ou `DRAFT` avec une question obligatoire sans réponse | étape 2 (questions sans réponse seulement) |
+| `DRAFT`, réponses complètes, fiche incomplète ou sans audit | étape 3 |
+| `DRAFT`, tout fait | étape 4 |
+| `DRAFT` après un envoi en validation (`underReviewAt` renseigné) | les animateurs l'ont renvoyé : lire leurs commentaires (`comment(where: {"projectId": <id>})`), les montrer, y répondre par l'étape 2 ou 3, puis étape 4 |
+| `UNDER_REVIEW` | « Ton skill attend encore la validation des animateurs. » |
+| `PUBLISHED` | « Ton skill est encore soumis au vote. » |
+| `CASHEDOUT`, `skillFileId` vide | étape 4, prompt de création, puis étape 5 |
+| `CASHEDOUT` ou `DELIVERED`, skill enregistré | ce que l'utilisateur demande : modification (étapes 5 et 6), exécution (7), utilisation (U), blocage (B) |
+| `CANCELLED`, `ENDED`, `CAMPAIGN_FAILED` | le dire ; un nouveau skill repart du préambule |
 
-Seuls l'auteur et les porteurs du projet cochent une étape ; un admin qui n'est pas porteur reçoit
-un refus. Sans la mutation : demander à l'utilisateur de cocher « Créer mon agent IA » dans
-`/manage`.
-
-## Étape 8 — Tester le skill
-
-1. Faire tester le skill sur un cas réel, dans la conversation ou après installation (étape 5).
-   Chaque exécution est déclarée par `ts-general-declarer-execution-skill`.
-2. Demander à l'utilisateur si le résultat est bon.
-   - **Oui** : proposer de cocher « Tester l'agent en conditions réelles » (action `test-agent`),
-     comme à l'étape 7.
-   - **Non, à corriger** : revenir à l'étape 5 ; la nouvelle version est déposée
-     automatiquement (étape 6).
-   - **Non, et ça bloque** (accès, outil, sécurité, données) : étape B.
-
-Les étapes suivantes de `/manage` (« Faire valider mon agent par mon ambassadeur », « Partager mon
-agent au collectif », « Déclarer mis en place ») se font dans l'app : les nommer, donner le lien.
+Une reprise de création : dire en une phrase où en est le skill, sans présenter les étapes. Une
+modification : ne rien dire avant de montrer le résultat.
 
 ## Étape U — Utilisation du skill
 
-Quand l'utilisateur demande comment son skill est utilisé (« combien de fois », « qui s'en sert »,
-« combien de tokens ») :
+« Combien de fois mon skill a été utilisé ? », « qui s'en sert ? » :
 
 ```graphql
 query($projectId: Int!) {
@@ -310,76 +467,63 @@ query($projectId: Int!) {
 ```
 variables : `{"projectId": <id>}`
 
-- Réservé à l'auteur, aux porteurs et aux admins du projet ; un autre compte reçoit un refus.
-- Les chiffres sont ceux que le skill a déclarés (`ts-general-declarer-execution-skill`) : une
-  exécution non déclarée n'est pas comptée, et `tokensCount` à 0 veut dire « tokens non
-  déclarés », pas « aucun token ».
-- Les mêmes chiffres sont dans la carte « Utilisation du skill » de la page `/manage` du projet.
+Réservé à l'auteur, aux porteurs et aux admins. Seules les exécutions déclarées sont comptées ;
+`tokensCount` à 0 veut dire « tokens non déclarés ». Les mêmes chiffres sont sur la page du
+skill (« Utilisation du skill »).
 
-## Étape B — Point de blocage
+## Étape B — Blocage
 
-Dès qu'un problème empêche de créer ou d'utiliser le skill, et que l'utilisateur ne peut pas le
-lever seul : proposer de le déclarer sur le projet, en suivant le skill
-`ts-general-declarer-blocage` (proposition, blocages déjà ouverts, rédaction, validation,
-déclaration, suivi). S'il est absent de la conversation, ces règles suffisent :
-
-- Le projet doit être en `CASHEDOUT` ou `DELIVERED` ; avant, le dire : un blocage ne se déclare
-  qu'en réalisation.
-- Lire d'abord les blocages ouverts du projet, pour ne pas déclarer deux fois le même :
-  `projectBlocker(where: {"projectId": <id>}) { id title category isResolved description }`.
-- Préparer le titre (120 caractères au plus), la catégorie (`tool`, `access`, `security`,
-  `budget`, `organization`, `participation`, `provider`, `other`) et une description qui dit ce
-  qui bloque, ce qui a été essayé, et le contournement en attendant. **Valider** avec
-  l'utilisateur, puis :
-
-```graphql
-mutation($b: projectBlockerInput!) { projectBlockerCreate(projectBlocker: $b) { id title category createdAt } }
-```
-variables : `{"b": {"projectId": <id>, "title": "…", "category": "tool", "description": "…"}}`
-
-- Dire que personne n'est prévenu tout de suite : le blocage devient une tâche des admins de
-  l'organisation, visible dans leurs actions et leur récapitulatif hebdomadaire.
-- Le blocage levé : `projectBlockerUpdate` avec `{"id": <id>, "isResolved": true}`, sur demande.
+Un problème qui empêche de créer ou d'utiliser le skill et que l'utilisateur ne peut pas lever
+seul : suivre `ts-general-declarer-blocage` (le skill doit être validé ; proposition,
+rédaction, validation, déclaration). Sans lui : lire les blocages ouverts
+(`projectBlocker(where: {"projectId": <id>})`), rédiger titre (120 caractères), catégorie et
+description, faire valider, puis `projectBlockerCreate(projectBlocker: {projectId, title,
+category, description})`.
 
 ## Garde-fous
 
-- **Jamais `run-mutation` sans demande de l'utilisateur dans la conversation**, et jamais
-  d'écriture sans la validation de l'étape. Deux exceptions, faites sans validation et annoncées
-  en une ligne : le dépôt de chaque version du skill (étape 6) et la déclaration de ses
-  exécutions (`ts-general-declarer-execution-skill`).
-- **Ne pas écrire le skill avant que le projet soit en `CASHEDOUT`**, sauf si l'utilisateur
-  choisit de le faire sans projet (Fallback).
-- **Déposer chaque version écrite, et seulement elle** : pas de fichier inchangé, pas d'autre
-  fichier que le `SKILL.md`. Ne jamais cocher une étape sans l'accord de l'utilisateur.
-- **Une seule source pour l'id du projet** : la métadonnée `teamstarter-project-id`. Ne jamais
-  déposer ni déclarer sur un autre projet.
-- Ne rien inventer de la tâche : demander.
+- **Écritures faites sans demander**, parce qu'elles font partie de la création : création du
+  skill dans Teamstarter, réponses validées, fiche, audit et ses corrections, envoi en
+  validation, enregistrement de chaque version, étapes « Créer mon agent IA » et « Tester
+  l'agent » cochées. Toute autre écriture (co-porteurs, blocage) suit l'accord de
+  l'utilisateur.
+- **Aucune réponse de structuration écrite sans sa validation** par l'utilisateur.
+- **Ne rien inventer** : date, montant, nom, outil viennent de l'utilisateur ou d'une
+  proposition qu'il a validée.
+- **Ne pas construire le skill avant `CASHEDOUT`.**
+- **Une seule source pour l'id** : `metadata.teamstarter-project-id`. Ne jamais enregistrer ni
+  déclarer sur un autre skill.
+- **Rien de confidentiel** dans les réponses, la fiche ou le skill.
+- Pas d'enregistrement d'un fichier inchangé.
 
 ## Tags de sécurité
 
-`écriture` : crée et propose un projet, dépose des fichiers, valide des étapes, déclare des
-blocages. Chaque écriture suit une validation de l'utilisateur, sauf le dépôt de chaque version
-du skill, automatique et annoncé. Produit un fichier local (le zip du skill).
+`écriture` : crée et structure un skill dans Teamstarter, l'envoie en validation, enregistre ses
+versions, coche ses étapes de réalisation ; chaque réponse de structuration est validée par
+l'utilisateur ; co-porteurs et blocages après accord. Produit un fichier local (le `.skill`).
 
 ## Fallback
 
-- **Pas de connecteur, ou accès en lecture seule** : dire que le skill ne pourra pas être rattaché
-  à un projet Teamstarter, et comment ouvrir l'écriture (l'administrateur de l'organisation ouvre
-  l'accès en écriture, puis l'utilisateur reconnecte le connecteur en choisissant lecture et
-  écriture). Si l'utilisateur veut continuer quand même, passer la main à `skill-creator` sans
-  métadonnée.
-- **Type `PROCESS_AUTOMATION_WITH_AI` absent de l'organisation** : même chose.
-- **Tools de skill absents** : les gestes manuels de l'étape 0, une fois annoncés.
+- **Pas de connecteur, ou accès en lecture seule** : dire que le skill ne pourra pas être
+  enregistré dans Teamstarter, et comment ouvrir l'écriture (l'administrateur de l'organisation
+  ouvre l'accès en écriture, puis l'utilisateur reconnecte le connecteur en choisissant lecture
+  et écriture). S'il veut continuer : étape 1, puis `skill-creator` sans métadonnée.
+- **Type d'automatisation absent ou désactivé** : même chose.
+- **Job IA qui ne se termine pas en 5 minutes** : continuer sans lui (fiche rédigée, pas
+  d'audit).
 
 ## Ressources
 
-- `references/regles-api.md` — règles du connecteur, statuts, identité de l'utilisateur.
-- Skills voisins : `ts-general-creer-projet` (créer et proposer le projet),
-  `ts-general-deposer-skill` (déposer chaque version du skill),
-  `ts-general-declarer-blocage` (déclarer et suivre les blocages du projet),
-  `ts-general-declarer-execution-skill` (déclarer chaque utilisation du skill),
-  `ts-general-lister-projets` (voir ses projets).
-- Skill d'Anthropic : `skill-creator` (écrire et évaluer le skill).
+- `references/regles-api.md` — règles du connecteur, statuts, utilisateur du connecteur.
+- `references/questions-structuration.md` — lire, coder et écrire les réponses.
+- `references/type-automatisation-ia.md` — les questions du type, la correspondance réponses →
+  fiche.
+- `references/fiche-projet.md` et `scripts/tiptap.py` — générer ou rédiger la fiche.
+- Skills voisins : `ts-general-deposer-skill` (enregistrer chaque version),
+  `ts-general-declarer-execution-skill` (compter les exécutions), `ts-general-declarer-blocage`
+  (blocages), `ts-general-lister-idees-automatisation` (partir d'une idée),
+  `ts-general-creer-projet` (le même parcours pour les autres types).
+- Skill d'Anthropic : `skill-creator`.
 
 ## Convention de nommage
 

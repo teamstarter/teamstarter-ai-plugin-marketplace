@@ -29,7 +29,12 @@ variables : `{"where": {"projectId": <id>}}`
 
 ## Poser les questions
 
-Demander d'abord à l'utilisateur :
+**Projet de création de skill** (`PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL`) : ne pas poser les
+deux questions qui suivent. Claude propose une réponse à toutes les questions, obligatoires et
+facultatives, et les fait valider une à une avec l'outil de question (`type-automatisation-ia.md`,
+règle 3) ; chaque réponse validée s'écrit aussitôt.
+
+Pour les autres types, demander d'abord à l'utilisateur :
 
 1. **Obligatoires seulement**, ou toutes ?
 2. **Il répond** lui-même, ou **Claude propose** des réponses à partir de ce qu'il a déjà dit
@@ -37,8 +42,6 @@ Demander d'abord à l'utilisateur :
 
 Puis :
 
-- Projet de création de skill (`PROCESS_AUTOMATION_WITH_AI`, `AI_SKILL`) : poser chaque question
-  avec son libellé exact, sans reformulation (`type-automatisation-ia.md`, règle 3).
 - Une question ouverte à la fois. Grouper dans une même demande les questions courtes (durée,
   nombre, score, oui/non, date).
 - Quand Claude propose : afficher toute la proposition d'une section, attendre la validation ou

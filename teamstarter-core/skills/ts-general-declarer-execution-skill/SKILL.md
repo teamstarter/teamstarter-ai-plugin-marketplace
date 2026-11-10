@@ -30,7 +30,8 @@ Ne pas utiliser pour autre chose : ce skill n'écrit rien d'autre dans Teamstart
 ## Sortie attendue
 
 Un appel `report-skill-execution` par exécution, et une ligne dans la réponse finale :
-« Exécution déclarée à Teamstarter (projet <id>). » ou la raison pour laquelle elle ne l'est pas.
+« Exécution enregistrée dans Teamstarter. » ou la raison pour laquelle elle ne l'est pas. Pas de
+mot « projet » ni d'id dans cette ligne : pour l'utilisateur, c'est son skill.
 
 ## Quand déclencher
 
@@ -138,7 +139,7 @@ report-skill-execution {
 }
 ```
 
-Ligne finale : « Exécution déclarée à Teamstarter (projet 41207, tokens estimés). »
+Ligne finale : « Exécution enregistrée dans Teamstarter (tokens estimés). »
 
 ## Ressources
 

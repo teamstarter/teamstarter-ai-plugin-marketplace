@@ -42,6 +42,18 @@ SHARED = {
         "teamstarter-core/skills/ts-general-lister-idees-automatisation/references/regles-api.md",
         "teamstarter-core/skills/ts-general-declarer-blocage/references/regles-api.md",
     ],
+    "teamstarter-core/skills/ts-general-creer-projet/references/questions-structuration.md": [
+        "teamstarter-core/skills/ts-general-creer-skill/references/questions-structuration.md",
+    ],
+    "teamstarter-core/skills/ts-general-creer-projet/references/type-automatisation-ia.md": [
+        "teamstarter-core/skills/ts-general-creer-skill/references/type-automatisation-ia.md",
+    ],
+    "teamstarter-core/skills/ts-general-creer-projet/references/fiche-projet.md": [
+        "teamstarter-core/skills/ts-general-creer-skill/references/fiche-projet.md",
+    ],
+    "teamstarter-core/skills/ts-general-creer-projet/scripts/tiptap.py": [
+        "teamstarter-core/skills/ts-general-creer-skill/scripts/tiptap.py",
+    ],
 }
 
 ALLOWED_FRONTMATTER_KEYS = {

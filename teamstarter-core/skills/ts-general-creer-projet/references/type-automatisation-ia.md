@@ -11,32 +11,37 @@ lire ses questions sur le projet créé, comme pour tout type.
 
 ## Règles du projet de création de skill
 
-Un projet de l'un de ces deux types crée un skill. Ces règles valent pour tout le parcours, de
-la création à la proposition, dans ce que Claude dit et demande à l'utilisateur :
+Un projet de l'un de ces deux types crée un skill, et c'est `ts-general-creer-skill` qui mène sa
+création (création sans validation, fiche et audit sans rien demander, envoi en validation
+automatique). Ces règles valent pour tout le parcours, dans ce que Claude dit et demande à
+l'utilisateur :
 
-1. **« Projet de création de skill », jamais « brouillon ».** Le projet tant qu'il n'est pas
-   proposé (`EMPTY`, `DRAFT`) se nomme « ton projet de création de skill ». Les statuts
-   techniques restent dans les requêtes.
+1. **« Skill », jamais « projet » ni « brouillon ».** Pour l'utilisateur, c'est « ton skill » :
+   à créer, en structuration, en attente de validation, validé. Les statuts techniques restent
+   dans les requêtes.
 2. **« Tâche », jamais « titre ».** Le titre du projet est la tâche à automatiser : un verbe à
    l'infinitif et son objet, 3 à 8 mots (« Rédiger les comptes rendus de réunion client »).
-   Demander « Quelle tâche veux-tu automatiser ? », et l'afficher sous l'étiquette « Tâche » dans
-   les récapitulatifs. La question `AI_TASK_DESCRIPTION` la détaille ensuite.
-3. **Les questions telles qu'elles sont écrites dans Teamstarter.** Poser chaque question de
-   structuration avec son libellé exact (`questionWordings.value` du projet), entre guillemets,
-   sans la reformuler, la résumer ni la fusionner avec une autre. Une question par message ; les
-   questions courtes (durée, fréquence, score, date) peuvent être envoyées ensemble, chacune sur
-   sa ligne avec son libellé exact. Ce que Claude sait déjà de la tâche se montre sous la question
-   (« Proposition : … ») : l'utilisateur répond, ou valide la proposition. Sa réponse s'écrit
-   telle qu'il l'a donnée ; une correction (faute, donnée sensible) se montre avant d'écrire.
+   L'afficher sous l'étiquette « Tâche ». La question `AI_TASK_DESCRIPTION` la détaille ensuite.
+3. **Les questions telles qu'elles sont écrites dans Teamstarter**, une à la fois, avec l'outil
+   de question de l'outil IA. Chaque question a son libellé exact (`questionWordings.value` du
+   projet), avec « skill » à la place de « projet », sans autre reformulation. Claude propose une
+   réponse à chaque question, obligatoire ou non, à partir de ce qu'il sait de la tâche ; elle
+   est le premier choix (« Valider ») ; l'utilisateur valide ou répond autrement. Une proposition
+   trop longue pour un choix s'écrit dans la conversation juste avant la question. La réponse de
+   l'utilisateur s'écrit telle qu'il l'a donnée.
+4. **Des étapes de la structuration, jamais des « sections ».** Chaque section de questions est
+   une étape de la structuration (« Étape 2/5 de la structuration : Impact de l'IA »).
+5. **Pas de compte rendu des mises à jour.** Une correction demandée par l'utilisateur
+   s'applique sans dire « j'ai mis à jour » ni « j'ai corrigé ».
 
 ## Choisir le type et l'objectif
 
 - `projectType(where: {"tag": "PROCESS_AUTOMATION_WITH_AI"}) { id tag isDisabled titleWordings { value } aiGlobalContextWordings { value } }`.
   `aiGlobalContextWordings` (FR) est le cahier des charges de construction de l'agent IA défini
-  par l'organisation : le garder pour l'utilisateur, il en aura besoin pour construire l'agent
-  une fois le projet validé.
+  par l'organisation : c'est la section « Instructions IA » du prompt de création, que le
+  skill suit pour sa construction et ses tests une fois validé.
 - Objectif : celui dont `projectTypes` contient ce type, en statut `OPEN` (souvent « skills IA »
-  ou « efficience »). Un seul : le prendre en le disant.
+  ou « efficience »). Un seul : le prendre sans rien demander ; plusieurs : outil de question.
 - Doublons : `project(where: {"objectiveId": <id>, "projectTypeId": <id>}, order: "reverse:createdAt", limit: 50) { id title status }`.
   Une tâche proche déjà portée par un projet : le montrer et proposer de rejoindre ce projet
   plutôt que d'en créer un.
@@ -65,8 +70,8 @@ la création à la proposition, dans ce que Claude dit et demande à l'utilisate
 Les questions et leur libellé peuvent varier selon l'organisation : lire celles du projet créé,
 ce tableau sert à préparer les réponses.
 
-- Si l'utilisateur vient de faire la tâche avec l'IA dans la conversation : en tirer une
-  proposition sous chaque question (règle 3), sans sauter la question.
+- Si l'utilisateur vient de faire la tâche avec l'IA dans la conversation : en tirer la
+  proposition de chaque question (règle 3), sans sauter la question.
 - **Aucune donnée réelle sensible** dans les réponses (noms de clients, montants, données
   personnelles) : proposer un terme générique à la place, en le disant ; la fiche sera lue par
   d'autres.

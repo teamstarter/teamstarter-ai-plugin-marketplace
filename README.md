@@ -22,8 +22,8 @@ dans ChatGPT et dans l'app.
 |---|---|---|
 | `ts-general-creer-projet` | Créer un projet de n'importe quel type, de l'idée jusqu'à sa proposition ; reprendre un brouillon là où il s'est arrêté | « J'ai une idée de projet », « Monte un projet pour notre séminaire de juin », « Reprends mon brouillon », « Génère la fiche de mon projet », « Soumets mon projet » |
 | `ts-general-lister-projets` | Voir ses projets regroupés par statut, avec l'étape suivante de chacun, et choisir lequel reprendre | « Où en sont mes projets ? », « Mes brouillons », « Qu'est-ce qu'il me reste à faire sur Teamstarter ? » |
-| `ts-general-creer-skill` | Créer un skill (un agent IA) par un projet « Automatisation de processus avec l'IA » : projet, validation, prompt de création récupéré automatiquement, écriture du skill, test, points de blocage | « Je veux créer un skill », « Crée-moi un agent qui… », « Crée le skill de mon projet », « Reprends mon skill », « Modifie mon skill », « Mon skill est bloqué » |
-| `ts-general-deposer-skill` | Déposer sur son projet Teamstarter chaque version d'un skill rattaché à un projet | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
+| `ts-general-creer-skill` | Créer un skill (un agent IA) avec Teamstarter : comprendre la tâche, la structurer (une réponse proposée à chaque question, validée une à une), fiche et audit, validation, construction et tests selon le prompt de Teamstarter, présentation, première exécution | « Je veux créer un skill », « Crée-moi un agent qui… », « Crée le skill de mon projet », « Reprends mon skill », « Modifie mon skill », « Mon skill est bloqué » |
+| `ts-general-deposer-skill` | Enregistrer dans Teamstarter chaque version d'un skill, en fichier `.skill` | se déclenche seul, à chaque écriture ou modification du `SKILL.md` d'un tel skill |
 | `ts-general-declarer-execution-skill` | Déclarer à Teamstarter chaque utilisation d'un skill rattaché à un projet, pour ses statistiques | se déclenche seul, à la fin de l'exécution d'un tel skill |
 | `ts-general-declarer-blocage` | Remonter les blocages d'un projet en réalisation : proposé dès qu'un problème bloque (par exemple l'échec d'un skill de projet), rédigé, validé, déclaré ; lister, commenter, résoudre | « Je suis bloqué sur mon projet », « Déclare un blocage », « Le blocage est levé », « Quels sont les blocages de mon projet ? » ; proposé seul quand un skill de projet échoue |
 | `ts-general-lister-idees-automatisation` | Voir les idées d'automatisation déposées dans la boîte à idées et les ateliers : celles à prendre, celles déjà lancées en projet ; créer le skill de l'une d'elles | « Quelles idées d'automatisation ont été proposées ? », « Trouve-moi une idée de skill », « Qu'est-ce que les collègues veulent automatiser ? » |
@@ -80,45 +80,52 @@ parcours commun, avec les questions que votre organisation a définies.
 ### Créer un skill
 
 `ts-general-creer-skill` passe avant le skill `skill-creator` d'Anthropic : un skill de
-l'organisation naît d'un projet Teamstarter.
+l'organisation est enregistré dans Teamstarter (techniquement, un projet « Automatisation de
+processus avec l'IA »). L'IA parle toujours de **votre skill**, jamais de projet, et demande le
+moins possible.
 
-1. **Projet de création de skill.** L'IA crée et propose un projet « Automatisation de processus
-   avec l'IA » avec `ts-general-creer-projet`, depuis une idée de la boîte à idées si vous en
-   choisissez une. Elle vous demande la **tâche** à automatiser, qui devient le titre du projet,
-   puis pose chaque question de structuration **avec son libellé exact dans Teamstarter**, sans la
-   reformuler ; ce que vous avez déjà dit de la tâche apparaît comme proposition sous la question.
-2. **Validation.** Si votre organisation relit les projets, le projet attend la validation des
-   animateurs : revenez quand il est validé, l'IA reprend là. Sans relecture, le projet passe
-   directement en réalisation.
-3. **Écriture.** Dès que le projet est en réalisation, l'IA récupère d'elle-même le prompt de
-   création du skill généré par Teamstarter, sans vous le demander, et confie l'écriture à
-   `skill-creator`. Le skill porte l'id du projet dans ses métadonnées
-   (`teamstarter-project-id`). Vous relisez le skill, demandez des corrections, puis le recevez en
-   zip prêt à installer.
-4. **Dépôt automatique.** Chaque version du skill est déposée sur le projet dès qu'elle est
-   écrite, sans validation : la première, puis chaque correction, y compris celles faites plus
-   tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`). L'IA l'annonce en une
-   ligne. Un fichier inchangé n'est pas redéposé : chaque dépôt crée pour les admins une tâche
-   « partager ce fichier ».
-5. **Étapes de réalisation.** L'IA coche avec votre accord « Créer mon agent IA », puis « Tester
-   l'agent en conditions réelles » une fois le test concluant.
-6. **Utilisation.** Chaque exécution du skill est déclarée à Teamstarter par
-   `ts-general-declarer-execution-skill` : heure, durée, tokens (estimés quand l'outil ne les
-   affiche pas) et personne qui l'utilise. Les statistiques sont dans la carte « Utilisation du
-   skill » de la page `/manage` du projet, réservée aux porteurs et aux admins, et l'IA les lit
-   sur demande (« combien de fois mon skill a été utilisé ? »).
-7. **Blocage.** Un problème qui empêche de créer ou d'utiliser le skill devient, avec votre accord,
-   un point de blocage sur le projet (`ts-general-declarer-blocage`, ci-dessous).
+- **Avant de commencer.** L'IA regarde si une idée ou un skill proche existe déjà dans
+  Teamstarter, et vous le propose seulement si elle en trouve un. Puis elle présente les étapes
+  (sauf quand vous modifiez un skill existant).
+1. **Comprendre la tâche.** Ses étapes, ses sources de données, comment vous la faites
+   aujourd'hui, et si le processus se découpe en plusieurs tâches, donc en plusieurs skills.
+2. **La structurer dans Teamstarter.** L'IA crée le skill dans Teamstarter sans vous le
+   demander, prépare une réponse à chaque question de structuration et vous les soumet **une à
+   une**, avec leur libellé exact : vous validez, ou répondez autrement. Les questions sont
+   regroupées en étapes de la structuration.
+3. **Fiche et audit**, faits par l'IA sans rien vous demander, sauf une information que l'audit
+   réclame et qu'elle n'a pas.
+4. **Validation.** Si votre organisation fait valider les skills par ses animateurs, le skill
+   leur est envoyé : revenez quand il est validé. Sinon, l'IA passe directement à la création.
+5. **Construire, tester, enregistrer.** L'IA récupère le prompt de création généré par
+   Teamstarter et le suit, pour la construction comme pour les tests. Le skill porte son id
+   Teamstarter dans ses métadonnées (`teamstarter-project-id`). Il est enregistré dans
+   Teamstarter en fichier `.skill`, puis chaque nouvelle version, y compris celles faites plus
+   tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`) ; l'étape « Créer mon
+   agent IA » est cochée.
+6. **Présentation.** Le nom du skill, ce qu'il prend (entrées), ce qu'il produit (sorties) et
+   ses étapes, avec le fichier pour l'installer. Vous pouvez tout changer.
+7. **Première exécution**, sur un cas réel. Si le résultat vous convient, l'étape « Tester l'agent
+   en conditions réelles » est cochée.
 
-Le prompt de création, le dépôt du skill, la validation des étapes et la déclaration des
+Vos corrections sont appliquées sans compte rendu : l'IA ne vous dit pas qu'elle a mis à jour le
+skill, elle vous montre le résultat. Elle ne vous demande jamais de confirmer votre identité.
+
+Chaque exécution du skill est ensuite déclarée à Teamstarter par
+`ts-general-declarer-execution-skill` (heure, durée, tokens, personne) ; les statistiques sont
+dans la carte « Utilisation du skill » de sa page, et l'IA les lit sur demande. Un problème qui
+empêche de créer ou d'utiliser le skill devient, avec votre accord, un blocage
+(`ts-general-declarer-blocage`, ci-dessous).
+
+Le prompt de création, l'enregistrement du skill, les étapes cochées et la déclaration des
 utilisations demandent des outils du connecteur que votre accès n'a peut-être pas encore. Sans
 eux, l'IA vous dit quoi faire dans l'app : copier le prompt, déposer le fichier, cocher l'étape.
 Sans eux, les utilisations ne sont pas comptées.
 
-Pour que ces appels se fassent sans clic, autorisez une fois pour toutes les outils
-`get-skill-creation-instructions` et `upload-project-skill` du connecteur : « Toujours autoriser »
-quand l'outil IA le demande (claude.ai, Cowork), ou une règle d'autorisation dans `/permissions`
-(Claude Code).
+Pour que la création se fasse sans clic, autorisez une fois pour toutes les outils `run-query`,
+`run-mutation`, `get-skill-creation-instructions` et `upload-project-skill` du connecteur :
+« Toujours autoriser » quand l'outil IA le demande (claude.ai, Cowork), ou une règle
+d'autorisation dans `/permissions` (Claude Code).
 
 ### Remonter les blocages d'un projet
 
@@ -204,13 +211,15 @@ l'organisation.
 ### Garde-fous
 
 - **Rien n'est écrit sans votre accord** : chaque écriture suit une validation, et la proposition
-  du projet demande une confirmation explicite. Deux exceptions, annoncées dans la réponse : le
-  dépôt de chaque version d'un skill de projet sur son projet, et la déclaration de chacune de
-  ses utilisations.
+  d'un projet demande une confirmation explicite. Exception, la création d'un skill : l'IA crée
+  le skill dans Teamstarter, écrit chaque réponse que vous avez validée, fait la fiche et
+  l'audit, l'envoie en validation, enregistre chaque version et coche ses étapes sans vous le
+  demander ; et chaque utilisation d'un skill est déclarée.
 - **Rien n'est inventé** : date, lieu, montant, prestataire, co-porteur. L'IA vous les demande,
   ou écrit « à préciser » en vous le disant.
-- Une réponse ou une section n'est jamais réécrite sans vous le dire, et seulement celle que vous
-  avez demandée.
+- Une réponse ou une section d'un projet n'est jamais réécrite sans vous le dire, et seulement
+  celle que vous avez demandée. Pour un skill, aucune réponse n'est écrite sans votre
+  validation.
 - Un projet proposé n'est jamais repassé en brouillon sans votre demande.
 - **RPT : rien ne part sans aperçu ni accord.** Une carte, une observation ou un fichier rangé
   n'est envoyé, créé ou déplacé qu'après votre validation de ce qui sera envoyé. La carte des
@@ -286,8 +295,8 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │   └── skills/
 │       ├── ts-general-creer-projet/    # créer un projet jusqu'à sa proposition ; reprendre un brouillon
 │       ├── ts-general-lister-projets/  # mes projets par statut ; choisir lequel reprendre
-│       ├── ts-general-creer-skill/     # créer un skill par un projet : prompt, écriture, test, blocages
-│       ├── ts-general-deposer-skill/   # déposer chaque version d'un skill de projet, automatiquement
+│       ├── ts-general-creer-skill/     # créer un skill : tâche, structuration, fiche, prompt, tests, première exécution
+│       ├── ts-general-deposer-skill/   # enregistrer chaque version d'un skill en .skill, automatiquement
 │       ├── ts-general-declarer-execution-skill/  # déclarer chaque utilisation d'un skill de projet
 │       ├── ts-general-declarer-blocage/  # blocages d'un projet en réalisation : déclarer, suivre, résoudre
 │       ├── ts-general-lister-idees-automatisation/  # idées d'automatisation : à prendre, lancées
@@ -318,8 +327,9 @@ versionné.
    phrases qui déclenchent le skill. Corps adressé au modèle, à l'infinitif.
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
    seul). La source et ses copies sont listées dans `SHARED` du script ; modifier la source, puis
-   `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, dont la source est
-   dans `ts-general-creer-projet`.
+   `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
+   `ts-general-creer-skill`, `questions-structuration.md`, `type-automatisation-ia.md`,
+   `fiche-projet.md` et `scripts/tiptap.py` ; leur source est dans `ts-general-creer-projet`.
 3. `python3 scripts/check_plugins.py` doit répondre `OK`.
 4. Monter la version dans `plugin.json` et dans `marketplace.json`.
 

@@ -134,7 +134,7 @@ Deux tableaux, dans cet ordre, puis le troisième s'il a été demandé :
 | Tableau | Colonnes |
 |---|---|
 | Idées à prendre (`toTakeCount`) | idée (titre), `#id`, type, auteur, déposée le, 👍 `d_likesCount`, 💬 `d_commentsCount`, description en une ligne (120 caractères) |
-| Idées déjà lancées (`launchedCount`) | idée, `#id`, auteur, projet lancé `#d_lastProjectId` |
+| Idées déjà lancées (`launchedCount`) | idée, `#id`, auteur, skill lancé `#d_lastProjectId` |
 | Sans type, à confirmer | idée, `#id`, auteur, déposée le, description en une ligne |
 
 - Donner les totaux, et dire quand une liste est tronquée.
@@ -146,12 +146,13 @@ Deux tableaux, dans cet ordre, puis le troisième s'il a été demandé :
 ## Étape 5 — Créer le skill d'une idée
 
 Proposer de créer le skill d'une idée à prendre (« Je crée le skill de laquelle ? »). Sur choix de
-l'utilisateur, passer la main à `ts-general-creer-skill` avec l'id de l'idée : il crée le projet
-de création de skill depuis l'idée, qui affiche ensuite le projet lancé.
+l'utilisateur, passer la main à `ts-general-creer-skill` avec l'id de l'idée : il crée le skill
+depuis l'idée, qui l'affiche ensuite comme lancée.
 
-Une idée déjà lancée : ne pas en créer un second projet ; proposer de rejoindre le projet existant
+Une idée déjà lancée : ne pas en créer un second ; proposer d'utiliser le skill qui en est né
 (`d_lastProjectId`), ou de le reprendre avec `ts-general-creer-skill` si l'utilisateur en est
-porteur.
+porteur. Dans ce que l'utilisateur lit, une idée lancée a donné **un skill**, jamais « un
+projet ».
 
 ## Garde-fous
 
