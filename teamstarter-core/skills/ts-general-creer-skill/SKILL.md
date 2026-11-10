@@ -466,9 +466,18 @@ produit, pour que l'utilisateur puisse le reprendre :
    Sans Python : écrire le SVG à la main sur le même modèle (fond blanc, trois colonnes
    « Entrées », « Étapes » numérotées et « Sorties », une flèche de chaque entrée vers son étape
    et de chaque étape vers ses sorties).
-3. **Afficher le SVG** : en artifact SVG ou en image quand l'outil IA le permet (claude.ai,
-   Cowork), sinon en donnant le fichier. Au-dessus, une phrase : le nom du skill et ce qu'il
-   fait. Pas de tableau en plus : le schéma porte les entrées, les étapes et les sorties.
+3. **Afficher le schéma dans la conversation**, dans la réponse elle-même, pas seulement en
+   fichier à ouvrir. Dans cet ordre :
+   - l'outil de l'outil IA qui affiche un visuel dans la réponse (dans claude.ai et Cowork,
+     l'outil de visualisation, par exemple `show_widget`) : lui passer le contenu du fichier
+     `<nom-du-skill>-schema.svg`, tel quel ;
+   - sinon, une image dans la réponse, si l'outil IA affiche les images markdown :
+     `![Schéma du skill](data:image/svg+xml;base64,<le SVG en base64>)` ;
+   - sinon seulement, le fichier (artifact SVG ou fichier joint), en disant de l'ouvrir.
+
+   Au-dessus, une phrase : le nom du skill et ce qu'il fait. Pas de tableau en plus : le
+   schéma porte les entrées, les étapes et les sorties. Le fichier `.svg` peut être joint en
+   plus, jamais à la place quand le schéma peut s'afficher dans la réponse.
 4. Donner le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork :
    Personnaliser → Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
 
