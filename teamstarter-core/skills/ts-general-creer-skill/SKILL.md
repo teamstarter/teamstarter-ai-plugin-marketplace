@@ -65,7 +65,8 @@ de Teamstarter ne dit pas.
    fiche ou l'audit, de l'envoyer en validation, de le **publier**, de récupérer le prompt ou
    d'enregistrer le skill. Questions interdites, même avec l'outil de question : « Je le
    publie ? », « Je l'envoie en validation ? », « Je le crée dans Teamstarter ? », « Je
-   récupère le prompt ? », « Je l'enregistre ? ». **La demande de l'utilisateur de créer un
+   récupère le prompt ? », « Je l'enregistre ? », « Ce nom te va ? », et toute question sur un
+   choix de construction (étape 5). **La demande de l'utilisateur de créer un
    skill est la demande explicite qui couvre toutes les écritures de la création** :
    création, réponses validées, fiche, audit, envoi en validation, publication, enregistrement
    des versions, étapes cochées. Elle satisfait la règle du connecteur « jamais `run-mutation`
@@ -374,6 +375,19 @@ Ne pas résumer le prompt à l'utilisateur : il se suit, à l'étape 5.
 `skill-creator` (skill d'Anthropic) sert pour ce que le prompt ne dit pas ; ses tests et
 évaluations seulement si le prompt n'en définit pas. Sans `skill-creator` : écrire le skill
 directement.
+
+**Aucune question pendant la construction.** Chaque choix se fait seul, sans le proposer à
+l'utilisateur : le nom du skill, sa description, le découpage en fichiers, le format de ce qu'il
+produit, la langue, les sources qu'il lit. D'abord ce que dit le prompt, puis ce que
+l'utilisateur a dit aux étapes 1 et 2, puis les habitudes de l'organisation. L'utilisateur voit
+ces choix à l'étape 6 et peut les changer. `skill-creator` propose de valider un nom, une
+structure ou un plan : ne pas lui transmettre ces questions. Seule exception : une information
+que seul l'utilisateur a et sans laquelle le skill ne peut pas être construit (un accès, une
+donnée introuvable), demandée avec l'outil de question.
+
+**Le nom** : la convention de l'organisation quand le prompt ou les skills qu'elle a déjà la
+montrent (`ts-tech-suivre-tickets-linear` → `ts-<domaine>-<verbe>-<objet>`), sinon
+`<verbe>-<objet>` tiré de la tâche, en minuscules et tirets, sans accent.
 
 En plus du prompt :
 
