@@ -81,9 +81,28 @@ de Teamstarter ne dit pas.
    **jamais une question, ni une liste de questions, écrite dans le texte de la réponse**.
    Chaque question a des réponses proposées (2 à 4), la plus probable en premier ; la réponse
    libre reste toujours possible. Ce qu'une question ouverte demande (les étapes du processus,
-   un exemple) se propose : écrire la proposition dans la conversation, puis l'outil de
-   question pour la valider ou la corriger. Sans cet outil : une seule question par message,
-   avec ses réponses proposées numérotées.
+   un exemple) se propose, et l'outil de question fait valider ou corriger la proposition, qu'il
+   porte lui-même (règle 8). Sans cet outil : une seule question par message, à la fin du
+   message, avec la proposition et ses réponses proposées numérotées.
+8. **La question porte ce qu'elle fait valider.** Dans certaines interfaces (Cowork, peut-être
+   claude.ai), le texte écrit entre deux appels d'outils est replié en une ligne de résumé : une
+   proposition écrite juste avant l'outil de question n'est pas lue, et l'utilisateur valide
+   sans l'avoir vue ou répond « Je ne vois pas les étapes ». Donc :
+   - **Dans la question** : son texte, ou la description de son premier choix, contient la
+     proposition, en entier quand elle tient en quelques lignes, sinon en version courte (le
+     verbe de chaque étape, le livrable, les chiffres). Exemple : « Tu qualifies les feedbacks
+     en ces 7 étapes ? 1. Lire l'Inbox PMs · 2. Reformuler l'insight · 3. Remplir les
+     propriétés · 4. Repérer les doublons · 5. Rattacher à une opportunité · 6. Proposer le
+     traitement · 7. Écrire dans Notion » → « Oui » / « À corriger ».
+   - **Le texte plus long** (une proposition détaillée, une réponse de plusieurs paragraphes,
+     un tableau) et tout autre texte à lire (la présentation des étapes, un dépôt impossible,
+     un lien) : quand l'outil IA a un outil qui envoie un message affiché en entier à
+     l'utilisateur (dans Cowork, l'outil de message), l'envoyer par lui, avant l'outil de
+     question ; sinon l'écrire dans la réponse. La question garde sa version courte : elle se
+     comprend seule.
+   - **Aucun renvoi** dans une question ni dans un choix : ni « ci-dessus », ni « plus haut »,
+     ni « au-dessus », ni « dans le message précédent ». La question nomme ce qu'elle fait
+     valider.
 
 ## Vue d'ensemble
 
@@ -158,7 +177,8 @@ variables : `{"i": {"projectTypeId": {"in": [<ids>]}}, "p": {"projectTypeId": {"
    Partir d'une idée : garder son id (`sourceIdeaId`, étape 2) et son texte pour l'étape 1.
    Reprendre : aller à « Reprise ».
 
-4. **Présenter les étapes**, pour une nouvelle création seulement :
+4. **Présenter les étapes**, pour une nouvelle création seulement, par l'outil de message quand
+   l'outil IA en a un (règle 8) :
 
 > Voici comment on va créer ton skill :
 > 1. Comprendre ta tâche : ses étapes, ses données, comment tu la fais aujourd'hui.
@@ -169,7 +189,7 @@ variables : `{"i": {"projectTypeId": {"in": [<ids>]}}, "p": {"projectTypeId": {"
 > 6. Te le présenter : ce qu'il prend, ce qu'il produit, ses étapes. Tu peux tout changer.
 > 7. Le lancer une première fois.
 
-   Puis enchaîner sur l'étape 1, dans le même message.
+   Puis enchaîner sur l'étape 1, sans attendre de réponse.
 
 ## Étape 1 — Comprendre la tâche
 
@@ -188,10 +208,12 @@ cas échéant).
   « Pour qui est le résultat ? » → « Pour moi » / « Pour mon équipe » / « Pour la direction » ;
   « À quelle fréquence ? » → « Chaque semaine » / « Chaque mois » / « À la demande » ; « D'où
   viennent les données ? » → les outils dont un connecteur est branché, puis « Ailleurs ».
-- **Une question ouverte devient une proposition à valider** : écrire dans la conversation ce
-  que Claude comprend (les étapes du processus, les mesures d'un rapport, le livrable), puis
-  l'outil de question : « C'est bien ça ? » → « Oui » / « À corriger » (la réponse libre dit
-  quoi).
+- **Une question ouverte devient une proposition à valider** : ce que Claude comprend (les
+  étapes du processus, les mesures d'un rapport, le livrable) est dans la question elle-même,
+  qui demande si c'est juste → « Oui » / « À corriger » (la réponse libre dit quoi). Jamais
+  « les étapes ci-dessus » : les étapes sont dans la question, numérotées et séparées par
+  « · » ; quand le détail de chaque étape est trop long pour la question, il est envoyé avant,
+  par l'outil de message (règle 8).
 - Une réponse qui ouvre une nouvelle question : la poser de la même façon, à la suite.
 
 **Ce qu'il faut savoir** — de quoi répondre aux questions de structuration du type
@@ -271,12 +293,15 @@ Puis, pour les questions qui restent, **une à la fois**, avec l'outil de questi
 - premier choix : « Valider », la proposition en description ; d'autres choix seulement quand la
   question en a (options d'un choix, score de 1 à 5, seul ou en équipe), la proposition en
   premier ; la réponse libre reste possible ;
-- **proposition trop longue** pour un choix (plusieurs lignes, une liste d'étapes) : l'écrire
-  dans la conversation juste avant, puis l'outil de question avec « Valider la proposition
-  ci-dessus » en premier choix.
+- **proposition trop longue** pour la description d'un choix (plusieurs lignes, une liste
+  d'étapes) : la mettre dans le texte de la question, après le libellé, les éléments séparés
+  par « · », raccourcie si besoin ; premier choix « Valider ». Quand elle est raccourcie, sa
+  version complète est envoyée avant, par l'outil de message (règle 8). Jamais « Valider la
+  proposition ci-dessus ».
 
-À la première question d'une nouvelle étape de la structuration, la nommer en une ligne avant
-l'outil de question (« Étape 2/5 de la structuration : Impact de l'IA »).
+À la première question d'une nouvelle étape de la structuration, le texte de la question
+commence par le nom de l'étape (« Impact de l'IA : <libellé> ») ; aucune ligne écrite avant
+l'outil de question pour l'annoncer.
 
 Après chaque réponse :
 
@@ -447,7 +472,8 @@ Sinon, empaqueter le dossier en `<nom-du-skill>.skill` (une archive zip qui cont
   skill est enregistré quand `skillName` est le `name` du skill. Sinon, il ne l'est pas, quoi
   qu'ait répondu l'appel.
 - **Un dépôt impossible ou refusé se dit tout de suite**, en une phrase avec la raison, avant la
-  présentation de l'étape 6 et pas à la fin d'un récapitulatif ; puis donner le fichier
+  présentation de l'étape 6 et pas à la fin d'un récapitulatif, par l'outil de message quand
+  l'outil IA en a un (règle 8) ; puis donner le fichier
   `<nom-du-skill>.skill` et le geste (page du skill dans Teamstarter, section Fichiers, déposer
   le fichier). Les cas sont dans `ts-general-deposer-skill` (archive trop grosse pour être
   recopiée sans risque, outil absent, refus).
@@ -490,16 +516,19 @@ produit, pour que l'utilisateur puisse le reprendre :
      `![Schéma du skill](data:image/svg+xml;base64,<le SVG en base64>)` ;
    - sinon seulement, le fichier (artifact SVG ou fichier joint), en disant de l'ouvrir.
 
-   Au-dessus, une phrase : le nom du skill et ce qu'il fait. Pas de tableau en plus : le
-   schéma porte les entrées, les étapes et les sorties. Le fichier `.svg` peut être joint en
-   plus, jamais à la place quand le schéma peut s'afficher dans la réponse.
+   Avec le schéma, une phrase : le nom du skill et ce qu'il fait, par l'outil de message quand
+   l'outil IA en a un (règle 8). Pas de tableau en plus : le schéma porte les entrées, les
+   étapes et les sorties. Le fichier `.svg` peut être joint en plus, jamais à la place quand le
+   schéma peut s'afficher dans la réponse.
 4. Donner le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork :
    Personnaliser → Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
 
-Puis l'outil de question : « Ce skill te convient ? » → « Oui, on l'essaie » / « Changer les
-entrées ou les sorties » / « Changer les étapes ». Un changement : le faire (étape 5 : modifier,
-retester, empaqueter, enregistrer), refaire le schéma sous les mêmes noms de fichier, puis le
-montrer de nouveau, sans dire ce qui a changé.
+Puis l'outil de question, qui porte le skill en version courte, pour qu'il se lise même si
+l'interface replie le schéma (règle 8) : « Ce skill te convient ? <nom> prend <entrées>, fait
+<n> étapes (<verbe de chaque étape>) et produit <sorties>. » → « Oui, on l'essaie » /
+« Changer les entrées ou les sorties » / « Changer les étapes ». Un changement : le faire
+(étape 5 : modifier, retester, empaqueter, enregistrer), refaire le schéma sous les mêmes noms
+de fichier, puis le montrer de nouveau, sans dire ce qui a changé.
 
 ## Étape 7 — Première exécution
 
