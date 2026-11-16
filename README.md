@@ -90,7 +90,8 @@ moins possible.
 1. **Comprendre la tâche.** Ses étapes, ses sources de données, comment vous la faites
    aujourd'hui, et si le processus se découpe en plusieurs tâches, donc en plusieurs skills.
    Chaque question vient avec des réponses proposées, par l'outil de question de l'outil IA :
-   vous cliquez, ou répondez autrement.
+   vous cliquez, ou répondez autrement. Ce que l'IA vous fait valider (les étapes de votre
+   tâche, une réponse longue, le skill construit) est écrit dans la question elle-même.
 2. **La structurer dans Teamstarter.** L'IA crée le skill dans Teamstarter sans vous le
    demander et écrit directement les réponses que vous avez déjà données à l'étape 1. Pour les
    autres questions de structuration, elle prépare une réponse et vous les soumet **une à une**,
@@ -329,6 +330,10 @@ versionné.
    `allowed-tools` ; l'import claude.ai refuse les autres), `name` = nom du dossier, format
    `ts-<domaine>-<verbe>-<objet>`, description de 1024 caractères au plus, sans chevrons, avec les
    phrases qui déclenchent le skill. Corps adressé au modèle, à l'infinitif.
+   Une question à l'utilisateur passe par l'outil de question et porte ce qu'elle fait valider,
+   en entier ou en version courte, sans « ci-dessus » : dans Cowork, le texte écrit entre deux
+   appels d'outils est replié en une ligne de résumé, et un texte plus long passe par l'outil
+   de message (TEA-3343).
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
    seul). La source et ses copies sont listées dans `SHARED` du script ; modifier la source, puis
    `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
