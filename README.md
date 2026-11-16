@@ -330,6 +330,10 @@ versionné.
    `allowed-tools` ; l'import claude.ai refuse les autres), `name` = nom du dossier, format
    `ts-<domaine>-<verbe>-<objet>`, description de 1024 caractères au plus, sans chevrons, avec les
    phrases qui déclenchent le skill. Corps adressé au modèle, à l'infinitif.
+   Une question à l'utilisateur passe par l'outil de question et porte ce qu'elle fait valider,
+   en entier ou en version courte, sans « ci-dessus » : dans Cowork, le texte écrit entre deux
+   appels d'outils est replié en une ligne de résumé, et un texte plus long passe par l'outil
+   de message (TEA-3343).
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
    seul). La source et ses copies sont listées dans `SHARED` du script ; modifier la source, puis
    `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
