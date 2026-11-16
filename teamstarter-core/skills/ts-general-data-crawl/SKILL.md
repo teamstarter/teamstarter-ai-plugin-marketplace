@@ -2,7 +2,7 @@
 name: ts-general-data-crawl
 description: "Describe where an organization's data is kept and how it is laid out, tool by tool (Google Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), from the connectors of the person who runs it: the folders, files, sheets, databases, CRM objects and pipelines, channels, labels and projects, nested as in the tool, with their size, the date of their last change and their column names. Never reads or sends a value of the data: no document content, no message, no record, no client name, no amount. Shows a preview of what will be sent, then, after the person's approval, drops the data map (rpt/v1 file with containers) in the organization's intake folder, where it is merged into the data tree of the RPT referential. Use when someone wants to know or map where the company's data is, which tool holds what, or whether it is up to date. Triggers: 'map our data', 'where is our data', 'crawl my Drive structure', « cartographie nos données », « où est notre donnée », « fais la carte des données »."
 metadata:
-  version: "1.3 (2026-10-26)"
+  version: "1.4 (2026-11-16)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-data-crawl; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -103,6 +103,12 @@ Claude Code and Cowork; in claude.ai, the answer input tool): at most four quest
 closed answers, the recommended answer first with "(Recommended)" in the person's language. A
 question written at the end of a message reads as a polite formula. Without a question tool,
 end the message with the question alone on its last line, in bold.
+
+In some interfaces (Cowork, perhaps claude.ai), the text you write between two tool calls is
+folded into a one-line summary: a preview or a table written just before the question tool is
+not read. When you have a tool that sends a message shown in full to the person (in Cowork,
+the message tool), show what the question is about with that tool, before the question tool.
+The question names what it is about and reads alone: never "above" or "the preview above".
 
 ## Step 1 — Frame
 
@@ -263,7 +269,9 @@ artifacts, paste its content in your answer.
 > no content. Check in particular that no name of a client or a person remains. The file will go
 > to <destination>; <intake.merged_by> will merge it into the data map."
 
-then the question tool asks "Shall I send it as is?", answers "Send as is" and "Change something".
+then the question tool asks "Shall I send the data map to <destination> as is?", answers "Send
+as is" and "Change something" (section "Asking a question": this sentence goes through the
+message tool when you have one).
 Send only after an explicit approval given after this preview; an approval given earlier does
 not count. After a correction, run the script and the preview again, replace the artifact and
 ask again.

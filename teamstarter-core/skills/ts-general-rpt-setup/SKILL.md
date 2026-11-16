@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: start with its explorer's artifact, shared in edit mode with Teamstarter, then run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, how many people should send a map, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.15 (2026-11-09)"
+  version: "1.16 (2026-11-16)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -45,6 +45,12 @@ Every question goes through the question tool when you have it: at most four que
 closed answers, the recommended answer first with "(Recommended)" in the person's language, and
 the person can always write something else. Without this tool, ask the questions as a numbered
 list. Do not ask again a question that a previous message already answers.
+
+In some interfaces (Cowork, perhaps claude.ai), the text you write between two tool calls is
+folded into a one-line summary: a preview or a table written just before the question tool is
+not read. When you have a tool that sends a message shown in full to the person (in Cowork,
+the message tool), show what the question is about with that tool, before the question tool.
+The question names what it is about and reads alone: never "above" or "the preview above".
 
 ## Step 0 — The explorer: an artifact shared with Teamstarter
 

@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.24 (2026-11-09)"
+  version: "2.25 (2026-11-16)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -123,9 +123,16 @@ and Cowork; in claude.ai, the answer input tool, `ask_user_input`). A question w
 of a message ("Is that OK for you?") reads as a polite formula: the person does not see that an
 answer is expected, the conversation stops there, and the map is never sent.
 
-- Your message first shows what the question is about (the first draft, a table, the summary,
-  the sending preview); the tool asks the question last, and nothing follows. Do not repeat the
-  question in the text of the message.
+- What the question is about (the first draft, a table, the summary, the sending preview) is
+  readable when the question opens. In some interfaces (Cowork, perhaps claude.ai), the text
+  you write between two tool calls is folded into a one-line summary: a table written just
+  before the question tool is not read, and the person answers without having seen it. When
+  you have a tool that sends a message shown in full to the person (in Cowork, the message
+  tool), show it with that tool, before the question tool; otherwise in your message.
+- The question names what it is about and carries its short version (the roles and the number
+  of tasks, the file and its destination), so that it reads alone; never "above", "the table
+  above" or "the preview above". The tool asks the question last, and nothing follows. Do not
+  repeat the question in the text of the message.
 - The answers offered are the most likely ones, your estimate first. An open question (a typical
   week, the members of a team, a correction) also goes through the tool: it offers what you
   already know, if anything, and the person answers in free text. Do not invent answers to fill
@@ -1051,11 +1058,13 @@ folder of the configuration, leave out `intake.visibility`, which describes the 
 > the people named and the alerts. The file will go to <the intake folder>, <intake.visibility>;
 > <intake.merged_by> will merge it into the referential."
 
-then the question tool asks "Shall I send it as is?", with two answers: "Send as is" and "Change
-something" (the person writes what). Neither is recommended. With several maps, say it in the
-plural and name the files. If you have no sending tool, do not promise the sending: "… After
-your approval, I give you the file to drop yourself in <the intake folder>.", and the tool asks
-"Shall I give you the file as is?", with the answers "Yes, as is" and "Change something".
+then the question tool asks "Shall I send the map to <the intake folder> as is?", with two
+answers: "Send as is" and "Change something" (the person writes what); the preview sentence goes
+through the message tool when you have one (section "Asking a question"). Neither is recommended.
+With several maps, say it in the plural and name the files. If you have no sending tool, do not
+promise the sending: "… After your approval, I give you the file to drop yourself in <the intake
+folder>.", and the tool asks "Shall I give you the file as is?", with the answers "Yes, as is"
+and "Change something".
 
 - Send only after an explicit approval given **after** this preview: "Send as is" (or "Yes, as
   is") chosen in the tool, or "yes", "send it" written. An ambiguous answer or a question is not

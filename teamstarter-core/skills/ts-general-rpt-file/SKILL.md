@@ -2,7 +2,7 @@
 name: ts-general-rpt-file
 description: "Store the deliverable of a task of the organization's RPT referential at the end of the task, where its entry says: update the fixed file the task maintains, or put the new file in the right folder (Google Drive, OneDrive, SharePoint, Notion, repository) under the name given by the entry's pattern, and start from the task's template when it cites one. Proposes the location and the name, and moves, renames or creates nothing without the person's approval. When the entry does not say where the deliverable goes, proposes the folder of the organization's data tree that the referential proposes for the task, else asks once, then passes the answer to the skill ts-general-rpt-observe to complete the entry and the data tree. Use when the deliverable of a work task done with Claude is ready, when the organization's global context asks for it, or when someone asks 'where do I store this?', 'file this in the right place', « où je range ça ? » or « range ce fichier au bon endroit »."
 metadata:
-  version: "1.7 (2026-10-28)"
+  version: "1.8 (2026-11-16)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-file; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -94,8 +94,10 @@ For each entry of `output_files`:
   `[Client]` the client of the session, `[First name]` (or `[Prénom]`) the person; ask for what
   the session does not say. Propose the full path and the file name, with the folder's link.
 
-Ask with the question tool "Shall I store it there?", with the answers "Yes", "Somewhere else"
-(the person says where) and "Not now".
+Ask with the question tool "Shall I store it in <path or file>?", with the answers "Yes",
+"Somewhere else" (the person says where) and "Not now". The question carries the path: in
+some interfaces (Cowork, perhaps claude.ai), the text written just before the question tool is
+folded into a one-line summary, and "there" would point to nothing.
 
 - **Not disclosed** (`kind: private`): propose no place, ask for none and read no folder to find
   one. Say in one sentence that the referential does not give this place and that the person

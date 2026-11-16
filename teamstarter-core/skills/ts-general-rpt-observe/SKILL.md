@@ -2,7 +2,7 @@
 name: ts-general-rpt-observe
 description: "Propose the diff of a task of the organization's RPT referential when a work session with Claude learned something its entry does not say: duration, frequency, tools, data and AI access, method, where the deliverable goes, template, status, a missing task, or a blocker (a new problem that keeps the task from progressing, a known blocker in progress, resolved or dropped). Finds the task, compares the session with the entry, shows the diff and, after the person's approval, writes an observation (rpt-observation/v1): in the session's PR with Claude Code, in the intake folder (read from the organization's rpt-config.yaml) from claude.ai. Use at the end of a work task done with Claude, after a skill, a scheduled task, an agent or a connector of a task was created or changed (the agent's own entry included), when the global context asks for it, or when someone says 'update this task's entry', « mets à jour la fiche de cette tâche » or « ce bloqueur est levé »."
 metadata:
-  version: "1.16 (2026-11-09)"
+  version: "1.17 (2026-11-16)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-observe; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -219,10 +219,16 @@ person's language:
 > "Here is everything that will be sent, and nothing else. The observation will go to
 > <intake.merged_by>, who will merge it into the referential after validation."
 
-and ask with the question tool "Shall I send it as is?", with three answers: "Send as is",
-"Change something", "Send nothing". Send only after an approval given **after** this table; an
-older approval does not count. On "Change something", correct, show the table again and ask
-again.
+and ask with the question tool "Shall I send this observation on <task> (<n> changes) as is?",
+with three answers: "Send as is", "Change something", "Send nothing". Send only after an
+approval given **after** this table; an older approval does not count. On "Change something",
+correct, show the table again and ask again.
+
+In some interfaces (Cowork, perhaps claude.ai), the text you write between two tool calls is
+folded into a one-line summary: a table written just before the question tool is not read.
+When you have a tool that sends a message shown in full to the person (in Cowork, the message
+tool), show the table and the sentence with that tool, before the question tool. The question
+names what it sends and reads alone: never "above" or "the table above".
 
 ## Step 5 — Write the file and check it
 
