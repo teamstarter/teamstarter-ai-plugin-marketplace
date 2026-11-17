@@ -1148,13 +1148,30 @@ MESSAGES = {
         "en": ", heterogeneous (its teams go from level {lo} to level {hi} in execution)",
         "fr": ", hétérogène (ses équipes vont du palier {lo} au palier {hi} en exécution)"},
     "md.profile_grade": {
-        "en": "Grade **{letter}**: {points} points out of 24, the sum of the six levels "
-              "(F 0-3, D 4-7, C 8-11, B 12-15, A 16-19, S 20-24){next}.",
-        "fr": "Note **{letter}** : {points} points sur 24, la somme des six paliers "
-              "(F 0-3, D 4-7, C 8-11, B 12-15, A 16-19, S 20-24){next}."},
+        "en": "Grade **{letter}**: {points} points out of 24, the sum of the six levels, that is "
+              "{out_of_20}/20 and {stars} stars out of 5 (F 0-3, D 4-7, C 8-11, B 12-15, "
+              "A 16-19, S 20-24 points; above S, Frontier, 20/20 and 5 stars){next}.",
+        "fr": "Note **{letter}** : {points} points sur 24, la somme des six paliers, soit "
+              "{out_of_20}/20 et {stars} étoiles sur 5 (F 0-3, D 4-7, C 8-11, B 12-15, "
+              "A 16-19, S 20-24 points ; au-dessus de S, Frontier, 20/20 et 5 étoiles){next}."},
     "md.profile_next": {
         "en": "; next grade: {letter}, from {points} points",
         "fr": " ; note suivante : {letter}, à partir de {points} points"},
+    "md.profile_next_frontier": {
+        "en": "; next grade: Frontier, still missing: {missing}",
+        "fr": " ; note suivante : Frontier, il manque : {missing}"},
+    "md.frontier.work": {
+        "en": "tasks still manual or conversational {n}",
+        "fr": "tâches encore manuelles ou conversationnelles {n}"},
+    "md.frontier.seats": {
+        "en": "people without a premium licence with the work modes {n}",
+        "fr": "personnes sans licence premium avec les modes de travail {n}"},
+    "md.frontier.access": {
+        "en": "people whose own AI does not reach the OS {n}",
+        "fr": "personnes dont l'IA n'atteint pas l'OS {n}"},
+    "md.frontier.data": {
+        "en": "tasks whose data the AI does not all reach {n}",
+        "fr": "tâches dont l'IA n'atteint pas toutes les données {n}"},
     "md.profile_header": {
         "en": "| Team | Active tasks | Execution | Delegation | Infrastructure | Sharing | "
               "Control | Investment | Grade | Profile |",

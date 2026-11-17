@@ -4210,6 +4210,14 @@ FRAMED_CRITERIA = 3
 PROFILE_GRADES = (("F", 0, "common"), ("D", 4, "common"), ("C", 8, "uncommon"),
                   ("B", 12, "uncommon"), ("A", 16, "rare"), ("S", 20, "mythic"))
 PROFILE_MAX = 4 * len(PROFILE_AXES)
+# Above S, Frontier: the best practice seen on the market to date, a definition that moves as
+# practices are observed (Vincent, 2026-11-17). People use the AI as their only work tool;
+# their job has moved closer to the client and holds no task that is not a decision or a
+# creation. Points do not reach it: an S grade does, once frontier_missing finds nothing.
+FRONTIER = "Frontier"
+# The points read out of 20 and in stars (Vincent, 2026-11-17: « les gens ne connaissent pas
+# le système japonais »): 24 points make 19/20 and 4.5 stars; 20/20 and 5 stars are Frontier's.
+GRADE_TOP_OUT_OF_20 = 19
 SKILL_TOOL_TYPES = ("skill", "agent", "managed-agent", "routine")
 # What a person uses in an AI assistant without a skill: the task stays in a chat (§1.21).
 CHAT_TOOL_TYPES = ("project", "prompt", "conversation")
@@ -4430,15 +4438,66 @@ def profile_of(levels, sharing_own=None):
     return profile
 
 
-def profile_grade(levels):
-    """The grade of the six levels: its letter (F, D, C, B, A, S), its points (0 to 24), the
-    rarity of its card, and the next grade with the points it starts at (None at S)."""
+def grade_scales(points):
+    """The points (0 to 24) out of 20 and in stars: out of 20, points × 19/24 rounded to the
+    nearest half point (a half rounds up); the stars, the note out of 20 divided by 4, rounded
+    down to the half star. 20/20 and 5 stars are left to Frontier."""
+    halves = (4 * GRADE_TOP_OUT_OF_20 * points + PROFILE_MAX) // (2 * PROFILE_MAX)
+    return {"out_of_20": halves / 2, "stars": halves // 4 / 2}
+
+
+def grade_table():
+    """The scales of the grade, for the explorer's table: per letter its rarity and, from its
+    first point to its last, the points, the note out of 20 and the stars; Frontier last, which
+    no number of points gives."""
+    rows = []
+    for i, (letter, start, rarity) in enumerate(PROFILE_GRADES):
+        end = PROFILE_GRADES[i + 1][1] - 1 if i + 1 < len(PROFILE_GRADES) else PROFILE_MAX
+        lo, hi = grade_scales(start), grade_scales(end)
+        rows.append({"letter": letter, "rarity": rarity, "points": [start, end],
+                     "out_of_20": [lo["out_of_20"], hi["out_of_20"]],
+                     "stars": [lo["stars"], hi["stars"]]})
+    return rows + [{"letter": FRONTIER, "rarity": "frontier", "points": None,
+                    "out_of_20": [20.0, 20.0], "stars": [5.0, 5.0]}]
+
+
+def frontier_missing(m):
+    """What a set of measures still lacks for Frontier, by condition, each with its count; empty
+    when it has it all. `work`: the active tasks a person still does, alone (M) or with a chat
+    (C); at Frontier the AI does every task outside judgment (S or A), people decide and create.
+    `seats`: the people without a premium licence with the work modes (`ai_plan`); `access`:
+    those whose own AI does not reach the OS (`access: works`, a shared assistant does not
+    count): at Frontier the AI is their only work tool. `data`: the tasks whose data the AI does
+    not all reach."""
+    g = lambda k: m.get(k) or 0
+    out = {"work": g("tasks") - g("judgment") - g("automated") - g("skilled"),
+           "seats": g("people") - g("seats_premium"),
+           "access": g("people") - g("reading") + g("reading_shared"),
+           "data": g("with_data") - g("reached")}
+    return {k: v for k, v in out.items() if v > 0}
+
+
+def profile_grade(levels, measures=None):
+    """The grade of the six levels: its letter (F, D, C, B, A, S, or Frontier), its points (0 to
+    24), the same out of 20 and in stars (grade_scales), the rarity of its card, and the next
+    grade with the points it starts at. An S grade whose `measures` meet every condition of
+    frontier_missing is Frontier (20/20, 5 stars, no next grade); otherwise its next grade is
+    Frontier, with what is missing."""
     points = sum(levels[k] for k in PROFILE_AXES)
     i = max(n for n, g in enumerate(PROFILE_GRADES) if points >= g[1])
     letter, _, rarity = PROFILE_GRADES[i]
     nxt = PROFILE_GRADES[i + 1] if i + 1 < len(PROFILE_GRADES) else None
-    return {"letter": letter, "points": points, "rarity": rarity,
-            "next": {"letter": nxt[0], "points": nxt[1]} if nxt else None}
+    out = dict({"letter": letter, "points": points, "rarity": rarity}, **grade_scales(points),
+               next=dict({"letter": nxt[0], "points": nxt[1]}, **grade_scales(nxt[1]))
+               if nxt else None)
+    if nxt or measures is None:
+        return out
+    missing = frontier_missing(measures)
+    if missing:
+        out["next"] = {"letter": FRONTIER, "points": None, "out_of_20": 20.0, "stars": 5.0,
+                       "missing": missing}
+        return out
+    return dict(out, letter=FRONTIER, rarity="frontier", out_of_20=20.0, stars=5.0)
 
 
 def profile_force(entry):
@@ -4459,7 +4518,7 @@ def profile_entry(m, policy, live_share, invest):
     own = axis_sharing(dict(m, reading=m["reading"] - m.get("reading_shared", 0)), live_share)[0]
     out["sharing"]["own"] = own
     levels = {k: out[k]["level"] for k in PROFILE_AXES}
-    out.update(profile=profile_of(levels, own), grade=profile_grade(levels),
+    out.update(profile=profile_of(levels, own), grade=profile_grade(levels, out["measures"]),
                force=profile_force(out))
     return out
 
@@ -4502,8 +4561,8 @@ def company_entry(pooled, teams):
               for k, t in teams.items()) / total
     out["sharing"]["own"] = min(4, math.floor(own + 1e-9))
     levels = {k: out[k]["level"] for k in PROFILE_AXES}
-    out.update(profile=profile_of(levels, out["sharing"]["own"]), grade=profile_grade(levels),
-               force=profile_force(out))
+    out.update(profile=profile_of(levels, out["sharing"]["own"]),
+               grade=profile_grade(levels, out["measures"]), force=profile_force(out))
     return out
 
 
@@ -4549,7 +4608,7 @@ def ai_profile(ref):
     spread = [min(weigh), max(weigh)] if weigh else [0, 0]
     company.update(spread=spread, heterogeneous=spread[1] - spread[0] >= PROFILE_SPREAD)
     return {"policy": policy, "live_share": round(live_share, 2), "max": PROFILE_MAX,
-            "company": company, "teams": teams}
+            "grades": grade_table(), "company": company, "teams": teams}
 
 
 def last_updated(ref):
@@ -6109,18 +6168,25 @@ def md_profile(ref, lang=None):
         return label("ai_profile", e["profile"], lang, e["profile"])
     het = tr("md.profile_het", lang, lo=c["spread"][0], hi=c["spread"][1]) \
         if c["heterogeneous"] else ""
-    g = c["grade"]
-    nxt = tr("md.profile_next", lang, letter=g["next"]["letter"], points=g["next"]["points"]) \
-        if g["next"] else ""
+    g, nxt = c["grade"], c["grade"]["next"]
+    if nxt and nxt.get("missing"):
+        nxt = tr("md.profile_next_frontier", lang, missing=", ".join(
+            tr(f"md.frontier.{k}", lang, n=n) for k, n in nxt["missing"].items()))
+    elif nxt:
+        nxt = tr("md.profile_next", lang, letter=nxt["letter"], points=nxt["points"])
     lines = [tr("md.profile_title", lang), "",
              tr("md.profile_company", lang, profile=name(c), het=het,
                 **{k: c[k]["level"] for k in PROFILE_AXES}), "",
-             tr("md.profile_grade", lang, letter=g["letter"], points=g["points"], next=nxt), "",
+             tr("md.profile_grade", lang, letter=g["letter"], points=g["points"],
+                out_of_20=fmt_half(g["out_of_20"], lang), stars=fmt_half(g["stars"], lang),
+                next=nxt or ""), "",
              tr("md.profile_header", lang), "|---" * (len(PROFILE_AXES) + 4) + "|"]
     for team, e in p["teams"].items():
+        t = e["grade"]
         lines.append(f"| {team} | {e['measures']['tasks']} | "
                      + " | ".join(str(e[k]["level"]) for k in PROFILE_AXES)
-                     + f" | {e['grade']['letter']} | {name(e)} |")
+                     + f" | {t['letter']} · {fmt_half(t['out_of_20'], lang)}/20 · "
+                     + f"{fmt_half(t['stars'], lang)} ★ | {name(e)} |")
     return lines + [""]
 
 
@@ -6260,6 +6326,12 @@ def connector_labels(values, lang=None):
     return ", ".join(label("connector", v, lang, str(v)) for v in
                      sorted(values, key=lambda v: CONNECTOR_ORDER.index(v)
                             if v in CONNECTOR_ORDER else 99))
+
+
+def fmt_half(value, lang=None):
+    """A grade out of 20 or in stars, a multiple of one half: « 8 », « 9,5 » in French."""
+    text = f"{value:g}"
+    return text.replace(".", ",") if (lang or rpt_i18n.language()) == "fr" else text
 
 
 def fmt_hours(hours, lang=None):
