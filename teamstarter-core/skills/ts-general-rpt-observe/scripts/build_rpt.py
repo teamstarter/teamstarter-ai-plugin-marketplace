@@ -948,8 +948,23 @@ def validate(ref):
         e, w = check_container(c, idx)
         errors, warnings = errors + e, warnings + w
     errors += check_container_tree(ref)
-    warnings += check_file_links(ref, idx) + check_orphans(ref)
+    warnings += check_file_links(ref, idx) + check_orphans(ref) + check_gates(ref, idx)
     return errors, warnings
+
+
+def check_gates(ref, idx):
+    """A process where the AI does a step alone (a task A), without `gates`, whose role declares
+    one: the control axis of the AI profile reads the gates of the processes, not those of the
+    roles (README_operations.md §1.18). The design team, all automated, stayed at 1 in control
+    because its gate was written on DESIGN-R1 only (Vincent, 2026-11-17)."""
+    def automated(p):
+        return any((idx.get(resolve(idx, s)) or {}).get("status") == "A"
+                   for s in p.get("steps") or [])
+    return [tr("warn.gate_on_role", where=f"{p['_file']} {p['id']}", role=p.get("role"))
+            for p in ref["processes"]
+            if p.get("state", "active") == "active" and not p.get("gates")
+            and not p.get("_borrowed") and (idx.get(p.get("role")) or {}).get("gates")
+            and automated(p)]
 
 
 def check_ids(ref):
@@ -4238,8 +4253,12 @@ def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=
     def framed(r):
         crit = r.get("criteria") if isinstance(r.get("criteria"), dict) else {}
         return sum(1 for v in crit.values() if v == "yes") >= FRAMED_CRITERIA
+    def kind(x):
+        trigger = x.get("trigger")
+        return trigger.get("type") if isinstance(trigger, dict) else trigger
     status = {t["id"]: t.get("status") for t in tasks}
     alone = [p for p in procs if any(status.get(s) == "A" for s in p.get("_steps") or [])]
+    entries = [e for r in roles for e in r.get("entries") or [] if isinstance(e, dict)]
     live = [a for a in agents if a.get("state") == "live"]
     billing = [(a.get("cost") or {}).get("billing") if isinstance(a.get("cost"), dict) else None
                for a in live]
@@ -4249,6 +4268,8 @@ def profile_measures(tasks, procs, roles, agents, tool_types, people=0, reading=
             "skilled": sum(1 for t in tasks if t.get("status") == "S"),
             "conversational": sum(1 for t in tasks if t.get("status") == "C"),
             "processes": len(procs),
+            "proc_manual": sum(1 for p in procs if kind(p) == "manual"),
+            "async_entries": sum(1 for x in procs + entries if kind(x) not in (None, "manual")),
             "proc_assisted": sum(1 for p in procs if p.get("automation") not in (None, "manual")),
             "proc_launched": sum(1 for p in procs if p.get("automation") in
                                  ("once-launched", "routing", "end-to-end")),
@@ -4317,12 +4338,31 @@ def axis_delegation(m):
     return 0, 0, ("first", 1)
 
 
+def synchronous(m):
+    """Every active process of the team starts with a person (`trigger.type: manual`), and so
+    does every entry of its roles: no work arrives on its own for an agent in service to take.
+    A team without an active process is not: its map does not say how its work arrives."""
+    return bool(m["processes"]) and m.get("proc_manual", 0) == m["processes"] \
+        and not m.get("async_entries", 0)
+
+
+def unmanned(m):
+    """An automated team nobody works in: no person has it in their teams, and the AI does all
+    its active tasks (status A)."""
+    return not m["people"] and bool(m["tasks"]) and m["automated"] == m["tasks"]
+
+
 def axis_infrastructure(m):
     """0 no AI; 1 prompting, the AI used in conversation; 2 skills shared by 10 % of the tasks;
     3 that, and an agent in service on a plan (a Routine, a scheduled task); 4 that, and an
-    agent in service billed on the API, outside personal plans (a managed agent)."""
+    agent in service billed on the API, outside personal plans (a managed agent). A team whose
+    work always starts with a person (synchronous) needs no agent in service: from level 2, it
+    is at 4 (Vincent, 2026-11-17: « Le critère est pertinent si il existe des tâches en entrée
+    de chaine (comme le testing qui dépend d'une liste) »)."""
     n = m["tasks"]
     k = m["with_skill"] / n if n else 0
+    if k >= 0.10 and synchronous(m):
+        return 4, 4.0, None
     if k >= 0.10 and (m["agents_api"] or m["agents_plan"]):
         if m["agents_api"]:
             return 4, 4 + _cap((m["agents_api"] - 1) / 3), None
@@ -4338,9 +4378,14 @@ def axis_sharing(m, live_share):
     """0 copy and paste; 1 the AI reaches all the data of under half the tasks that use data;
     2 from half; 3 that and 30 % of the people reach the OS through an AI: their own, or a
     shared assistant they can talk to (a bot of the team's chat tool connected to the data,
-    §1.18); 4 that and half the leaves of the OS filled by a flow in place."""
+    §1.18); 4 that and half the leaves of the OS filled by a flow in place. An automated team
+    nobody works in (unmanned) has nobody to give the OS to: it is at 4 once its AI reaches the
+    data of half its tasks that use data, or when none does (Vincent, 2026-11-17: « pertinent si
+    on a encore des humain »)."""
     d = m["reached"] / m["with_data"] if m["with_data"] else 0
     o = m["reading"] / m["people"] if m["people"] else 0
+    if unmanned(m) and (d >= 0.50 or not m["with_data"]):
+        return 4, 4.0, None
     if d >= 0.50 and o >= 0.30:
         if live_share >= 0.50:
             return 4, 4 + _cap((live_share - 0.50) / 0.50), None
@@ -4399,13 +4444,18 @@ def investment_measures(inv, folk):
             "enforced": inv.get("enforced") is True}
 
 
-def axis_investment(v):
+def axis_investment(v, nobody=False):
     """A level is reached when half the people have its access (people without `ai_plan`
     count as without access): 0 no access to the AI; 1 the
     AI without thinking mode; 2 with thinking, without the work modes (Cowork, Claude Code,
     artifacts, assets); 3 premium accounts with the work modes; 4 that, and a budget policy
     that caps what the AI may cost for the human time it gives back (`cost_ratio`), enforced
-    (what tells whether an agent costs less than it gives back)."""
+    (what tells whether an agent costs less than it gives back). `nobody`: an automated team
+    nobody works in (unmanned), at 4: no seat to equip, its only investment is the licence its
+    work runs on, which it has since the AI does all its tasks (Vincent, 2026-11-17: « pas
+    besoin d'investissement autre que les licences qui font tourner les réflexions »)."""
+    if nobody:
+        return 4, 4.0, None
     people = v["people"]
     have = [v["seats_access"], v["seats_thinking"], v["seats_premium"]]
     level = sum(1 for n in have if people and n >= 0.50 * people)
@@ -4421,20 +4471,22 @@ def axis_investment(v):
                                              _missing(0.50, people, have[level]))
 
 
-def profile_of(levels, sharing_own=None):
+def profile_of(levels, sharing_own=None, waived=()):
     """Augmented (the six axes at 3 or more), else the profile of the leading axis when it
     reaches level 2 (industrializer: infrastructure, delegator: delegation, executor:
     execution, controller: control, investor: investment, cautious and equipped: sharing; on a
     tie, in that order), else manual. `sharing_own`: the sharing level without the shared
     assistants; when sharing leads only thanks to them, the profile is read with that level
-    (Vincent, 2026-10-20: the profile stays that of the next axis)."""
+    (Vincent, 2026-10-20: the profile stays that of the next axis). `waived`: the axes that do
+    not apply to the entry (README §1.18); they do not lead, a team without an agent is not
+    an industrializer."""
     if min(levels[k] for k in PROFILE_AXES) >= 3:
         return "augmented"
-    lead = max(PROFILE_LEAD, key=lambda k: levels[k])
+    lead = max((k for k in PROFILE_LEAD if k not in waived), key=lambda k: levels[k])
     profile = PROFILE_LEAD[lead] if levels[lead] >= 2 else "manual"
     if profile == PROFILE_LEAD["sharing"] and sharing_own is not None \
             and sharing_own < levels["sharing"]:
-        return profile_of(dict(levels, sharing=sharing_own))
+        return profile_of(dict(levels, sharing=sharing_own), waived=waived)
     return profile
 
 
@@ -4509,16 +4561,25 @@ def profile_entry(m, policy, live_share, invest):
     """`invest`: the investment measures of the people of the entry (investment_measures)."""
     axes = {"execution": axis_execution(m), "delegation": axis_delegation(m),
             "infrastructure": axis_infrastructure(m), "sharing": axis_sharing(m, live_share),
-            "control": axis_control(m, policy), "investment": axis_investment(invest)}
+            "control": axis_control(m, policy),
+            "investment": axis_investment(invest, unmanned(m))}
     out = {"measures": dict(m, **{k: v for k, v in invest.items() if k != "people"})}
     for k, (level, score, nxt) in axes.items():
         out[k] = {"level": level, "score": round(score, 2),
                   "next": {"key": nxt[0], "count": nxt[1]} if nxt else None}
+    # Why an axis does not ask all its conditions of this entry (README §1.18, « Axes that do
+    # not apply »), for the explorer.
+    if synchronous(m):
+        out["infrastructure"]["waived"] = "sync"
+    if unmanned(m):
+        out["sharing"]["waived"] = out["investment"]["waived"] = "unmanned"
     # The sharing level without the shared assistants (§1.18), for the profile.
     own = axis_sharing(dict(m, reading=m["reading"] - m.get("reading_shared", 0)), live_share)[0]
     out["sharing"]["own"] = own
     levels = {k: out[k]["level"] for k in PROFILE_AXES}
-    out.update(profile=profile_of(levels, own), grade=profile_grade(levels, out["measures"]),
+    waived = {k for k in PROFILE_AXES if out[k].get("waived")}
+    out.update(profile=profile_of(levels, own, waived),
+               grade=profile_grade(levels, out["measures"]),
                force=profile_force(out))
     return out
 
@@ -4598,9 +4659,13 @@ def ai_profile(ref):
                              investment_measures(ref.get("ai_investment"), folk))
     teams = {}
     for code in sorted({team.get(t.get("role")) for t in tasks} - {None}):
-        # A team nobody works in (an automated team) serves the company's people: the axes that
-        # read people (sharing, investment) read theirs (README §1.18).
-        folk = [x for x in ref["people"] if code in (x.get("_teams") or [])] or ref["people"]
+        # A team nobody works in reads the company's people on the axes that read people
+        # (sharing, investment), unless the AI does all its tasks: then it reads nobody, and
+        # those axes do not apply (unmanned, README §1.18, Vincent, 2026-11-17).
+        folk = [x for x in ref["people"] if code in (x.get("_teams") or [])]
+        if not folk and not all(t.get("status") == "A" for t in tasks
+                                if team.get(t.get("role")) == code):
+            folk = ref["people"]
         teams[code] = entry(lambda tm, code=code: tm == code, folk)
     company = company_entry(entry(lambda tm: True, ref["people"]), teams)
     weigh = [t["execution"]["level"] for t in teams.values()
