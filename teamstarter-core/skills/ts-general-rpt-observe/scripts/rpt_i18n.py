@@ -1225,6 +1225,13 @@ MESSAGES = {
               "`relevance.effort` is {effort}: correct the effort rating",
         "fr": "{where}: `measure.minutes` = {minutes} donne un effort de {expected}, "
               "`relevance.effort` vaut {effort} : corriger la note d'effort"},
+    "warn.gate_on_role": {
+        "en": "{where}: the AI does a step alone and role {role} declares a human gate, but the "
+              "process has no `gates`: the control axis of the AI profile does not count it "
+              "(README_operations.md §1.18)",
+        "fr": "{where}: l'IA y fait une étape seule et le rôle {role} déclare une porte humaine, "
+              "mais le processus n'a pas de `gates` : l'axe contrôle du profil IA ne la compte "
+              "pas (README_operations.md §1.18)"},
     "warn.tool_unused": {
         "en": "{where}: tool cited by no task and no process",
         "fr": "{where}: outil cité par aucune tâche ni aucun processus"},
