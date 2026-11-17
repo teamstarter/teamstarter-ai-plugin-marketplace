@@ -2,7 +2,7 @@
 name: ts-general-data-crawl
 description: "Describe where an organization's data is kept and how it is laid out, tool by tool (Google Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), from the connectors of the person who runs it: the folders, files, sheets, databases, CRM objects and pipelines, channels, labels and projects, nested as in the tool, with their size, the date of their last change and their column names. Never reads or sends a value of the data: no document content, no message, no record, no client name, no amount. Shows a preview of what will be sent, then, after the person's approval, drops the data map (rpt/v1 file with containers) in the organization's intake folder, where it is merged into the data tree of the RPT referential. Use when someone wants to know or map where the company's data is, which tool holds what, or whether it is up to date. Triggers: 'map our data', 'where is our data', 'crawl my Drive structure', « cartographie nos données », « où est notre donnée », « fais la carte des données »."
 metadata:
-  version: "1.4 (2026-11-16)"
+  version: "1.5 (2026-11-17)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-data-crawl; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -255,6 +255,11 @@ what surprised you (a type of data in three places, a folder untouched for two y
 python3 <skill folder>/scripts/check_datamap.py <file> --config rpt-config.yaml --catalogues catalogues --preview > apercu.md
 ```
 
+Write `apercu.md` in your working folder, never where your environment puts the files to deliver
+(`/mnt/user-data/outputs/` in claude.ai): the person downloads what is there, and a preview
+dropped in place of the data map gives the merge nothing to read. Its first line says it is not
+to be sent and names the file that is.
+
 When the file will not go to the intake folder or address of the configuration, add
 `--destination "<where it will go>"`, so that the preview does not name a folder that does not
 exist. Create an artifact (Markdown document)
@@ -276,13 +281,26 @@ Send only after an explicit approval given after this preview; an approval given
 not count. After a correction, run the script and the preview again, replace the artifact and
 ask again.
 
-After the approval, give the file to download, then send it like a map of the skill
-`ts-general-check-process-cartography`: create it in the intake folder with the Google Drive
-connector (content type `text/plain`, conversion to Google Docs disabled; check the created file
-is not a Google Doc), else e-mail it to the intake address (subject
-`Data map — <first name> — <YYYY-MM-DD>`, in French `Carte des données — <prénom> — <AAAA-MM-JJ>`;
-body: one sentence, then the YAML content), else the folder of the configuration, else the person
-drops it. Send nothing else: neither the preview nor the summary. Say what was done.
+After the approval, give **the data map** `datamap-<first name>-<YYYY-MM-DD>.yaml` to download
+(only that file, never `apercu.md`), then send it, the first way that works:
+
+1. **The intake folder**: create it there with the Google Drive connector (content type
+   `text/plain`, conversion to Google Docs disabled; check the created file is not a Google Doc).
+   A connector that can only read Drive (ChatGPT, Gemini, some Claude setups) cannot do it: go
+   to the next point.
+2. **The intake address**: e-mail it (subject `Data map — <first name> — <YYYY-MM-DD>`, in
+   French `Carte des données — <prénom> — <AAAA-MM-JJ>`; body: one sentence, then the YAML
+   content).
+3. **The folder of the configuration**, if there is no intake folder and no intake address,
+   as in point 1.
+4. **By hand**, if none is possible: tell the person, in these words or close, "Download
+   `datamap-<first name>-<YYYY-MM-DD>.yaml` and drop it, as is, in <intake folder name>:
+   https://drive.google.com/drive/folders/<intake.drive_folder_id>. Do not drop the preview
+   (`apercu.md`): it is only for reading." Without an intake folder, give the intake address,
+   else <intake.merged_by>.
+
+Send nothing else: neither the preview nor the summary. Say what was done (Drive link, e-mail
+sent, or the drop the person has to make, with the file name and the folder link).
 
 ## Files of the skill
 

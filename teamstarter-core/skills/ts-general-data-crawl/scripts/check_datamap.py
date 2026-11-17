@@ -85,17 +85,24 @@ MESSAGES = {
         "fr": "Dernière modification : {fresh} à 7 jours ou moins, {recent} à 30, {aging} à 90, "
               "{old} à 180, {stale} plus anciennes, {unknown} inconnues"},
     # The preview.
-    "dm.p.title": {"en": "# Data map — what will be sent",
-                   "fr": "# Carte des données — ce qui sera envoyé"},
+    "dm.p.title": {"en": "# Preview of the data map — what will be sent",
+                   "fr": "# Aperçu de la carte des données — ce qui sera envoyé"},
+    # The preview is read, not sent: a person who drops the files by hand must not take it
+    # for the data map (Make the Grade, 2026-11-17: the preview was dropped instead of the yaml).
+    "dm.p.not_sent": {
+        "en": "> **This preview is to be read, not sent.** The file to send is `{file}`, and "
+              "only that file.",
+        "fr": "> **Cet aperçu se relit, il ne s'envoie pas.** Le fichier à envoyer est `{file}`, "
+              "et lui seul."},
     "dm.p.intro": {
-        "en": "This file describes where the data is kept and how it is laid out: the places "
-              "of {tools} tool(s), their size and the date of their last change. It holds no "
-              "content: no document, no message, no value of a field. It will go to "
+        "en": "The data map `{file}` describes where the data is kept and how it is laid out: "
+              "the places of {tools} tool(s), their size and the date of their last change. It "
+              "holds no content: no document, no message, no value of a field. It will go to "
               "{destination}.",
-        "fr": "Ce fichier décrit où la donnée est rangée et comment elle est organisée : les "
-              "emplacements de {tools} outil(s), leur taille et la date de leur dernière "
-              "modification. Il ne contient aucun contenu : aucun document, aucun message, "
-              "aucune valeur de champ. Il ira dans {destination}."},
+        "fr": "La carte des données `{file}` décrit où la donnée est rangée et comment elle est "
+              "organisée : les emplacements de {tools} outil(s), leur taille et la date de leur "
+              "dernière modification. Elle ne contient aucun contenu : aucun document, aucun "
+              "message, aucune valeur de champ. Elle ira dans {destination}."},
     "dm.p.meta": {"en": "Made by {authors} on {date}. Tools read: {tools}.",
                   "fr": "Fait par {authors} le {date}. Outils lus : {tools}."},
     "dm.p.alerts": {"en": "## Alerts of the automatic check", "fr": "## Alertes du contrôle automatique"},
@@ -276,8 +283,10 @@ def preview(path, ref, warnings, preview_rpt):
     tools, types = names(ref, "tools"), names(ref, "data_sources")
     conts = ref["containers"]
     used = sorted({c["tool"] for c in conts}, key=lambda t: str(tools.get(t, t)))
-    lines = [tr("dm.p.title"), "",
-             tr("dm.p.intro", tools=len(used), destination=preview_rpt.destination()), "",
+    file = os.path.basename(path)
+    lines = [tr("dm.p.title"), "", tr("dm.p.not_sent", file=file), "",
+             tr("dm.p.intro", file=file, tools=len(used), destination=preview_rpt.destination()),
+             "",
              tr("dm.p.meta", authors=", ".join(map(str, meta.get("authors") or [])) or "—",
                 date=meta.get("updated") or "—",
                 tools=", ".join(str(tools.get(t, t)) for t in used)), "",
