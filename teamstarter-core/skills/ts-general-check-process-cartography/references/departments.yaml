@@ -287,13 +287,13 @@ departments:
       fr: [outillage, amélioration continue, gestion des connaissances, outillage IA]
 
   - id: operations-supply
-    name: {en: Production & logistics, fr: Production et logistique}
+    name: {en: Production & delivery, fr: Production et livraison}
     description:
-      en: Make, stock and deliver what the organization sells when it is a physical good or an on-site service; supply the materials it needs.
-      fr: Fabriquer, stocker et livrer ce que l'organisation vend quand c'est un bien physique ou un service sur place ; approvisionner les matières dont elle a besoin.
+      en: Make, stock and deliver what the organization sells when it is a physical good, an on-site service or a service produced for the clients beside the software (a recurring deliverable, a mission, content for subscribers); supply the materials it needs.
+      fr: Fabriquer, stocker et livrer ce que l'organisation vend quand c'est un bien physique, un service sur place ou un service produit pour les clients à côté du logiciel (un livrable récurrent, une mission, des contenus pour les abonnés) ; approvisionner les matières dont elle a besoin.
     examples:
-      en: [production planning, batch of the day, inventory count, supplier order of raw materials, delivery round, quality control]
-      fr: [planning de production, fournée du jour, inventaire, commande de matières premières, tournée de livraison, contrôle qualité]
+      en: [production planning, batch of the day, inventory count, supplier order of raw materials, delivery round, quality control, monthly deliverable for the subscribed clients, client mission]
+      fr: [planning de production, fournée du jour, inventaire, commande de matières premières, tournée de livraison, contrôle qualité, livrable mensuel des clients abonnés, mission client]
     aliases:
-      en: [production, manufacturing, logistics, supply chain, supply, inventory, warehouse, quality control]
-      fr: [production, fabrication, logistique, chaîne d'approvisionnement, approvisionnement, stock, inventaire, entrepôt, contrôle qualité]
+      en: [production, manufacturing, logistics, supply chain, supply, inventory, warehouse, quality control, service delivery, missions]
+      fr: [production, fabrication, logistique, chaîne d'approvisionnement, approvisionnement, stock, inventaire, entrepôt, contrôle qualité, production du service, livraison du service, missions]

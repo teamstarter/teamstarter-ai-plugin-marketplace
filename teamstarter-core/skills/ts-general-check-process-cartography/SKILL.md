@@ -530,7 +530,7 @@ by id: `strategy-management` (strategy and management), `product-design` (produc
 `customer-success` (customer success and onboarding), `sales` (sales), `marketing` (marketing and
 communication), `people-hr` (HR and recruiting), `finance-admin` (finance, administration and
 legal), `security-compliance` (security and compliance), `knowledge-ai-tooling` (knowledge and
-AI tooling), `operations-supply` (production, logistics and supplies of a physical activity). If you hesitate, read the examples and aliases of `catalogues/departments.yaml`. If
+AI tooling), `operations-supply` (production, logistics and supplies of a physical activity, and the service produced for the clients beside the software). If you hesitate, read the examples and aliases of `catalogues/departments.yaml`. If
 none fits, take the closest and write the original word in `notes`.
 
 ## Blockers
