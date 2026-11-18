@@ -37,6 +37,7 @@ Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartograp
 | `ts-general-data-crawl` | Décrire où sont les données de l'organisation, outil par outil (Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
 | `ts-general-rpt-observe` | À la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche (durée, outils, méthode, blocage) | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | Ranger le livrable d'une tâche là où sa fiche le dit, sous le bon nom | « Où je range ça ? », « Range ce fichier au bon endroit » |
+| `ts-general-rpt-context` | Générer, depuis le `rpt-config.yaml` de l'organisation, son skill de contexte RPT (`<organisation>-rpt-context`), pour un outil IA sans instructions d'organisation comme ChatGPT : les skills RPT y lisent où déposer et où lire. Une fois, puis à chaque changement du fichier | « Génère le skill de contexte RPT », « La carto ne sait pas où déposer » |
 
 Inutile de nommer le skill : l'outil IA le choisit d'après la demande.
 
@@ -193,6 +194,9 @@ Les skills RPT ne passent pas par le connecteur Teamstarter. Ils ne contiennent 
 d'une organisation : ils lisent son fichier `rpt-config.yaml` (nom, langue, dossiers du
 référentiel et de réception, équipes, responsables, ce qui n'est jamais envoyé), dont l'adresse
 est dans les instructions de Claude de l'organisation.
+Dans un outil IA sans instructions d'organisation (ChatGPT), `ts-general-rpt-context` génère
+depuis ce fichier le skill de contexte de l'organisation, `<organisation>-rpt-context`, à
+installer à côté des skills RPT : il porte ces informations et une copie du fichier.
 
 1. **Mise en place, une fois** : `ts-general-rpt-setup` écrit `rpt-config.yaml` avec la personne
    qui met RPT en place, le dépose à la racine du dossier de l'OS de l'organisation, et donne le

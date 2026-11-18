@@ -88,7 +88,7 @@ MESSAGES = {
     "dm.p.title": {"en": "# Preview of the data map — what will be sent",
                    "fr": "# Aperçu de la carte des données — ce qui sera envoyé"},
     # The preview is read, not sent: a person who drops the files by hand must not take it
-    # for the data map (Make the Grade, 2026-11-17: the preview was dropped instead of the yaml).
+    # for the data map (a client, 2026-11-17: the preview was dropped instead of the yaml).
     "dm.p.not_sent": {
         "en": "> **This preview is to be read, not sent.** The file to send is `{file}`, and "
               "only that file.",

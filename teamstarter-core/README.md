@@ -28,6 +28,7 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 | `ts-general-data-crawl` | RPT : décrire où sont les données de l'organisation, outil par outil, sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
 | `ts-general-rpt-observe` | RPT : à la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | RPT : ranger le livrable d'une tâche là où sa fiche le dit | « Où je range ça ? » |
+| `ts-general-rpt-context` | RPT : générer le skill de contexte de l'organisation pour ChatGPT, depuis son `rpt-config.yaml` | « Génère le skill de contexte RPT » |
 
 **Créer un projet** suit le parcours de l'app : choix du type et de l'objectif, recherche des
 projets et idées proches, création du brouillon, questions de structuration, fiche du projet
