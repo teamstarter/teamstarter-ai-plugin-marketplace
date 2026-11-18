@@ -54,6 +54,17 @@ SHARED = {
     "teamstarter-core/skills/ts-general-creer-projet/scripts/tiptap.py": [
         "teamstarter-core/skills/ts-general-creer-skill/scripts/tiptap.py",
     ],
+    # Skills deslop : leur source est dans le dépôt teamstarter (package_rpt_skill.py), qui copie
+    # le script d'écriture et ses listes dans le skill des decks ; la copie se vérifie ici aussi.
+    "teamstarter-core/skills/ts-general-deslop-writing/scripts/check_writing.py": [
+        "teamstarter-core/skills/ts-general-deslop-slides/scripts/check_writing.py",
+    ],
+    "teamstarter-core/skills/ts-general-deslop-writing/references/fr.md": [
+        "teamstarter-core/skills/ts-general-deslop-slides/references/fr.md",
+    ],
+    "teamstarter-core/skills/ts-general-deslop-writing/references/en.md": [
+        "teamstarter-core/skills/ts-general-deslop-slides/references/en.md",
+    ],
 }
 
 ALLOWED_FRONTMATTER_KEYS = {
