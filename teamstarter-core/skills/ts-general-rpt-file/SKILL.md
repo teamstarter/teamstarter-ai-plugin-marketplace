@@ -2,7 +2,7 @@
 name: ts-general-rpt-file
 description: "Store the deliverable of a task of the organization's RPT referential at the end of the task, where its entry says: update the fixed file the task maintains, or put the new file in the right folder (Google Drive, OneDrive, SharePoint, Notion, repository) under the name given by the entry's pattern, and start from the task's template when it cites one. Proposes the location and the name, and moves, renames or creates nothing without the person's approval. When the entry does not say where the deliverable goes, proposes the folder of the organization's data tree that the referential proposes for the task, else asks once, then passes the answer to the skill ts-general-rpt-observe to complete the entry and the data tree. Use when the deliverable of a work task done with Claude is ready, when the organization's global context asks for it, or when someone asks 'where do I store this?', 'file this in the right place', « où je range ça ? » or « range ce fichier au bon endroit »."
 metadata:
-  version: "1.8 (2026-11-16)"
+  version: "1.9 (2026-11-18)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-file; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -61,6 +61,12 @@ folder the organization's instructions link to. Never guess a value. The configu
 - in the organization's repository: in `referential.repository_path`;
 - in claude.ai, with the Google Drive connector: in the folder `referential.drive_folder`;
 - without either: ask for the id; the explorer shows it (`referential.explorer`).
+
+**Without organization instructions** (ChatGPT, or any AI tool without a global context), the
+organization installs its RPT context skill, `<organization>-rpt-context`, generated from its
+configuration by `ts-general-rpt-context`. When it is installed, read it first: its section "The
+organization's instructions" stands for the global context, and the file `rpt-config.yaml` of its folder
+references is a copy of the configuration, to use when the address cannot be read.
 
 Then read the task's entry in its role file (`roles.<role>.file` of the index), and, in the
 index, its line of `places` when it has one: `{"out": [status, [container ids]], "in": …}`, where

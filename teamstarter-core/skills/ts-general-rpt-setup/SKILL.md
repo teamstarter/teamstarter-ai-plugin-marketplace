@@ -2,7 +2,7 @@
 name: ts-general-rpt-setup
 description: "Set up the RPT referential (roles, processes, tasks) in an organization: start with its explorer's artifact, shared in edit mode with Teamstarter, then run a short interview with the person who sets it up, write their organization's rpt-config.yaml file (name, language, Drive folders of the referential and of the intake, intake address, teams and their codes, how many people should send a map, owners, confidentiality, Claude global context text), check it with the shipped script, show it to them in full, then, after their approval, put it at the root of the organization's OS folder; optionally propose the structure of their OS (its zones, the data that could feed each one, the questions it would answer) and say what to do next. Use when someone wants to set up RPT, the mapping of roles and tasks, or the Teamstarter skills in their company, fill in an rpt-config.yaml or its template, or says 'configure RPT for my company', 'set up RPT', « configure RPT pour ma boîte » or « mets en place RPT »."
 metadata:
-  version: "1.16 (2026-11-16)"
+  version: "1.17 (2026-11-18)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-rpt-setup; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -287,7 +287,9 @@ Tell the person, in this order:
    organization if the plan allows it: the same `.skill` files as every organization, given by
    the person who gave them this skill. They carry no value of any organization.
 3. Paste the `global_context` text into the organization's instructions (or into their profile
-   preferences): its `Config RPT` line is how the skills find `rpt-config.yaml`.
+   preferences): its `Config RPT` line is how the skills find `rpt-config.yaml`. In an AI tool
+   without organization instructions (ChatGPT), run the skill `ts-general-rpt-context` on the
+   file instead: it builds the organization's RPT context skill, to install next to the others.
 4. Have a first team mapped: in Claude, ask "map my roles and my processes" (« fais la carte de
    mes rôles et de mes process »). Nothing else is needed: no OS, no referential, no catalogue.
    The map arrives in the intake folder; the person who maintains the referential merges it,
