@@ -39,6 +39,14 @@ Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartograp
 | `ts-general-rpt-file` | Ranger le livrable d'une tâche là où sa fiche le dit, sous le bon nom | « Où je range ça ? », « Range ce fichier au bon endroit » |
 | `ts-general-rpt-context` | Générer, depuis le `rpt-config.yaml` de l'organisation, son skill de contexte RPT (`<organisation>-rpt-context`), pour un outil IA sans instructions d'organisation comme ChatGPT : les skills RPT y lisent où déposer et où lire. Une fois, puis à chaque changement du fichier | « Génère le skill de contexte RPT », « La carto ne sait pas où déposer » |
 
+Les skills deslop (voir [Retirer les marques de contenu généré](#retirer-les-marques-de-contenu-généré-deslop)) :
+
+| Skill | Pour | Exemples de demandes |
+|---|---|---|
+| `ts-general-deslop-writing` | Retirer d'un texte, en français ou en anglais, les marques de texte généré par IA (tirets cadratins, libellés en gras, « Il ne s'agit pas de X mais de Y », vocabulaire gonflé, sources inventées), en gardant la voix de son auteur ; ou les lister sans réécrire | « Enlève le slop de ce texte », « Ça fait IA ? », « Rends ce mail naturel » ; s'applique aussi seul à tout texte rédigé |
+| `ts-general-deslop-ui` | Retirer d'une page, d'un écran ou d'un artefact HTML les marques d'interface générée (dégradés violets, barres d'accent, capitales espacées, pilules partout, emoji en icônes, page d'accueil type, chiffres et logos inventés), le design system de l'organisation l'emportant | « Cette page fait template », « Deslop cet artefact », « Relis ce tableau de bord » |
+| `ts-general-deslop-slides` | Retirer d'un deck (PowerPoint, deck HTML, plan) les marques de deck généré (titres-sujets, sommaire d'un deck court, titre et puces sur chaque slide, trios d'icônes, chiffres inventés, « Merci ! Des questions ? ») | « Ce deck fait IA », « Relis ma présentation » |
+
 Inutile de nommer le skill : l'outil IA le choisit d'après la demande.
 
 ### Créer un projet
@@ -217,6 +225,23 @@ reçues ; cette fusion ne se fait pas avec le plugin. Les consignes des skills R
 anglais ; l'IA vous parle dans votre langue, et la carte est écrite dans la langue de
 l'organisation.
 
+### Retirer les marques de contenu généré (deslop)
+
+Un lecteur reconnaît un texte, une page ou un deck produit par une IA à ses marques avant d'en
+lire le contenu : un tiret cadratin toutes les deux phrases, un libellé en gras en tête de chaque
+puce, « un véritable levier », un dégradé violet sur le titre, trois cartes identiques avec un
+emoji, « Merci ! Des questions ? » pour finir. Les trois skills deslop les retirent pendant
+l'écriture, corrigent un contenu existant, ou les listent sans réécrire.
+
+- Chaque skill a un script de contrôle (Python, bibliothèque standard) qui liste les marques avec
+  leur ligne ou leur slide ; l'IA corrige jusqu'à ce qu'il ne reste aucune marque bloquante, puis
+  relit ce qu'un script ne voit pas.
+- Ce qui l'emporte sur ces skills : le guide de rédaction ou le design system de l'organisation,
+  puis la voix de la personne dont c'est le texte. La typographie française reste (« », ’, point
+  médian de l'écriture inclusive).
+- Rien n'est inventé pour « faire humain » : ni expérience à la première personne, ni chiffre, ni
+  témoignage. Le mode détection cite chaque marque et ne dit jamais qui a écrit le texte.
+
 ### Garde-fous
 
 - **Rien n'est écrit sans votre accord** : chaque écriture suit une validation, et la proposition
@@ -313,7 +338,10 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │       ├── ts-general-check-process-cartography/   # RPT : carte des rôles, processus et tâches
 │       ├── ts-general-data-crawl/                   # RPT : carte des données, outil par outil
 │       ├── ts-general-rpt-observe/                  # RPT : proposer la mise à jour d'une fiche de tâche
-│       └── ts-general-rpt-file/                     # RPT : ranger le livrable d'une tâche
+│       ├── ts-general-rpt-file/                     # RPT : ranger le livrable d'une tâche
+│       ├── ts-general-deslop-writing/               # deslop : marques de texte généré (FR, EN)
+│       ├── ts-general-deslop-ui/                    # deslop : marques d'interface générée
+│       └── ts-general-deslop-slides/                # deslop : marques de deck généré
 └── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés, empaqueter
 ```
 
@@ -346,9 +374,9 @@ versionné.
 3. `python3 scripts/check_plugins.py` doit répondre `OK`.
 4. Monter la version dans `plugin.json` et dans `marketplace.json`.
 
-### Mettre à jour les skills RPT
+### Mettre à jour les skills RPT et deslop
 
-Les cinq skills RPT ne s'écrivent pas ici. Leur source est dans le dépôt `teamstarter`,
+Les skills RPT et les skills deslop ne s'écrivent pas ici. Leur source est dans le dépôt `teamstarter`,
 `teamstarter-os/skills/<skill>/`, et `teamstarter-os/tools/package_rpt_skill.py` y ajoute leurs
 scripts et catalogues génériques ; leur version et leur source sont dans le `metadata` de leur
 frontmatter. Une modification faite ici serait écrasée à la copie suivante. Pour les mettre à
@@ -357,10 +385,16 @@ jour :
 1. Dans le dépôt `teamstarter` :
    `python3 teamstarter-os/tools/package_rpt_skill.py --marketplace <clone de ce dépôt>`
    remplace chaque `teamstarter-core/skills/<skill>/` déjà présent ici par le dossier empaqueté,
-   et laisse de côté un skill RPT que le plugin ne déclare pas encore (l'ajouter est une
+   et laisse de côté un skill que le plugin ne déclare pas encore (l'ajouter est une
    décision prise ici, avec le tableau des skills de ce README).
 2. `python3 scripts/check_plugins.py`, puis monter la version du plugin (dernier chiffre pour de
    nouvelles versions de skills déjà déclarés) dans `plugin.json` et `marketplace.json`.
+
+Les sources publiques dont s'inspirent les skills deslop, avec la révision lue de chacune, sont
+dans `teamstarter-os/skills/deslop-inspirations.yaml` du dépôt `teamstarter` ;
+`teamstarter-os/tools/check_deslop_inspirations.py` dit lesquelles ont changé depuis. Le skill des
+decks embarque une copie du script d'écriture et de ses listes (`SHARED` du script de
+vérification).
 
 Une PR qui ne fait que cela (nouvelles versions de skills déjà déclarés, version du plugin) est
 mergée par la session qui l'ouvre, sans validation (Vincent, 2026-10-19). Un skill ajouté ou

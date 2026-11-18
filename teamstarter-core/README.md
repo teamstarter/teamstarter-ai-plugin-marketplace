@@ -29,6 +29,9 @@ tâches de votre organisation, avec ce qui en est automatisé ou peut être conf
 | `ts-general-rpt-observe` | RPT : à la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | RPT : ranger le livrable d'une tâche là où sa fiche le dit | « Où je range ça ? » |
 | `ts-general-rpt-context` | RPT : générer le skill de contexte de l'organisation pour ChatGPT, depuis son `rpt-config.yaml` | « Génère le skill de contexte RPT » |
+| `ts-general-deslop-writing` | Deslop : retirer d'un texte, en français ou en anglais, les marques de texte généré par IA, en gardant la voix de son auteur ; ou les lister sans réécrire | « Enlève le slop de ce texte », « Ça fait IA ? » |
+| `ts-general-deslop-ui` | Deslop : retirer d'une page, d'un écran ou d'un artefact HTML les marques d'interface générée ; le design system de l'organisation l'emporte | « Cette page fait template », « Deslop cet artefact » |
+| `ts-general-deslop-slides` | Deslop : retirer d'un deck les marques de deck généré (titres-sujets, mêmes puces partout, trios d'icônes, chiffres inventés) | « Ce deck fait IA », « Relis ma présentation » |
 
 **Créer un projet** suit le parcours de l'app : choix du type et de l'objectif, recherche des
 projets et idées proches, création du brouillon, questions de structuration, fiche du projet
@@ -70,6 +73,12 @@ le connecteur Teamstarter et ne contiennent aucune donnée d'une organisation : 
 vos connecteurs montrent de votre travail, vous interroge, vous montre un aperçu de ce qui sera
 envoyé, puis dépose la carte dans le dossier de réception de l'organisation ; la personne qui
 tient le référentiel la fusionne ensuite, hors du plugin.
+
+**Les skills deslop** retirent d'un texte, d'une page ou d'un deck les marques de contenu généré
+par une IA : tirets cadratins, libellés en gras, « un véritable levier », dégradés violets, emoji
+en icônes, titre et puces sur chaque slide, chiffres et témoignages inventés. Ils corrigent en
+gardant la voix de l'auteur et la typographie française, ou listent les marques sans réécrire. Le
+guide de rédaction et le design system de l'organisation l'emportent sur eux.
 
 ## Ce dont vous avez besoin
 
@@ -139,7 +148,10 @@ tient le référentiel la fusionne ensuite, hors du plugin.
   - dans les skills RPT, `scripts/build_rpt.py` et `validate_rpt.py` vérifient une carte, une
     observation ou un `rpt-config.yaml`, `preview_rpt.py` produit l'aperçu de ce qui sera envoyé
     et signale les données personnelles, `check_datamap.py` vérifie la carte des données,
-    `rpt_i18n.py` porte leurs messages. Ils demandent Python 3 et PyYAML.
+    `rpt_i18n.py` porte leurs messages. Ils demandent Python 3 et PyYAML ;
+  - dans les skills deslop, `check_writing.py`, `check_ui.py` et `check_slides.py` listent les
+    marques d'un texte, d'une page ou d'un deck (.pptx, HTML, markdown), avec leur ligne ou leur
+    slide (bibliothèque standard).
 - **Fichiers locaux** : sans connecteur ou en lecture seule, la création livre un fichier
   `fiche-projet-<titre>.md` dans la conversation ; la création d'un skill livre le dossier du
   skill et son fichier `.skill`, prêts à installer.
