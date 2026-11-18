@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.26 (2026-11-18)"
+  version: "2.27 (2026-11-18)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -405,13 +405,21 @@ a 10-minute task that 10 people do every week, whose deliverable alone is struct
 day), pays back in 2.4 weeks (2). A J task that no tool can prepare has no payback:
 `payback: null`.
 
-Rate yourself each axis that what you read or heard, or the nature of the task, lets you
-estimate: a frequency mentioned, the volume of an input, the number of people waiting for the
-deliverable, a duration; validating an appointment in a tool takes less than 30 minutes. For the
-others, ask the person (step 4). If they do not know, keep your estimate when you have one;
-otherwise the axis is `null`. The score is (reach + frequency + effort + describability) ×
-payback, out of 36: in the sum, a `null` axis counts 0; a `null` payback counts 1; "?" when no
-axis of the sum is estimated.
+Rate every axis of every task yourself, `reach`, `frequency`, `effort` and `describability`
+always, from what you read or heard and from the nature of the task: a frequency mentioned, the
+volume of an input, the number of people waiting for the deliverable, a duration; validating an
+appointment in a tool takes less than 30 minutes. When nothing tells you, estimate from the
+task's name, its input and its deliverable, and write `basis: {relevance.<axis>: inferred}`:
+your estimate is better than `null`, which removes the task from every gain of the referential
+(the gains need an effort or a duration, and a frequency), and better than a figure the person
+types at random. Then show the person your estimates (step 4) and ask them to correct the wrong
+ones; one they confirm or correct is `declared`. A frequency « to confirm » in the text still
+gets its rating. `payback` too is computed from your estimates; it is `null` only for a J task
+that no tool can prepare. Some AI tools leave these axes empty (two maps written with another AI
+tool in November 2026: `effort` and `payback` null on all 65 tasks, no gain computed): check
+before the preview that no task has a `null` axis other than the payback of a J task. The score
+is (reach + frequency + effort + describability) × payback, out of 36: in the sum, a `null`
+axis counts 0; a `null` payback counts 1; "?" when no axis of the sum is estimated.
 
 Every task carries its **job** (`references/format-rpt-v1.md`):
 
