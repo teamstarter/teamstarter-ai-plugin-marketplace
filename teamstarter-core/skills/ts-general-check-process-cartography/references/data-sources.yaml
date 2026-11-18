@@ -222,6 +222,13 @@ data_sources:
       fr: Comptes, droits et licences des membres de l'équipe dans ses outils.
     sensitivity: [personal]
 
+  - id: data:referentiels-clients
+    name: {en: Clients' RPT referentials, fr: Référentiels RPT des clients}
+    description:
+      en: RPT configurations, employees' maps and merged referentials of the clients who map their teams.
+      fr: Configurations RPT, cartes des collaborateurs et référentiels fusionnés des clients qui cartographient leurs équipes.
+    sensitivity: [personal, client]
+
   - id: data:commandes-clients
     name: {en: Customer orders, fr: Commandes clients}
     description:
