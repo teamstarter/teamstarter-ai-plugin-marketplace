@@ -18,7 +18,7 @@ one code per map (one map per hat), the declared automation
 of each process against the statuses of its steps, the relevance of each task, the data sources
 of manual, conversational or skilled tasks and what they do with the data the AI reaches
 (`crud`), the measures (runs per month of every active task,
-minutes of the M, C, S and J tasks) and the stakes, the order of the processes (`next`, or
+minutes of the M, C, S and J tasks, and a workload under 20 h a month per person) and the stakes, the order of the processes (`next`, or
 `next: []` at the end of a chain), the blockers (where an inferred one was seen, a task that
 still writes its own `blocker`), and possible personal or confidential
 data (preview_rpt.py), blocker texts and evidence included. build_rpt.py checks the form of the
@@ -100,6 +100,16 @@ MESSAGES = {
               "a person spends on one run (SKILL.md, \"The model\")",
         "fr": "{count} tâche(s) M, C, S ou J sans `measure.minutes` ({ids}) : demander les "
               "minutes qu'une personne passe sur une exécution (SKILL.md, « The model »)"},
+    "validate.workload": {
+        "en": "the map counts {hours} h of work per month per person ({people} person(s)), under "
+              "{floor} h: ask whether they work in tools the AI does not reach today (Canva, "
+              "Pennylane, a spreadsheet on their computer, a business software…) and what they do "
+              "there, then add those tasks; never give the person the hours (SKILL.md, step 3, point 12)",
+        "fr": "la carte compte {hours} h de travail par mois et par personne ({people} "
+              "personne(s)), moins de {floor} h : demander si elle travaille dans des outils que "
+              "l'IA n'atteint pas aujourd'hui (Canva, Pennylane, un tableur sur son ordinateur, un "
+              "logiciel métier…) et ce qu'elle y fait, puis ajouter ces tâches ; ne jamais lui donner les heures "
+              "(SKILL.md, étape 3, point 12)"},
     "validate.stakes": {
         "en": "{count} M, C or S task(s) without `stakes` ({ids}): ask what happens when it is "
               "done late or badly (SKILL.md, \"The model\")",
@@ -291,7 +301,8 @@ def check(path, reformat, starts=()):
         warnings += detector_warnings(data) + code_warnings(data) + automation_warnings(ref)
         warnings += relevance_warnings(ref, build_rpt.RELEVANCE_AXES) + data_warnings(ref)
         warnings += crud_warnings(ref, build_rpt)
-        warnings += measure_warnings(ref) + chain_warnings(ref) + blocker_warnings(ref)
+        warnings += measure_warnings(ref) + workload_warnings(ref)
+        warnings += chain_warnings(ref) + blocker_warnings(ref)
         warnings += unused_tool_warnings(data) + reference_warnings(data)
         warnings += [tr("validate.data_alert", where=where, label=label, excerpt=excerpt)
                      for where, label, excerpt in preview_rpt.alerts(data)]
@@ -449,6 +460,46 @@ def measure_warnings(ref):
         if missing:
             warnings.append(tr(key, count=len(missing), ids=", ".join(missing)))
     return warnings
+
+
+# Below this many hours of work per month and per person, a map misses work: a full month is
+# about 140 h (Vincent, 2026-11-18: maps of 10 to 15 h a month for full-time jobs, whose work
+# was in tools the AI did not reach).
+WORKLOAD_FLOOR = 20
+
+
+def workload(ref):
+    """(hours of work per month per person, people) of the active M, C, S and J tasks that have
+    their runs and minutes; None when no task has both. The people are the holders of the
+    active roles, at least one."""
+    hours = 0.0
+    measured = False
+    for t in ref["tasks"]:
+        m = t.get("measure")
+        if (t.get("state") != "active" or t.get("status") not in OPEN_STATUSES + ("J",)
+                or not isinstance(m, dict)):
+            continue
+        if isinstance(m.get("runs"), (int, float)) and isinstance(m.get("minutes"), (int, float)):
+            hours += m["runs"] * m["minutes"] / 60
+            measured = True
+    if not measured:
+        return None
+    holders = set()
+    for r in ref["roles"]:
+        if r.get("state", "active") == "active":
+            h = r.get("holders") or []
+            holders.update(h if isinstance(h, list) else [h])
+    people = max(1, len(holders))
+    return hours / people, people
+
+
+def workload_warnings(ref):
+    """A map whose measured work is under WORKLOAD_FLOOR hours a month per person: the person
+    works somewhere the AI did not see (SKILL.md, step 3, point 12)."""
+    w = workload(ref)
+    if w is None or w[0] >= WORKLOAD_FLOOR:
+        return []
+    return [tr("validate.workload", hours=round(w[0]), people=w[1], floor=WORKLOAD_FLOOR)]
 
 
 def chain_warnings(ref):

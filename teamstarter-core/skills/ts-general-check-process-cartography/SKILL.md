@@ -2,7 +2,7 @@
 name: ts-general-check-process-cartography
 description: "Map the roles, processes and tasks (RPT) of a person or of a team of their organization, with the automation level of each task (automated, skilled, conversational, manual, human judgment), the data it uses and what blocks it, have the person review a preview of what will be sent, then drop the map (one rpt/v1 file per job held) in the organization's intake folder, or send it to its intake address (read from the organization's rpt-config.yaml). Use whenever someone wants to map their work or their team's, list their roles, processes or recurring tasks, know what they could automate or hand over to AI or which connectors to activate, answer the product team's request to map their RPT, update an RPT map, or turn a procedure or a job description into an RPT map, even without saying role, process or mapping. Triggers: 'map my roles', 'process mapping', 'which tasks could I automate', « fais la carte de mes rôles », « cartographie mon équipe », « qu'est-ce que je pourrais automatiser »."
 metadata:
-  version: "2.27 (2026-11-18)"
+  version: "2.28 (2026-11-18)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-check-process-cartography; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
@@ -885,9 +885,24 @@ In quick mode, skip this step and start from the answers of step 1, typical week
     it. Rank the processes not covered by `weight`, then by the signals seen in the sources (a
     tool of `signals.tools` among their tools, a word of `signals.words` in the subjects or the
     titles read); a process already in `reference.not_applicable` (an update) is left out. The
-    first three at most become the questions of step 4, from their `challenge` text. Never add a
-    task from this file without the person's answer: the file says what a role usually covers,
-    not what the person does.
+    first three become, at step 4, **three proposed tasks**: for each of these processes, its
+    first `key_tasks` in the person's language, named as a task of their job ("Prepare the
+    monthly closing with the accountant"). The person ticks those they do; the answer "Show me
+    more" proposes the next three, from the following processes, and so on until they stop or
+    nothing is left. Never add a task from this file without the person's answer: the file says
+    what a role usually covers, not what the person does.
+12. **Count the hours.** Add up, for the active M, C, S and J tasks, the runs per month × the
+    minutes of one run, and divide by the number of people who hold the roles (one for a person's
+    map). A full month is about 140 h; under 20 h per person, the map misses work, most often
+    done in tools the AI does not reach today (Canva, Pennylane, a spreadsheet on their
+    computer, a business software, paper). The first round then asks it, in one question, without the
+    number of hours: "I am not sure I have your whole scope of work. Do you also work in tools I
+    cannot see today, such as Canva or Pennylane? What do you do there?", answers "Yes: I list them" and "No, the map is
+    complete". Each tool named is declared (`tools`, `connector: none` while the AI does not
+    reach it) and each activity becomes a task, completed by the next rounds. `validate_rpt.py`
+    flags a map under 20 h. The hours are never shown nor said to the person, in this question
+    or elsewhere: a count of their hours reads as an assessment of their work; it only tells
+    you that the map is incomplete.
 
 ## Step 4 — Have it validated (three rounds at most)
 
@@ -895,14 +910,18 @@ Show the first draft in summary: one table per role (tasks, statuses and relevan
 filed by hat, then the list of processes. Then ask, with the question tool, **3 or 4 questions
 at a time**, the most important first.
 
-**The first round starts with the challenge questions** of step 3 (point 11, three at most, and
-the question about the tools without a task, point 10): they take the place of the questions of
-least weight, never one round more. Each names the process and asks who does it, without
-proposing a task. The answers offered, and what each one writes:
+**The first round starts with the challenge questions** of step 3: the three proposed tasks
+(point 11), the question about the tools without a task (point 10) and, under 20 h a month, the
+question about the tools the AI does not see (point 12). They take the place of the questions of
+least weight, never one round more. The three proposed tasks make one question, with several
+answers possible: each task, with the process it belongs to, then "Show me more" and "None of
+these". For a task the person does not tick, ask who does its process only when its `weight` is
+3; otherwise leave it. The answers, and what each one writes:
 
 | Answer | What the map gets |
 |---|---|
-| "I do it, it was forgotten" | The task, in the draft, with the source "answer to the question on <refp id>" (`basis: declared`); the next rounds complete it. |
+| A proposed task ticked: "I do it" | The task, in the draft, with the source "answer to the question on <refp id>" (`basis: declared`); the next rounds complete it. |
+| "Show me more" | The next three tasks, from the following processes of the ranking, in the same question. |
 | "Someone else in the organization does it" (first and last name, their job) | A `people` entry for that colleague: `id`, `name`, `teams` (the team code of their job, from the configuration), `notes` (what they do, in one sentence). Their own map will describe the work; you write no task for them. |
 | "A contractor outside the organization" (name of the firm or the person) | The same entry with `external: true`; no map is expected from them. When the person steers the work (briefs, reviews, pays), that steering is their task. |
 | "It is not done here" | The id in `reference.not_applicable` of the role: no one asks again. |
@@ -1137,7 +1156,7 @@ the new version of this file with the suffix `-v2` before `.rpt.yaml`.
 |---|---|
 | `references/format-rpt-v1.md` | At step 3 to choose `automation` (§7), at step 5 before writing the file: fields, allowed values, YAML pitfalls, script messages, the `blockers` list (§11). |
 | `assets/exemple.rpt.yaml` | At step 5: a complete and valid map whose structure to copy. |
-| `references/reference-roles.yaml` | At step 3 (point 11): the reference roles and processes, the questions that challenge the processes the map does not cover. |
+| `references/reference-roles.yaml` | At step 3 (point 11): the reference roles and processes, the tasks proposed for the processes the map does not cover. |
 | `rpt-config.yaml` (address in the organization's instructions) | Before your first message: the organization, its team codes, the intake folder and address, what is never sent, where its catalogues are. |
 | `catalogues/departments.yaml` | When an element hesitates between two departments: examples and aliases of each (without the organization's catalogue: `references/departments.yaml`). |
 | `catalogues/tools.yaml` | At step 5: ids of the tools and skills already known to the referential. |

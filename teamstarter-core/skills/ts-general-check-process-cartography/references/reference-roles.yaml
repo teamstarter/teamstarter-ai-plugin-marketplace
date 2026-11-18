@@ -1,7 +1,8 @@
 # Reference roles and processes: what a role usually covers, whatever the organization.
 # Read at step 3 of SKILL.md (point 11): each hat of the map is matched to one or two roles
-# below; a process of these roles that no task of the map covers becomes a question at the
-# first round of step 4 (three at most). Never a task to add without the person's answer.
+# below; for the processes of these roles that no task of the map covers, their key tasks are
+# proposed at the first round of step 4 (three, then three more on request). Never a task to
+# add without the person's answer.
 #
 # Fields
 #   roles[].id            `ref:<slug>`, stable: the maps cite it (`roles[].reference.roles`)
