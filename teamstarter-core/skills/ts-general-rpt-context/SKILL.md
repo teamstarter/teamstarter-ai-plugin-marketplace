@@ -21,7 +21,7 @@ does not know where to drop a map, the filing does not know where the referentia
 of them knows what the organization never sends.
 
 This skill turns the organization's `rpt-config.yaml` into a skill of its own, the **RPT context
-skill**, named `<organization>-rpt-context` (`make-the-grade-rpt-context`). The organization
+skill**, named `<organization>-rpt-context` (`acme-rpt-context`). The organization
 installs it next to the RPT skills; it holds:
 
 - the text of `global_context`, to follow as the organization's instructions;
