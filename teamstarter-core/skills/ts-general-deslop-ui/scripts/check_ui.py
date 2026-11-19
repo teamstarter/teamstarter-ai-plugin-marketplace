@@ -13,8 +13,9 @@ WARN (check whether it carries information here). Exit 0 when there is no FAIL, 
 `--allow` takes rule ids, separated by commas, that the organization's design system specifies
 (for example `uppercase` when its type scale has capital eyebrows): they are not reported.
 
-Not read: HTML comments, CSS and JS comments, the content of <code> and <pre> (a command or an id
-is copied as it is). Counted marks (pills, large radii, palette) are reported once per file.
+Not read: HTML comments, CSS and JS comments (in an .html, .vue or .svelte file, only inside <style>
+and <script>: a path such as `/admin/*` in the text is not a comment), the content of <code> and
+<pre> (a command or an id is copied as it is). Counted marks (pills, large radii, palette) are reported once per file.
 
 What a script cannot see (nested cards, a templated landing page, invented testimonials, density)
 is in the skill's checklist: references/catalog.md.
@@ -111,11 +112,30 @@ def blank(match):
     return re.sub(r"[^\n]", " ", match.group(0))
 
 
-def prepare(text):
-    """Comments, <code> and <pre> blanked; line numbers kept."""
-    text = re.sub(r"<!--.*?-->", blank, text, flags=re.S)
+HTML_FILES = (".html", ".htm", ".vue", ".svelte")
+MARKUP = re.compile(r"<(?:!doctype|html|head|body|style|script|div|p|span|section|main|article)\b", re.I)
+
+
+def code_comments(text):
+    """CSS and JS comments of a piece of code blanked."""
     text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
-    text = re.sub(r"(?m)(^|[\s;{}(),])//[^\n]*", lambda m: m.group(1) + blank(m)[len(m.group(1)):], text)
+    return re.sub(r"(?m)(^|[\s;{}(),])//[^\n]*", lambda m: m.group(1) + blank(m)[len(m.group(1)):], text)
+
+
+def prepare(text, html=None):
+    """Comments, <code> and <pre> blanked; line numbers kept.
+
+    In a page (html), CSS and JS comments are only looked for inside <style> and <script>: in the
+    text of the page, a path such as `/admin/*` would otherwise open a « comment » that hides
+    everything up to the next `*/` (2026-11-18, 73 KB of an opportunity page left unread)."""
+    if html is None:
+        html = bool(MARKUP.search(text))
+    text = re.sub(r"<!--.*?-->", blank, text, flags=re.S)
+    if html:
+        text = re.sub(r"(<(style|script)\b[^>]*>)(.*?)(</\2>)",
+                      lambda m: m.group(1) + code_comments(m.group(3)) + m.group(4), text, flags=re.S | re.I)
+    else:
+        text = code_comments(text)
     text = re.sub(r"\{/\*.*?\*/\}", blank, text, flags=re.S)
     text = re.sub(r"<(code|pre)\b[^>]*>.*?</\1>", blank, text, flags=re.S | re.I)
     return text
@@ -133,9 +153,9 @@ def files_of(paths):
             yield path
 
 
-def check_text(text, allow=()):
+def check_text(text, allow=(), html=None):
     """[(severity, line, rule id, message, excerpt)] for one file's content."""
-    text = prepare(text)
+    text = prepare(text, html)
     lines = text.split("\n")
     found = []
 
@@ -191,7 +211,7 @@ def main(argv=None):
             print(f"cannot read {path}: {e}", file=sys.stderr)
             return 2
         read += 1
-        for severity, line, rid, message, excerpt in check_text(content, allow):
+        for severity, line, rid, message, excerpt in check_text(content, allow, path.endswith(HTML_FILES) or None):
             print(f"{severity}  {path}:{line}  [{rid}] {message}\n      {excerpt}")
             fails += severity == "FAIL"
             warns += severity == "WARN"
