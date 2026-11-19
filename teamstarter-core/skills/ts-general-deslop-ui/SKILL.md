@@ -3,7 +3,7 @@ name: ts-general-deslop-ui
 description: "Removes the marks of generated interfaces from any page, screen or HTML artifact (landing page, dashboard, report, project page, component): purple gradients, gradient text, blurred blobs and glows, an accent bar on one side of a card, spaced capitals, pills and large radii everywhere, nested cards, emoji and sparkles as icons, the templated landing page (badge pill, centered hero, three icon cards, stats band), fade-in on scroll, invented logos, numbers and testimonials, Claude's own cream and terracotta palette. The organization's design system always wins. Two modes: build (decide palette, type, radius and density before writing code) and review (file:line or screen region, the mark, the fix). Runs a checker script on HTML, CSS and component files. Use when building or reviewing an interface or artifact, and when someone says deslop, « enlève le slop », « ça fait IA », « ça fait template », looks AI-generated."
 license: MIT
 metadata:
-  version: "1.0 (2026-11-18)"
+  version: "1.1 (2026-11-18)"
   owner: "Teamstarter product team"
   source: "teamstarter repository, teamstarter-os/skills/ts-general-deslop-ui; packaged by teamstarter-os/tools/package_rpt_skill.py"
 ---
