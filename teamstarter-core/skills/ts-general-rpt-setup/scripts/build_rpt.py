@@ -19,6 +19,12 @@ The referential is every `*.yaml` file of a folder whose `format` is `rpt/v1`
                                                          # a blank explorer for a new organization:
                                                          # each page empty, a Setup page first
 
+The page of the cartography, rpt-explorer.html, is the Carto V2 since 2026-11-23 (Vincent: « je
+valide la V2, on va dire que c'est maintenant la cartographie »): the explorer's template
+(rpt_explorer.template.html), which stays its engine and its « Référentiel » space, plus the layer
+of the five spaces (tools/carto_v2/), added by build_carto_v2.compose(). A packaged skill ships
+this script without that layer: there the page is the explorer alone.
+
 A folder or file other than OS/Operations borrows the departments, task types, tools and data
 sources it does not declare from OS/Operations, or from the folder given by --catalogues (the skill
 ts-general-check-process-cartography ships this script with the generic departments and common
@@ -6879,9 +6885,44 @@ def render_html(ref):
     return fill_template(explorer_data(ref), org, view_language())
 
 
-def fill_template(data, org, lang):
-    """The explorer page: the template with `data` inline and the organization's name."""
+def carto_v2():
+    """The module of the Carto V2 layer (build_carto_v2.py), when it is next to this script, as
+    in the repository; None in a packaged skill, which ships build_rpt.py without it."""
+    if not os.path.exists(os.path.join(HERE, "build_carto_v2.py")):
+        return None
+    if HERE not in sys.path:
+        sys.path.insert(0, HERE)
+    # build_carto_v2 imports build_rpt. When this script runs as __main__, that import must
+    # give this module, not a second copy that would not have the configuration of the run.
+    sys.modules.setdefault("build_rpt", sys.modules[__name__])
+    import build_carto_v2
+    return build_carto_v2
+
+
+def page_template():
+    """The template of the cartography's page: the explorer's, with the layer of the Carto V2
+    when it is there. Stops (SystemExit) when the explorer's template moved under a patch."""
     template = read_text(TEMPLATE)
+    layer = carto_v2()
+    return layer.compose(template) if layer else template
+
+
+def page_errors():
+    """The patch of the Carto V2 that the explorer's template no longer matches, as an error:
+    --validate-only (the job « OS » of the CI) stops on it, before `yarn os-sync` does."""
+    if carto_v2() is None:
+        return []
+    try:
+        page_template()
+    except SystemExit as stop:
+        return [str(stop)]
+    return []
+
+
+def fill_template(data, org, lang):
+    """The page of the cartography: its template (page_template) with `data` inline and the
+    organization's name."""
+    template = page_template()
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("</", "<\\/")  # keep </script> out of the inline JSON
     title = tr("html.title", lang, org=org)
@@ -7493,6 +7534,7 @@ def run(args):
         if cfg is not None:
             errors += check_config(cfg) + config_teams_errors(cfg, ref)
             warnings += config_warnings(cfg)
+        errors += page_errors()
     else:
         warnings = []
     target = getattr(args, "apply_observation", None)
