@@ -37,6 +37,7 @@ Les skills RPT (voir [Cartographier ses rôles, processus et tâches](#cartograp
 | `ts-general-data-crawl` | Décrire où sont les données de l'organisation, outil par outil (Drive, Notion, HubSpot, Slack, Gmail, Linear, Jira), sans lire leur contenu | « Cartographie nos données », « Où est notre donnée ? » |
 | `ts-general-rpt-observe` | À la fin d'une tâche faite avec Claude, proposer la mise à jour de sa fiche (durée, outils, méthode, blocage) | « Mets à jour la fiche de cette tâche », « Ce bloqueur est levé » |
 | `ts-general-rpt-file` | Ranger le livrable d'une tâche là où sa fiche le dit, sous le bon nom | « Où je range ça ? », « Range ce fichier au bon endroit » |
+| `ts-general-os-place` | À la fin d'une conversation qui a produit un contenu à garder (document, deck, tableur, page, artefact publié), lui donner sa place dans l'OS : son entrée avec les données dont il est fait et son cycle de mise à jour, son dossier du Drive partagé, ce dossier décrit dans la carte des données ; jamais un contenu privé (paie, RH, santé, finance confidentielle, juridique, capital) | « Ça a sa place dans l'OS ? », « Inscris ça dans l'OS », « Range ce document dans le Drive » |
 | `ts-general-rpt-context` | Générer, depuis le `rpt-config.yaml` de l'organisation, son skill de contexte RPT (`<organisation>-rpt-context`), pour un outil IA sans instructions d'organisation comme ChatGPT : les skills RPT y lisent où déposer et où lire. Une fois, puis à chaque changement du fichier | « Génère le skill de contexte RPT », « La carto ne sait pas où déposer » |
 
 Les skills deslop (voir [Retirer les marques de contenu généré](#retirer-les-marques-de-contenu-généré-deslop)) :
@@ -218,7 +219,11 @@ installer à côté des skills RPT : il porte ces informations et une copie du f
    mise à jour, jamais leur contenu.
 3. **Au fil du travail** : à la fin d'une tâche faite avec Claude, `ts-general-rpt-file` range le
    livrable à l'endroit que dit la fiche de la tâche, et `ts-general-rpt-observe` propose la mise
-   à jour de la fiche quand la session a appris ce qu'elle ne dit pas.
+   à jour de la fiche quand la session a appris ce qu'elle ne dit pas. Un contenu qui n'est le
+   livrable d'aucune tâche (une étude, un deck, un tableau de bord) passe par
+   `ts-general-os-place` : son entrée dans l'OS avec ses données et son cycle de mise à jour, son
+   dossier du Drive partagé, et ce dossier décrit dans la carte des données par
+   `ts-general-data-crawl`.
 
 La personne ou l'équipe qui tient le référentiel fusionne ensuite les cartes et les observations
 reçues ; cette fusion ne se fait pas avec le plugin. Les consignes des skills RPT sont écrites en
@@ -339,6 +344,7 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │       ├── ts-general-data-crawl/                   # RPT : carte des données, outil par outil
 │       ├── ts-general-rpt-observe/                  # RPT : proposer la mise à jour d'une fiche de tâche
 │       ├── ts-general-rpt-file/                     # RPT : ranger le livrable d'une tâche
+│       ├── ts-general-os-place/                     # RPT : donner sa place dans l'OS à un contenu produit
 │       ├── ts-general-deslop-writing/               # deslop : marques de texte généré (FR, EN)
 │       ├── ts-general-deslop-ui/                    # deslop : marques d'interface générée
 │       └── ts-general-deslop-slides/                # deslop : marques de deck généré
