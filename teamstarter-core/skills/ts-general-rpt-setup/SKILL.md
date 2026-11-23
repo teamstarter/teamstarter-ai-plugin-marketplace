@@ -91,6 +91,35 @@ Teamstarter's access from the same menu.
 If the sharing is refused or the person wants to do it later, go on: `explorer` stays `null`,
 and step 8 reminds it first. If the organization sets RPT up without Teamstarter, skip this step.
 
+### When the organization works in ChatGPT: a ChatGPT Site
+
+An organization without a Claude account has no artifact. Its page is a ChatGPT Site of its own
+workspace (Sites is a public beta in November 2026, on Business and Enterprise workspaces).
+Teamstarter cannot publish in it: only members of the workspace edit a Site. So Teamstarter
+builds the page and sends the file, and a member publishes it. `explorer` is then the link of
+the Site.
+
+A Site gives a page no database by itself. The controls of the page that write an answer
+(« Juste », « Corriger », « Pas celle-ci », « Marquer comme fait », the state of a decision)
+work only when the Site's server part has the interface described in
+[`assets/site-carto-api.md`](assets/site-carto-api.md). Never leave on a Site a page whose
+buttons cannot work:
+
+1. **Publish.** The member gives ChatGPT (`@Sites`) the page and `assets/site-carto-api.md`, and
+   asks: "Publish this page as a Site restricted to our workspace, and implement the interface
+   of this file in its server part."
+2. **Check.** The three checks at the end of that file: `<site>/api/carto/me` answers, an answer
+   given on the page is still there after a reload, a second member sees it.
+3. **If the interface is not installed, or a check fails and cannot be fixed**, the buttons
+   must not be there. The page already hides them on a Site that has no interface. Ask
+   Teamstarter all the same for the page built read-only
+   (`build_carto_v2.py --read-only`), and publish that one: it shows no control that writes on
+   any host, whatever the Site becomes later.
+
+Say which of the two pages is published, in one line. The answers given on a Site stay in the
+Site's database: the person who maintains the referential reads them at
+`<site>/api/carto/docs?collection=answers` and gives that file to the merge.
+
 ## Step 1 — The organization and the person
 
 Ask, in a single call:
@@ -140,8 +169,9 @@ Then ask for:
   maps there are readable by these people: say so.
 
 If the organization has a code repository where it keeps its documents, `repository` and
-`repository_path` say so; otherwise `null`. `explorer` is the link of the artifact of step 0
-(`null` if the step was skipped or left for later).
+`repository_path` say so; otherwise `null`. `explorer` is the link of the artifact of step 0,
+or of the ChatGPT Site of an organization that works in ChatGPT (`null` if the step was skipped
+or left for later).
 
 ## Step 3 — The teams
 
@@ -282,7 +312,9 @@ Tell the person, in this order:
 1. The explorer: Teamstarter publishes it in the artifact of step 0, first as a setup page that
    lists these steps; <Organization> shares it with the people who need it. If step 0 was left
    for later, propose it now: no other step waits for it, but Teamstarter can publish the
-   explorer only there.
+   explorer only there. An organization that works in ChatGPT publishes the page itself, on its
+   ChatGPT Site, from the file Teamstarter sends (step 0, « When the organization works in
+   ChatGPT »).
 2. Install the RPT skills in Claude (Settings, Capabilities, Skills), for the whole
    organization if the plan allows it: the same `.skill` files as every organization, given by
    the person who gave them this skill. They carry no value of any organization.
@@ -317,4 +349,5 @@ line, then the organization's instructions.
 - It creates or moves nothing without approval, and keeps no personal data other than the first
   and last name of the people named in the file.
 - It does not publish the explorer: Teamstarter does, in the artifact of step 0, and only the
-  organization shares it with its people.
+  organization shares it with its people. On a ChatGPT Site a member of the organization
+  publishes it, since only members of the workspace edit a Site.
