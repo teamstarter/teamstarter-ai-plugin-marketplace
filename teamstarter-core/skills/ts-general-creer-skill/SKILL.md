@@ -84,10 +84,13 @@ de Teamstarter ne dit pas.
    un exemple) se propose, et l'outil de question fait valider ou corriger la proposition, qu'il
    porte lui-même (règle 8). Sans cet outil : une seule question par message, à la fin du
    message, avec la proposition et ses réponses proposées numérotées.
-8. **La question porte ce qu'elle fait valider.** Dans certaines interfaces (Cowork, peut-être
-   claude.ai), le texte écrit entre deux appels d'outils est replié en une ligne de résumé : une
-   proposition écrite juste avant l'outil de question n'est pas lue, et l'utilisateur valide
-   sans l'avoir vue ou répond « Je ne vois pas les étapes ». Donc :
+8. **La question porte ce qu'elle fait valider.** Dans certaines interfaces (claude.ai, Cowork),
+   le texte **et les visuels** écrits entre deux appels d'outils sont repliés en une ligne de
+   résumé (« Visuel créé » pour un visuel) : une proposition écrite juste avant l'outil de
+   question n'est pas lue, un schéma affiché juste avant n'est pas vu, et l'utilisateur valide
+   sans les avoir vus ou répond « Je ne vois pas les étapes », « Je ne vois pas ton visuel ».
+   Dans ces interfaces, ce que l'utilisateur doit voir avant une question passe par la question
+   elle-même, par l'outil de message ou par une carte (fichier ou artefact). Donc :
    - **Dans la question** : son texte, ou la description de son premier choix, contient la
      proposition, en entier quand elle tient en quelques lignes, sinon en version courte (le
      verbe de chaque étape, le livrable, les chiffres). Exemple : « Tu qualifies les feedbacks
@@ -100,6 +103,12 @@ de Teamstarter ne dit pas.
      l'utilisateur (dans Cowork, l'outil de message), l'envoyer par lui, avant l'outil de
      question ; sinon l'écrire dans la réponse. La question garde sa version courte : elle se
      comprend seule.
+   - **Un visuel** (le schéma du skill, étape 6) : envoyé en **carte**, avant l'outil de
+     question, par l'outil qui envoie un fichier à l'utilisateur (en mode « render » quand
+     l'outil a ce mode) ou publié en artefact. La carte reste visible au-dessus de la question
+     et s'ouvre d'un clic. L'outil de visualisation (`show_widget`) et l'image dans le texte de
+     la réponse sont repliés comme le texte : jamais avant une question, sauf dans une interface
+     qui n'a ni outil d'envoi de fichier ni artefact.
    - **Aucun renvoi** dans une question ni dans un choix : ni « ci-dessus », ni « plus haut »,
      ni « au-dessus », ni « dans le message précédent ». La question nomme ce qu'elle fait
      valider.
@@ -507,28 +516,37 @@ produit, pour que l'utilisateur puisse le reprendre :
    Sans Python : écrire le SVG à la main sur le même modèle (fond blanc, trois colonnes
    « Entrées », « Étapes » numérotées et « Sorties », une flèche de chaque entrée vers son étape
    et de chaque étape vers ses sorties).
-3. **Afficher le schéma dans la conversation**, dans la réponse elle-même, pas seulement en
-   fichier à ouvrir. Dans cet ordre :
-   - l'outil de l'outil IA qui affiche un visuel dans la réponse (dans claude.ai et Cowork,
-     l'outil de visualisation, par exemple `show_widget`) : lui passer le contenu du fichier
-     `<nom-du-skill>-schema.svg`, tel quel ;
-   - sinon, une image dans la réponse, si l'outil IA affiche les images markdown :
-     `![Schéma du skill](data:image/svg+xml;base64,<le SVG en base64>)` ;
-   - sinon seulement, le fichier (artifact SVG ou fichier joint), en disant de l'ouvrir.
+3. **Envoyer le schéma en carte**, avant l'outil de question (règle 8). Dans cet ordre :
+   - l'outil qui envoie un fichier à l'utilisateur, avec le fichier
+     `<nom-du-skill>-schema.svg`, en mode « render » quand l'outil a ce mode ; ou le SVG publié
+     en artefact. L'utilisateur voit une carte, au-dessus de la question, et l'ouvre d'un clic ;
+   - sinon seulement, dans une interface qui n'a ni outil d'envoi de fichier ni artefact :
+     l'outil de visualisation (par exemple `show_widget`), avec le contenu du fichier tel quel ;
+     sinon une image markdown, si l'outil IA les affiche :
+     `![Schéma du skill](data:image/svg+xml;base64,<le SVG en base64>)`.
 
-   Avec le schéma, une phrase : le nom du skill et ce qu'il fait, par l'outil de message quand
+   Dans claude.ai et Cowork, aucun appel à `show_widget` ni image base64 avant la question :
+   l'interface les replie en une ligne « Visuel créé » et ne laisse qu'un espace vide.
+
+   **L'envoi de la carte échoue** (refus, erreur de l'outil) : essayer l'autre forme de carte
+   (artefact ou fichier), pas la visualisation ni l'image. Si elle échoue aussi, la question dit
+   en tête « Le schéma n'a pas pu s'afficher. », puis porte le skill en version courte comme
+   d'habitude.
+
+   Avec la carte, une phrase : le nom du skill et ce qu'il fait, par l'outil de message quand
    l'outil IA en a un (règle 8). Pas de tableau en plus : le schéma porte les entrées, les
-   étapes et les sorties. Le fichier `.svg` peut être joint en plus, jamais à la place quand le
-   schéma peut s'afficher dans la réponse.
-4. Donner le fichier `<nom-du-skill>.skill` pour l'installer (claude.ai et Cowork :
-   Personnaliser → Skills ; Claude Code : décompresser dans `~/.claude/skills/`).
+   étapes et les sorties.
+4. Donner le fichier `<nom-du-skill>.skill` pour l'installer, par le même outil d'envoi de
+   fichier (claude.ai et Cowork : Personnaliser → Skills ; Claude Code : décompresser dans
+   `~/.claude/skills/`).
 
-Puis l'outil de question, qui porte le skill en version courte, pour qu'il se lise même si
-l'interface replie le schéma (règle 8) : « Ce skill te convient ? <nom> prend <entrées>, fait
-<n> étapes (<verbe de chaque étape>) et produit <sorties>. » → « Oui, on l'essaie » /
-« Changer les entrées ou les sorties » / « Changer les étapes ». Un changement : le faire
-(étape 5 : modifier, retester, empaqueter, enregistrer), refaire le schéma sous les mêmes noms
-de fichier, puis le montrer de nouveau, sans dire ce qui a changé.
+Puis l'outil de question, qui porte le skill en version courte, pour qu'elle se comprenne seule,
+carte ouverte ou non (règle 8) : « Ce skill te convient ? <nom> prend <entrées>, fait <n> étapes
+(<verbe de chaque étape>) et produit <sorties>. » → « Oui, on l'essaie » / « Changer les entrées
+ou les sorties » / « Changer les étapes ». Un changement : le faire (étape 5 : modifier,
+retester, empaqueter, enregistrer), refaire le schéma sous les mêmes noms de fichier, puis
+envoyer **une nouvelle carte** du schéma mis à jour (point 3) avant la nouvelle question, sans
+dire ce qui a changé.
 
 ## Étape 7 — Première exécution
 
