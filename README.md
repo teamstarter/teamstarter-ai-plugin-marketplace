@@ -373,8 +373,8 @@ versionné.
    entre deux appels d'outils est replié en une ligne de résumé, et un texte plus long passe par
    l'outil de message (TEA-3343). Un visuel est replié de la même façon (« Visuel créé ») : ce
    que l'utilisateur doit voir avant une question, comme le schéma d'un skill, s'envoie en carte
-   (fichier rendu ou artefact), jamais par l'outil de visualisation ni par une image dans le
-   texte (TEA-3409).
+   (fichier rendu ou artefact), pas par l'outil de visualisation ni par une image dans le texte,
+   sauf dans une interface qui n'a ni outil d'envoi de fichier ni artefact (TEA-3409).
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
    seul). La source et ses copies sont listées dans `SHARED` du script ; modifier la source, puis
    `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
