@@ -196,7 +196,7 @@ def check_shared(errors, sync):
 
 def chatgpt_expected(marketplace, plugin_dirs):
     """Contenu attendu de chatgpt/ : chemin relatif -> octets (manifeste) ou Path (copie)."""
-    copy = dict(marketplace, name=f"{marketplace['name']}-chatgpt")
+    copy = dict(marketplace, name=f"{marketplace.get('name', '')}-chatgpt")
     copy["metadata"] = dict(marketplace.get("metadata", {}))
     copy["metadata"]["description"] = copy["metadata"].get("description", "") + CHATGPT_NOTE
     manifest = json.dumps(copy, ensure_ascii=False, indent=2) + "\n"
