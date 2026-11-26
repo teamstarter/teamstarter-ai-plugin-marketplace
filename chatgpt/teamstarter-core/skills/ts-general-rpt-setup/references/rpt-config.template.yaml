@@ -1,0 +1,97 @@
+# RPT configuration of an organization, rpt-config/v1 format. Template to fill in: replace each
+# <…>, remove the lines that are not used, then check:
+#   python3 teamstarter-os/tools/build_rpt.py --config-check rpt-config.yaml
+# The file goes at the root of the organization's OS folder (Drive or repository), next to the
+# intake folder. It is all the mapping needs: the referential and the catalogues can come later. Filled-in example: teamstarter-os/rpt-config.yaml (Teamstarter). Rules and
+# deployment: teamstarter-os/OS/Operations/README_operations.md §3.3.
+format: rpt-config/v1
+updated: '<YYYY-MM-DD>'
+
+organization:
+  name: <Organization name>
+  language: en   # a code of tools/rpt_i18n.py LANGUAGES (en, fr today)
+  description: <one sentence on what the organization does>
+  # How many people should send a map, each counted once: the whole organization, or the part the
+  # mapping covers (the teams of a pilot). The « Coverage » page of the explorer measures the maps
+  # received against it (README_operations.md §1.16); leave it out only when nobody knows.
+  headcount: <number of people who should send a map>
+
+# The referential: role files, catalogues, task index. At least drive_folder or
+# repository_path. While it does not exist yet, keep the planned paths.
+referential:
+  # The https:// address where people open this file: the link of the folder at whose root it
+  # is (known before the file exists), or the file's own link. global_context cites it: the
+  # skills, the same for every organization, find the file through the organization's
+  # instructions.
+  config_url: <link of the Drive folder <Organization>/OS/>
+  drive_folder: <Organization>/OS/Operations/
+  repository: null
+  repository_path: null
+  tools_path: null
+  index: index-taches.json
+  # The link of the explorer: an artifact of the organization's own Claude account, created at
+  # the start of the setup and shared in edit mode with Teamstarter, which publishes the
+  # explorer in it (README_operations.md §3.3, « Deploying RPT in another organization »).
+  # null until it exists.
+  explorer: null
+  archive_drive_folder: <Organization>/OS/documents-processed/Operations/
+
+# Where the maps and the observations arrive. At least drive_folder or email.
+intake:
+  drive_folder: <Organization>/OS/to-process/
+  drive_folder_id: <folder id, at the end of its Drive link>
+  email: <intake address>
+  visibility: "<who can read this folder, for example 'readable by the whole company'>"
+  merged_by: "<who merges the maps, for example 'the product team'>"
+
+# Who is responsible for what: a role of the referential, or the person's first and last name. No other data.
+owners:
+  referential: {role: null, first_name: <first and last name>, what: structure of the referential, merge of the maps}
+  ai_policy: {role: null, first_name: null, what: ai-policy.yaml (the person in charge of data)}
+
+# The teams: the code (lowercase) prefixes the identifiers (ops → OPS-R1, OPS-T1.2). headcount:
+# how many people work in the team, even part of their time (a person who works for two teams
+# counts in both); the explorer compares it with the people who sent a map for the team
+# (README_operations.md §1.16). lead (optional): the person (first and last name, as in the
+# roles' holders) or the role (OPS-R1) who validates where the team's files go, on the page
+# « Files to place » of the explorer (§1.20); without it, the page names the people who do the
+# tasks to place.
+teams:
+  - {code: <code>, name: <team name>, scope: <the business areas it covers>, headcount: <number of people>, lead: null}
+
+# The catalogues of the referential, relative to referential. Absent = not used; a map then
+# borrows the generic catalogues shipped with the skills.
+catalogues:
+  departments: departments.yaml
+  ai_policy: ai-policy.yaml
+
+skills:
+  - {name: ts-general-check-process-cartography, where: claude.ai}
+  - {name: ts-general-rpt-observe, where: claude.ai}
+  - {name: ts-general-rpt-file, where: claude.ai}
+  - {name: ts-general-data-crawl, where: claude.ai}
+  - {name: ts-general-os-place, where: claude.ai}
+  - {name: ts-general-rpt-merge, where: claude-code}
+  - {name: ts-general-data-merge, where: claude-code}
+
+privacy:
+  excluded: [private matters, internal reviews, HR discussions, the company's financial health, personal data (address, gender, phone…), client names]
+  allowed_personal_data: the first and last name of a person who holds a role or does a task
+  # Never stored in the shared Drive nor described in the OS (skill ts-general-os-place).
+  not_filed: [payslips and pay, HR contracts and files, health, confidential finance, litigation and confidential legal files, capital and shareholders, the board, credentials]
+
+# The whole text of the organization's instructions, pasted in place of the previous one; 2500
+# characters at most. The organization may add its own lines above the RPT lines (what it does,
+# where its information is, one line per good practice of its OS). Write it in the
+# organization's language (`organization.language`): the sample below is in English, Teamstarter's
+# French text is in teamstarter-os/rpt-config.yaml. Replace the name, the paths and the example id.
+global_context: |
+  <Organization> — task referential (RPT)
+
+  RPT config (rpt-config.yaml): <link of the Drive folder <Organization>/OS/>; tasks: index-taches.json
+
+  Task (OPS-T1.2, a skill of the index) or tooling changed (skill, scheduled task, agent, connector): at the start find its entry without saying so, start from its template (templates); at the end propose ts-general-rpt-file (output_files) when a deliverable is ready, then ts-general-rpt-observe if the entry is no longer true.
+  A content produced (doc, deck, page): propose ts-general-os-place (its place in the OS, its data, its Drive folder). Never payroll, HR, capital.
+  Propose ts-general-check-process-cartography if I ask, join or change position.
+
+  One proposal per conversation, nothing one-off or personal. Nothing is sent without my approval on a preview. No client name, no personal data. With nobody to answer: flag it in the recap.

@@ -1,0 +1,228 @@
+# Template of the structure of an organization's OS, rpt/v1 format, drawn from Teamstarter's
+# (teamstarter-os/OS/Operations/os-structure.yaml) without its proper names. Rules:
+# README_operations.md §1.15 of Teamstarter's OS.
+# Keep the zones the organization has or wants, rename them, add its own; give each flow the
+# tool where the organization keeps the data (`tool`, an id of its tool catalogue) and the
+# skill that writes into the zone (`skill`), if any. `state`: live (a pipeline, a skill or a
+# routine brings the data in), manual (someone does it by hand), possible (the data exists in a
+# tool, nothing brings it in yet). Every flow starts `possible`: the setup says which ones run.
+format: rpt/v1
+meta: {updated: '2026-10-13'}
+
+os_zones:
+  - id: os:briefs
+    name: {en: Distilled documents, fr: Documents distillés}
+    path: documents-processed
+    holds: briefs
+    description:
+      en: One brief per raw document (meeting transcript, deck, article), written by a distillation skill. The other zones are fed from here.
+      fr: Une fiche par document brut (transcript de réunion, deck, article), écrite par un skill de distillation. Les autres zones sont alimentées depuis ici.
+
+  - id: os:briefs-calls-sales
+    name: {en: Sales call briefs, fr: Fiches des calls commerciaux}
+    path: documents-processed/Sales/Calls
+    parent: os:briefs
+    holds: briefs
+    feeds:
+      - from: data:reunions
+        what: enregistrements et transcripts des rendez-vous commerciaux, y compris les réunions de closing
+        state: possible
+        insights: [INS-1, INS-2, INS-3, INS-4]
+
+  - id: os:briefs-reunions-clients
+    name: {en: Client meeting briefs, fr: Fiches des réunions clients}
+    path: documents-processed/Clients/Meetings
+    parent: os:briefs
+    holds: briefs
+    feeds:
+      - from: data:reunions
+        what: enregistrements et transcripts des réunions avec les clients (lancement, suivi, bilan)
+        state: possible
+        insights: [INS-5, INS-6, INS-8]
+
+  - id: os:strategie
+    name: {en: Strategy, fr: Stratégie}
+    path: OS/Strategy
+    holds: reference
+    description:
+      en: Where the organization goes and why, its target, its offer, its positioning.
+      fr: Où va l'organisation et pourquoi, sa cible, son offre, son positionnement.
+    feeds:
+      - from: data:documents
+        what: decks et comptes rendus de séminaire
+        state: possible
+
+  - id: os:marketing
+    name: {en: Target and personas, fr: Cible et personas}
+    path: OS/Marketing
+    holds: reference
+    feeds:
+      - from: os:briefs-calls-sales
+        what: segments, personas et mots des prospects relevés en rendez-vous
+        state: possible
+        insights: [INS-4]
+      - from: data:campagnes-emailing
+        what: ouvertures et clics des campagnes par sujet
+        state: possible
+        insights: [INS-9]
+      - from: data:webinars
+        what: inscrits, présents et questions posées par événement
+        state: possible
+        insights: [INS-9]
+
+  - id: os:ventes
+    name: {en: Sales, fr: Ventes}
+    path: OS/Sales
+    holds: reference
+    description:
+      en: What is sold and how, and the buyer registers.
+      fr: Ce qui se vend et comment, et les référentiels acheteur.
+    feeds:
+      - from: data:offres
+        what: propositions commerciales et grilles de prix
+        state: possible
+
+  - id: os:objections
+    name: {en: Objections, fr: Objections}
+    path: OS/Sales/Objections
+    parent: os:ventes
+    holds: findings
+    feeds:
+      - from: os:briefs-calls-sales
+        what: objections et freins relevés en rendez-vous
+        state: possible
+        insights: [INS-1]
+
+  - id: os:gains
+    name: {en: Gains sought, fr: Gains recherchés}
+    path: OS/Sales/Gains
+    parent: os:ventes
+    holds: findings
+    feeds:
+      - from: os:briefs-calls-sales
+        what: ce que les prospects cherchent à obtenir, dans leurs mots
+        state: possible
+        insights: [INS-2]
+
+  - id: os:criteres-decision
+    name: {en: Decision criteria, fr: Critères de décision}
+    path: OS/Sales/Decision-Criteria
+    parent: os:ventes
+    holds: findings
+    feeds:
+      - from: os:briefs-calls-sales
+        what: comment le prospect décide, qui valide le budget
+        state: possible
+        insights: [INS-3]
+
+  - id: os:affaires-gagnees-perdues
+    name: {en: Won and lost deals, fr: Affaires gagnées et perdues}
+    path: OS/Sales/Win-Loss
+    parent: os:ventes
+    holds: findings
+    feeds:
+      - from: data:pipe-prospects
+        what: motif de gain ou de perte de chaque affaire clôturée, dans le CRM
+        state: possible
+        insights: [INS-3, INS-4]
+      - from: os:briefs-calls-sales
+        what: réunions de closing et de négociation
+        state: possible
+        insights: [INS-3]
+
+  - id: os:concurrence
+    name: {en: Competitors, fr: Concurrence}
+    path: OS/Sales/Competitors
+    parent: os:ventes
+    holds: findings
+    feeds:
+      - from: data:veille
+        what: analyses de concurrents
+        state: possible
+        insights: [INS-10]
+
+  - id: os:clients
+    name: {en: Client accounts, fr: Comptes clients}
+    path: OS/Clients
+    holds: records
+    description:
+      en: One record per account, what was decided meeting after meeting, its health.
+      fr: Une fiche par compte, ce qui s'est décidé de réunion en réunion, sa santé.
+    feeds:
+      - from: os:briefs-reunions-clients
+        what: décisions et contexte des réunions avec le compte
+        state: possible
+        insights: [INS-5]
+      - from: data:comptes-clients
+        what: contrats, renouvellements, contacts du CRM
+        state: possible
+        insights: [INS-5]
+      - from: data:questionnaires
+        what: sondages de satisfaction et NPS
+        state: possible
+        insights: [INS-5, INS-6, INS-7]
+      - from: data:demandes-utilisateurs
+        what: tickets et questions au support
+        state: possible
+        insights: [INS-5, INS-8]
+
+  - id: os:delivery
+    name: {en: Delivery, fr: Livraison}
+    path: OS/Delivery
+    holds: process
+    description:
+      en: How the organization delivers what it sells, step by step, and what clients think of each step.
+      fr: Comment l'organisation livre ce qu'elle vend, étape par étape, et ce qu'en pensent les clients.
+    feeds:
+      - from: os:briefs-reunions-clients
+        what: réunions de livraison réellement tenues
+        state: possible
+        insights: [INS-6]
+      - from: data:questionnaires
+        what: sondage de fin de session ou de livraison
+        state: possible
+        insights: [INS-6, INS-7]
+
+  - id: os:produit
+    name: {en: Product and documentation, fr: Produit et documentation}
+    path: OS/Product
+    holds: reference
+    description:
+      en: What the product or service does, its documentation, what clients ask of it.
+      fr: Ce que fait le produit ou le service, sa documentation, ce que les clients lui demandent.
+    feeds:
+      - from: data:centre-aide
+        what: documentation produit et articles du centre d'aide
+        state: possible
+        insights: [INS-8]
+      - from: data:feedbacks
+        what: demandes et retours des clients
+        state: possible
+        insights: [INS-8]
+
+  - id: os:references
+    name: {en: Proof and references, fr: Preuves et références}
+    path: OS/References
+    holds: reference
+    feeds:
+      - from: data:questionnaires
+        what: résultats chiffrés déclarés par les clients
+        state: possible
+        insights: [INS-7]
+
+  - id: os:operations
+    name: {en: 'Operations: roles, processes, tasks', fr: 'Opérations : rôles, processus, tâches'}
+    path: OS/Operations
+    holds: reference
+    description:
+      en: The RPT referential, fed by the maps of each team and the observations of work sessions.
+      fr: Le référentiel RPT, alimenté par les cartes de chaque équipe et les observations des sessions de travail.
+    feeds:
+      - from: data:emails
+        what: cartes des rôles et des tâches, faites avec l'accord de chaque personne
+        state: possible
+        insights: [INS-11]
+      - from: data:messages-internes
+        what: messages qui signalent un blocage
+        state: possible
+        insights: [INS-11]

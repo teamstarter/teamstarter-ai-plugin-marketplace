@@ -6,7 +6,8 @@ un projet, de le mener jusqu'à sa proposition et de suivre où en sont ses proj
 sa conversation avec Claude ou ChatGPT. Il contient aussi les skills RPT côté utilisateur, qui
 décrivent les rôles, processus et tâches de l'organisation et ce qui peut en être confié à l'IA.
 
-Le plugin est au format des plugins Claude, que ChatGPT sait aussi lire. Il réunit :
+Le plugin est au format des plugins Claude, que ChatGPT sait aussi lire ; ChatGPT importe sa
+copie du dossier [`chatgpt/`](chatgpt/README.md), sans déclaration de serveur MCP. Il réunit :
 
 - des **skills** : la méthode, écrite en Markdown, que l'outil IA suit étape par étape ;
 - le **connecteur MCP Teamstarter** : l'accès à vos données Teamstarter, avec votre propre compte.
@@ -295,13 +296,14 @@ Teamstarter.
 | Claude Code | `/plugin marketplace add teamstarter/teamstarter-ai-plugin-marketplace`, puis `/plugin install teamstarter-core@teamstarter`. Depuis une copie locale du dépôt : `/plugin marketplace add <chemin du dépôt>`. Puis `/mcp` pour autoriser le connecteur. |
 | claude.ai, Cowork (compte individuel) | Personnaliser → Plugins → Ajouter → téléverser `teamstarter-core.zip` (voir [Empaqueter](#empaqueter)), puis connecter le connecteur depuis l'onglet Connecteurs du plugin. |
 | claude.ai (Team, Enterprise) | Paramètres de l'organisation → Plugins et skills : le propriétaire téléverse le zip, ou synchronise un dépôt GitHub qu'il contrôle (une copie de celui-ci), et choisit qui a le plugin (disponible, installé par défaut, obligatoire). |
-| ChatGPT | Un administrateur du workspace importe le marketplace depuis un dépôt GitHub (le fichier `.claude-plugin/marketplace.json` est lu tel quel) ; le connecteur s'ajoute comme serveur MCP personnalisé (`https://app.teamstarter.co/mcp`, OAuth). Un plugin importé avec un `.mcp.json` ne fonctionne que dans l'app de bureau ; pour le web, enregistrer le connecteur comme app du workspace. Les skills seuls se téléversent depuis `dist/skills/`. |
+| ChatGPT (Business, Enterprise, Edu) | Un administrateur du workspace ajoute le connecteur comme app du workspace (serveur MCP personnalisé `https://app.teamstarter.co/mcp`, OAuth), puis importe le marketplace depuis GitHub avec le **chemin `chatgpt`** : le plugin y est sans `.mcp.json` et tourne sur le web, dans l'app mobile et dans l'app de bureau. Chaque membre connecte l'app Teamstarter une fois. Importé avec le chemin vide, le plugin déclare le connecteur dans `.mcp.json`, et ChatGPT le marque « Desktop only » : il ne tourne ni sur le web ni dans l'app mobile. Étapes : [chatgpt/README.md](chatgpt/README.md). Les skills seuls se téléversent depuis `dist/skills/`. |
 
 ### Adresse du connecteur
 
 `https://app.teamstarter.co/mcp` vaut pour les organisations hébergées sur
 `app.teamstarter.co`. Une instance Teamstarter sur une autre adresse a son propre connecteur :
-remplacer l'adresse dans `teamstarter-core/.mcp.json` avant d'installer ou d'empaqueter le plugin.
+remplacer l'adresse dans `teamstarter-core/.mcp.json` avant d'installer ou d'empaqueter le plugin
+pour Claude ; dans ChatGPT, c'est l'adresse de l'app ajoutée au workspace.
 
 ### Si vous aviez déjà le skill `ts-general-creer-projet`
 
@@ -348,7 +350,8 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 │       ├── ts-general-deslop-writing/               # deslop : marques de texte généré (FR, EN)
 │       ├── ts-general-deslop-ui/                    # deslop : marques d'interface générée
 │       └── ts-general-deslop-slides/                # deslop : marques de deck généré
-└── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés, empaqueter
+├── chatgpt/                            # le marketplace pour ChatGPT : même plugin sans .mcp.json, écrit par --sync
+└── scripts/check_plugins.py            # vérifier, synchroniser les fichiers partagés et chatgpt/, empaqueter
 ```
 
 ### Empaqueter
@@ -357,9 +360,10 @@ en installant le plugin : deux skills au même nom et aux mêmes déclencheurs s
 python3 scripts/check_plugins.py --package
 ```
 
-Écrit `dist/teamstarter-core.zip` (le plugin, pour claude.ai et Cowork) et
-`dist/skills/<skill>.zip` (chaque skill seul, pour claude.ai ou ChatGPT). `dist/` n'est pas
-versionné.
+Écrit `dist/teamstarter-core.zip` (le plugin, pour claude.ai et Cowork),
+`dist/chatgpt/teamstarter-core.zip` (le plugin sans `.mcp.json`, pour un workspace ChatGPT qui
+téléverse un zip) et `dist/skills/<skill>.zip` (chaque skill seul, pour claude.ai ou ChatGPT).
+`dist/` n'est pas versionné.
 
 ### Modifier un skill
 
@@ -380,8 +384,10 @@ versionné.
    `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
    `ts-general-creer-skill`, `questions-structuration.md`, `type-automatisation-ia.md`,
    `fiche-projet.md` et `scripts/tiptap.py` ; leur source est dans `ts-general-creer-projet`.
-3. `python3 scripts/check_plugins.py` doit répondre `OK`.
-4. Monter la version dans `plugin.json` et dans `marketplace.json`.
+3. Monter la version dans `plugin.json` et dans `marketplace.json`.
+4. `python3 scripts/check_plugins.py --sync` recopie le plugin et le marketplace dans `chatgpt/`,
+   sans `.mcp.json` ; puis `python3 scripts/check_plugins.py` doit répondre `OK`. Ne jamais
+   modifier `chatgpt/` à la main.
 
 ### Mettre à jour les skills RPT et deslop
 
@@ -396,8 +402,9 @@ jour :
    remplace chaque `teamstarter-core/skills/<skill>/` déjà présent ici par le dossier empaqueté,
    et laisse de côté un skill que le plugin ne déclare pas encore (l'ajouter est une
    décision prise ici, avec le tableau des skills de ce README).
-2. `python3 scripts/check_plugins.py`, puis monter la version du plugin (dernier chiffre pour de
-   nouvelles versions de skills déjà déclarés) dans `plugin.json` et `marketplace.json`.
+2. Monter la version du plugin (dernier chiffre pour de nouvelles versions de skills déjà
+   déclarés) dans `plugin.json` et `marketplace.json`, puis
+   `python3 scripts/check_plugins.py --sync`, qui recopie aussi le plugin dans `chatgpt/`.
 
 Les sources publiques dont s'inspirent les skills deslop, avec la révision lue de chacune, sont
 dans `teamstarter-os/skills/deslop-inspirations.yaml` du dépôt `teamstarter` ;
@@ -410,4 +417,6 @@ mergée par la session qui l'ouvre, sans validation (Vincent, 2026-10-19). Un sk
 retiré, ou un changement de la description du plugin, passe par une revue.
 
 Pas de hook ni de dossier `bin/` : le chat claude.ai et ChatGPT ne les exécutent pas, et
-claude.ai refuse un plugin qui a un `bin/` à sa racine. Le script le vérifie.
+claude.ai refuse un plugin qui a un `bin/` à sa racine. Pas de `mcpServers` dans `plugin.json` :
+le connecteur se déclare dans `.mcp.json`, que la copie `chatgpt/` laisse de côté. Le script
+vérifie les deux.
