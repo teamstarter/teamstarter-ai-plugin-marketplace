@@ -1,0 +1,20 @@
+# Template of the insights of an organization's OS, rpt/v1 format, drawn from Teamstarter's
+# (teamstarter-os/OS/Operations/insights.yaml). Rules: README_operations.md §1.15 of
+# Teamstarter's OS. Keep the questions the organization asks itself, add its own; every
+# question starts `unanswered`. The findings (facts grouped and counted) come later, from the
+# data the flows bring in: none is invented at setup.
+format: rpt/v1
+meta: {updated: '2026-10-13'}
+
+insights:
+  - {id: INS-1, kind: question, text: "Qu'est-ce qui retient un prospect d'acheter ?", zone: os:objections, state: unanswered}
+  - {id: INS-2, kind: question, text: "Que cherchent à obtenir les prospects, dans leurs mots ?", zone: os:gains, state: unanswered}
+  - {id: INS-3, kind: question, text: "Comment un prospect décide-t-il, et pourquoi perd-on une affaire ?", zone: os:affaires-gagnees-perdues, state: unanswered}
+  - {id: INS-4, kind: question, text: "Quelles entreprises achètent, et lesquelles n'achètent pas ?", zone: os:marketing, state: unanswered}
+  - {id: INS-5, kind: question, text: "Quels comptes risquent de ne pas renouveler ?", zone: os:clients, state: unanswered}
+  - {id: INS-6, kind: question, text: "Quelle étape de la livraison les clients trouvent-ils la moins claire ou la moins utile ?", zone: os:delivery, state: unanswered}
+  - {id: INS-7, kind: question, text: "Quel résultat les clients obtiennent-ils, chiffré ?", zone: os:references, state: unanswered}
+  - {id: INS-8, kind: question, text: "Où les utilisateurs bloquent-ils, et que demandent-ils au produit ?", zone: os:produit, state: unanswered}
+  - {id: INS-9, kind: question, text: "Quels sujets de contenu et d'événement font venir des prospects ?", zone: os:marketing, state: unanswered}
+  - {id: INS-10, kind: question, text: "Contre qui est-on en concurrence, et sur quoi perd-on ?", zone: os:concurrence, state: unanswered}
+  - {id: INS-11, kind: question, text: "Quelles tâches de l'équipe automatiser d'abord, et qu'est-ce qui l'empêche ?", zone: os:operations, state: unanswered}

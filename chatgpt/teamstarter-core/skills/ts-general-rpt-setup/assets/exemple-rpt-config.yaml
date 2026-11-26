@@ -1,0 +1,66 @@
+# Filled-in example, for a fictitious organization (Acme) that works in French. Do not copy its
+# values: they show the expected form of each field. Values are written in the organization's
+# language (`organization.language`).
+format: rpt-config/v1
+updated: '2026-10-09'
+
+organization:
+  name: Acme
+  language: fr
+  description: Éditeur de logiciels de gestion pour les cabinets d'architectes.
+  headcount: 40
+
+referential:
+  config_url: https://drive.google.com/drive/folders/1AcmeOsFolderExampleId
+  drive_folder: Acme/OS/Operations/
+  repository: null
+  repository_path: null
+  tools_path: null
+  index: index-taches.json
+  explorer: https://claude.ai/artifact/AcmeExplorerExampleId
+  archive_drive_folder: Acme/OS/documents-processed/Operations/
+
+intake:
+  drive_folder: Acme/OS/to-process/
+  drive_folder_id: 1AbCdEfGhIjKlMnOpQrStUvWxYz012345
+  email: rpt@acme.example
+  visibility: lisible par toute l'entreprise
+  merged_by: Camille Durand, responsable des opérations
+
+owners:
+  referential: {role: null, first_name: Camille Durand, what: structure du référentiel, fusion des cartes}
+  ai_policy: {role: null, first_name: Karim Benali, what: ai-policy.yaml (la personne chargée des données)}
+
+teams:
+  - {code: dir, name: Direction, scope: direction, stratégie, headcount: 3}
+  - {code: sales, name: Ventes, scope: ventes, renouvellements, headcount: 12}
+  - {code: support, name: Support, scope: support client, formation, headcount: 9}
+  - {code: tech, name: Tech, scope: développement, infrastructure, headcount: 12}
+  - {code: fin, name: Finance, scope: finance, administration, juridique, headcount: 4}
+
+catalogues:
+  departments: departments.yaml
+  ai_policy: ai-policy.yaml
+
+skills:
+  - {name: ts-general-check-process-cartography, where: claude.ai}
+  - {name: ts-general-rpt-observe, where: claude.ai}
+  - {name: ts-general-rpt-file, where: claude.ai}
+  - {name: ts-general-data-crawl, where: claude.ai}
+  - {name: ts-general-os-place, where: claude.ai}
+
+privacy:
+  excluded: [sujets privés, revues internes, discussions RH, santé de l'entreprise, données personnelles (adresse, sexe, téléphone…), noms de clients]
+  allowed_personal_data: le prénom et le nom d'une personne qui tient un rôle ou fait une tâche
+  not_filed: [bulletins de paie et rémunérations, contrats et dossiers RH, santé, finance confidentielle, contentieux et dossiers juridiques confidentiels, capital et actionnariat, conseil d'administration, identifiants et mots de passe]
+
+global_context: |
+  Acme — référentiel des tâches (RPT)
+
+  Config RPT (rpt-config.yaml) : https://drive.google.com/drive/folders/1AcmeOsFolderExampleId ; tâches : index-taches.json
+
+  Tâche (SALES-T1.2, skill de l'index) ou outillage changé (skill, tâche planifiée, agent, connecteur) : au début retrouve sans le dire la fiche, pars de son modèle (templates) ; à la fin propose ts-general-rpt-file (output_files) au livrable prêt, puis ts-general-rpt-observe si la fiche ne dit plus vrai.
+  Contenu produit (doc, deck, page) : propose ts-general-os-place (place dans l'OS, données sources, dossier Drive). Jamais paie, RH, capital.
+  Propose ts-general-check-process-cartography si je le demande, arrive ou change de poste.
+
+  Une proposition par conversation, rien de ponctuel ni de perso. Rien ne part sans mon accord sur un aperçu. Ni client ni donnée personnelle. Sans personne : note-le au compte rendu.
