@@ -117,9 +117,9 @@ moins possible.
    Teamstarter en fichier `.skill`, puis chaque nouvelle version, y compris celles faites plus
    tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`) ; l'étape « Créer mon
    agent IA » est cochée.
-6. **Présentation**, par un schéma SVG : le nom du skill, ce qu'il prend (entrées), ses étapes
-   numérotées et ce qu'il produit (sorties), avec le fichier pour l'installer. Vous pouvez tout
-   changer.
+6. **Présentation**, par un schéma SVG envoyé en carte, que vous ouvrez d'un clic : le nom du
+   skill, ce qu'il prend (entrées), ses étapes numérotées et ce qu'il produit (sorties), avec le
+   fichier pour l'installer. Vous pouvez tout changer.
 7. **Première exécution**, sur un cas réel. Si le résultat vous convient, l'étape « Tester l'agent
    en conditions réelles » est cochée.
 
@@ -369,9 +369,12 @@ versionné.
    `ts-<domaine>-<verbe>-<objet>`, description de 1024 caractères au plus, sans chevrons, avec les
    phrases qui déclenchent le skill. Corps adressé au modèle, à l'infinitif.
    Une question à l'utilisateur passe par l'outil de question et porte ce qu'elle fait valider,
-   en entier ou en version courte, sans « ci-dessus » : dans Cowork, le texte écrit entre deux
-   appels d'outils est replié en une ligne de résumé, et un texte plus long passe par l'outil
-   de message (TEA-3343).
+   en entier ou en version courte, sans « ci-dessus » : dans claude.ai et Cowork, le texte écrit
+   entre deux appels d'outils est replié en une ligne de résumé, et un texte plus long passe par
+   l'outil de message (TEA-3343). Un visuel est replié de la même façon (« Visuel créé ») : ce
+   que l'utilisateur doit voir avant une question, comme le schéma d'un skill, s'envoie en carte
+   (fichier rendu ou artefact), pas par l'outil de visualisation ni par une image dans le texte,
+   sauf dans une interface qui n'a ni outil d'envoi de fichier ni artefact (TEA-3409).
 2. Un fichier utile à plusieurs skills est copié dans chacun (un skill doit pouvoir être téléversé
    seul). La source et ses copies sont listées dans `SHARED` du script ; modifier la source, puis
    `python3 scripts/check_plugins.py --sync`. Aujourd'hui : `regles-api.md`, et, pour
