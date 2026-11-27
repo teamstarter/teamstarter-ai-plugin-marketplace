@@ -53,7 +53,10 @@ metadata:
 - **Une modification = un dépôt**, une fois la modification terminée : plusieurs retouches dans
   la même réponse font un seul dépôt, avant la réponse finale. Trois corrections demandées l'une
   après l'autre font trois dépôts.
-- **La première version aussi**, dès qu'elle est écrite et testée.
+- **La première version aussi**, dès qu'elle est écrite, testée et validée par l'utilisateur.
+- **Pendant une création ou une modification menée par `ts-general-creer-skill`**, le dépôt
+  attend le « Oui » de la revue (son étape 6) : les versions écrites pendant la construction et
+  la revue ne se déposent pas, seule celle que l'utilisateur a validée l'est, à l'étape 7.
 - **Tout le dossier du skill** est déposé : une modification de `references/`, `scripts/` ou
   `assets/` fait aussi une nouvelle version.
 - **Sans le demander à l'utilisateur** : le dépôt fait partie de l'écriture du skill.
