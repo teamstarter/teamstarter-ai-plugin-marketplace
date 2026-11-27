@@ -93,7 +93,9 @@ parcours commun, avec les questions que votre organisation a définies.
 `ts-general-creer-skill` passe avant le skill `skill-creator` d'Anthropic : un skill de
 l'organisation est enregistré dans Teamstarter (techniquement, un projet « Automatisation de
 processus avec l'IA »). L'IA parle toujours de **votre skill**, jamais de projet, et demande le
-moins possible.
+moins possible. Chacun sa partie : le skill mène le parcours dans Teamstarter, le prompt de
+création de Teamstarter fixe ce que le skill doit faire et les règles de construction de votre
+organisation (questions comprises), et `skill-creator` ne sert qu'au format du skill.
 
 - **Avant de commencer.** L'IA regarde si une idée ou un skill proche existe déjà dans
   Teamstarter, et vous le propose seulement si elle en trouve un. Puis elle présente les étapes
@@ -112,17 +114,25 @@ moins possible.
    réclame et qu'elle n'a pas.
 4. **Validation.** Si votre organisation fait valider les skills par ses animateurs, le skill
    leur est envoyé : revenez quand il est validé. Sinon, l'IA passe directement à la création.
-5. **Construire, tester, enregistrer.** L'IA récupère le prompt de création généré par
-   Teamstarter et le suit, pour la construction comme pour les tests. Le skill porte son id
-   Teamstarter dans ses métadonnées (`teamstarter-project-id`). Il est enregistré dans
-   Teamstarter en fichier `.skill`, puis chaque nouvelle version, y compris celles faites plus
-   tard avec `skill-creator` ou à la main (`ts-general-deposer-skill`) ; l'étape « Créer mon
-   agent IA » est cochée.
-6. **Présentation**, par un schéma SVG envoyé en carte, que vous ouvrez d'un clic : le nom du
-   skill, ce qu'il prend (entrées), ses étapes numérotées et ce qu'il produit (sorties), avec le
-   fichier pour l'installer. Vous pouvez tout changer.
-7. **Première exécution**, sur un cas réel. Si le résultat vous convient, l'étape « Tester l'agent
-   en conditions réelles » est cochée.
+5. **Construire et tester.** L'IA récupère le prompt de création généré par Teamstarter et le
+   suit, pour la construction comme pour les tests, y compris les questions qu'il fait poser
+   (décisions structurantes, exemples de livrables, validations humaines, cas limites) ; ce que
+   vous avez déjà dit ne vous est pas redemandé. Le nom du skill suit la convention de
+   l'environnement technique de votre organisation, sans vous être demandé. Le skill porte son
+   id Teamstarter dans ses métadonnées (`teamstarter-project-id`).
+6. **Revue**, avant tout enregistrement : un schéma SVG envoyé en carte, que vous ouvrez d'un
+   clic (le nom du skill, ce qu'il prend, ses étapes numérotées, ce qu'il produit), puis un essai
+   sur un exemple, réel si vous en avez un. Vous pouvez tout changer.
+7. **Enregistrer**, après votre « Oui » : le skill est enregistré dans Teamstarter en fichier
+   `.skill`, puis chaque nouvelle version, y compris celles faites plus tard avec `skill-creator`
+   ou à la main (`ts-general-deposer-skill`) ; l'étape « Créer mon agent IA » est cochée, le
+   registre des agents IA mis à jour quand votre organisation en a un, et le fichier vous est
+   donné pour l'installer.
+8. **Première exécution**, sur un cas réel, si l'essai de la revue n'en était pas un. Si le
+   résultat vous convient, l'étape « Tester l'agent en conditions réelles » est cochée.
+
+Le prompt de création se copie aussi depuis la page du skill dans Teamstarter : collé dans une
+conversation, il fait démarrer la création à l'étape 5.
 
 Vos corrections sont appliquées sans compte rendu : l'IA ne vous dit pas qu'elle a mis à jour le
 skill, elle vous montre le résultat. Elle ne vous demande jamais de confirmer votre identité.

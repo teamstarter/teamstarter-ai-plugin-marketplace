@@ -60,6 +60,9 @@ metadata:
 - **L'exécution n'a pas eu lieu** : l'utilisateur a lu, résumé, modifié ou discuté le skill, ou
   l'a interrompu avant sa première étape. Une exécution commencée puis arrêtée a eu lieu : elle se
   déclare avec `outcome: "failure"`.
+- **Un essai du skill pendant sa construction** (tests à blanc, essai sur un exemple fictif à la
+  revue de `ts-general-creer-skill`) : ne rien déclarer, ce n'est pas un usage. Un essai sur un
+  vrai cas de l'utilisateur se déclare.
 - Jamais « pour essayer le tool ».
 - **Pas de connecteur Teamstarter, ou un connecteur sans le tool `report-skill-execution`** (accès
   en lecture seule, ou plateforme qui ne l'expose pas encore) : ne rien déclarer, ne pas passer par

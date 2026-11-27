@@ -45,10 +45,11 @@ si une idée ou un skill proche existe déjà, présente les étapes, comprend l
 sources de données, découpage en plusieurs skills), crée le skill dans Teamstarter, reprend
 ce que vous avez déjà dit et vous soumet une à une ses réponses proposées aux autres questions
 de structuration, fait la fiche et l'audit, l'envoie en validation ou le publie quand votre
-organisation ne modère pas, construit et teste le skill en suivant le prompt de création de Teamstarter, l'enregistre
-dans Teamstarter, vous le présente dans un schéma SVG (entrées, étapes, sorties) et propose une
-première exécution. Il ne vous demande jamais de confirmer votre identité, et applique vos
-corrections sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
+organisation ne modère pas, construit et teste le skill en suivant le prompt de création de
+Teamstarter (y compris les questions qu'il fait poser), vous le présente dans un schéma SVG
+(entrées, étapes, sorties) et l'essaie sur un exemple, puis, après votre « Oui », l'enregistre
+dans Teamstarter et propose une première exécution sur un cas réel. Il ne vous demande jamais
+de confirmer votre identité, et applique vos corrections sans compte rendu. Chaque utilisation du skill est ensuite déclarée à Teamstarter ; les
 statistiques sont dans la carte « Utilisation du skill » de sa page.
 
 **Remonter les blocages** : sur un projet en réalisation ou mis en place, de n'importe quel type,
