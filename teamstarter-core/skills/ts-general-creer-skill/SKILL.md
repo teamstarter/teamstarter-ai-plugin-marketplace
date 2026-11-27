@@ -136,7 +136,7 @@ retire qu'une règle : le nom du skill ne se fait pas confirmer (étape 5).
 [5] Construire et tester le skill      ←── en suivant le prompt, ses questions comprises
 [6] Revue : schéma, essai sur un exemple   ←── changements jusqu'au « Oui »
 [7] Enregistrer dans Teamstarter, installer   ←── après le « Oui » seulement
-[8] Première exécution en conditions réelles   ←── sauf si l'essai était un vrai cas
+[8] Première exécution en conditions réelles   ←── ou l'essai de la revue, si c'était un vrai cas
 [U] Utilisation du skill · [B] Blocage · [R] Reprise
 ```
 
@@ -165,11 +165,14 @@ Lire `references/regles-api.md` avant le premier appel.
    - L'utilisateur ouvre un `SKILL.md` qui porte `metadata.teamstarter-project-id`, nomme un
      skill existant, ou demande de le modifier : aller à « Reprise » (R). Une **modification**
      d'un skill existant ne présente pas les étapes et ne dit rien de plus : faire la
-     modification (étapes 5, 6 et 7).
-   - **La conversation s'ouvre sur le prompt de création**, copié depuis la page du skill dans
-     Teamstarter (il commence par « Crée un agent IA en suivant… » et porte la ligne « Teamstarter
-     project id ») : le skill est validé et sa structuration est faite. Prendre l'id de cette
-     ligne, relire `project(where: {"id": <id>}) { id status skillFileId skillName }`, ne pas
+     modification (étapes 5 et 6), chaque version étant déposée comme le dit
+     `ts-general-deposer-skill`.
+   - **La conversation porte le prompt de création** copié depuis la page du skill dans
+     Teamstarter, collé ou dans un fichier joint (`…-ai-agent.md`). Il se reconnaît à la ligne
+     « Teamstarter project id », la même en français, en anglais et en espagnol ; il commence par
+     « Crée un agent IA », « Create an AI agent » ou « Crea un agente de IA ». Le skill est validé
+     et sa structuration est faite. Prendre l'id de cette ligne, relire
+     `project(where: {"id": <id>}) { id status skillFileId skillName }`, ne pas
      présenter les étapes, ne pas rappeler `get-skill-creation-instructions` (le prompt est là),
      et aller à l'étape 5 avec ce prompt. `skillName` renseigné : le skill a déjà une version,
      et il garde ce nom.
@@ -503,8 +506,9 @@ disponible, ne rien faire.
 seul, à blanc ou sur un exemple de l'étape 1. Un test qui échoue : corriger et retester, sans
 le dire. Les essais qui demandent l'utilisateur ou ses vraies données se font à l'étape 6.
 
-**Rien ne s'enregistre encore** : ni dépôt dans Teamstarter, ni étape cochée, avant le « Oui »
-de l'étape 6. `ts-general-deposer-skill` attend aussi ce « Oui ».
+**Pendant une création, rien ne s'enregistre encore** : ni dépôt dans Teamstarter, ni étape
+cochée, avant le « Oui » de l'étape 6. `ts-general-deposer-skill` attend aussi ce « Oui ». Une
+modification d'un skill déjà enregistré se dépose comme le dit `ts-general-deposer-skill`.
 
 ## Étape 6 — Revue : schéma, essai sur un exemple
 
@@ -611,25 +615,24 @@ accès à ouvrir). Rien d'autre à dire : le dépôt réussi s'annonce comme le 
 
 ## Étape 8 — Première exécution en conditions réelles
 
-**L'essai de l'étape 6 était un vrai cas**, et l'utilisateur a répondu « Oui » : cet essai est
-la première exécution. Une fois « Créer mon agent IA » coché, cocher « Tester l'agent en
-conditions réelles » (action `test-agent`), sans le dire.
+L'outil de question, toujours : « On le lance une première fois sur un cas réel ? » → « Oui,
+maintenant » / « Plus tard ». Quand l'essai de l'étape 6 était un vrai cas, une réponse de plus,
+en premier : « L'essai sur <le cas> suffit ».
 
-**Sinon**, l'outil de question : « On le lance une première fois sur un cas réel ? » → « Oui,
-maintenant » / « Plus tard ».
-
+- **L'essai suffit** : cocher « Tester l'agent en conditions réelles » (action `test-agent`),
+  sans le dire.
 - **Oui** : demander l'entrée réelle si elle manque, exécuter le skill en suivant son
   `SKILL.md`. L'exécution est déclarée par `ts-general-declarer-execution-skill`. Un échec sur
   un problème que l'utilisateur ne peut pas lever seul : `ts-general-declarer-blocage`.
 - Puis : « Le résultat te convient ? » → « Oui » / « Non, à corriger ».
   - **Oui** : cocher « Tester l'agent en conditions réelles » (action `test-agent`), sans le
     dire.
-  - **Non** : demander ce qui ne va pas, corriger (étapes 5 et 6, en silence), enregistrer la
-    nouvelle version (étape 7), proposer de relancer.
+  - **Non** : demander ce qui ne va pas, corriger (étape 5) en silence ; la nouvelle version se
+    dépose comme le dit `ts-general-deposer-skill` ; proposer de relancer.
 - **Plus tard** : rien à cocher.
 
-« Tester l'agent » ne se coche qu'après un « Oui » de l'utilisateur sur un vrai cas, et jamais
-avant « Créer mon agent IA ». Puis donner le lien de la page du skill
+« Tester l'agent » se coche seulement après une de ces réponses de l'utilisateur, jamais en même
+temps que « Créer mon agent IA ». Puis donner le lien de la page du skill
 (`<adresse de l'app>/<tag de l'organisation>/project/<id>/manage`) et la suite qui se fait dans
 Teamstarter : le faire valider par son ambassadeur, le partager à ses collègues.
 
@@ -660,7 +663,7 @@ variables : `{"where": {"id": <id>}}`
 | `UNDER_REVIEW` | « Ton skill attend encore la validation des animateurs. » |
 | `PUBLISHED` | « Ton skill est encore soumis au vote. » |
 | `CASHEDOUT`, `skillFileId` vide | étape 4, prompt de création, puis étape 5 |
-| `CASHEDOUT` ou `DELIVERED`, skill enregistré | ce que l'utilisateur demande : modification (étapes 5, 6 et 7), exécution (8), utilisation (U), blocage (B) |
+| `CASHEDOUT` ou `DELIVERED`, skill enregistré | ce que l'utilisateur demande : modification (étapes 5 et 6, dépôt par `ts-general-deposer-skill`), exécution (8), utilisation (U), blocage (B) |
 | `CANCELLED`, `ENDED`, `CAMPAIGN_FAILED` | le dire ; un nouveau skill repart du préambule |
 
 Une reprise de création : dire en une phrase où en est le skill, sans présenter les étapes. Une
@@ -701,8 +704,7 @@ category, description})`.
   version, étapes « Créer mon agent IA » et « Tester l'agent » cochées, ligne du registre des
   agents IA quand l'organisation en a un. Toute autre écriture (co-porteurs, blocage) suit
   l'accord de l'utilisateur.
-- **Rien n'est déposé ni coché avant le « Oui » de la revue** (étape 6), pour une création
-  comme pour une modification.
+- **Pendant une création, rien n'est déposé ni coché avant le « Oui » de la revue** (étape 6).
 - **Aucune réponse de structuration écrite que l'utilisateur n'a ni donnée ni validée**, et
   aucune question reposée quand il y a déjà répondu.
 - **Ne rien inventer** : date, montant, nom, outil viennent de l'utilisateur ou d'une
